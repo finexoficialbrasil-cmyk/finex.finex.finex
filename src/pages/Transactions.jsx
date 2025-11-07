@@ -49,6 +49,13 @@ const getBrazilDate = () => {
   return `${year}-${month}-${day}`;
 };
 
+// ✅ NOVA FUNÇÃO: Formatar data sem conversão de timezone
+const formatDateBR = (dateString) => {
+  if (!dateString) return '-';
+  const [year, month, day] = dateString.split('-');
+  return `${day}/${month}/${year}`;
+};
+
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState([]);
   const [accounts, setAccounts] = useState([]);
@@ -337,7 +344,7 @@ export default function TransactionsPage() {
                                 <p className="font-medium text-white text-sm sm:text-base truncate">{tx.description}</p>
                                 <div className="flex items-center gap-2 mt-1 flex-wrap">
                                   <span className="text-xs text-purple-300">
-                                    {format(new Date(tx.date), "dd/MM/yyyy")}
+                                    {formatDateBR(tx.date)}
                                   </span>
                                   <span className="text-xs text-purple-400">•</span>
                                   <span className="text-xs text-purple-300 truncate max-w-[100px]">{account.name}</span>

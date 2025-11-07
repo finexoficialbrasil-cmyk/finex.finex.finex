@@ -27,6 +27,13 @@ import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-f
 import { ptBR } from "date-fns/locale";
 import { motion } from "framer-motion";
 
+// ✅ NOVA FUNÇÃO: Formatar data sem conversão de timezone
+const formatDateBR = (dateString) => {
+  if (!dateString) return '-';
+  const [year, month, day] = dateString.split('-');
+  return `${day}/${month}/${year}`;
+};
+
 export default function Statement() {
   const [transactions, setTransactions] = useState([]);
   const [accounts, setAccounts] = useState([]);
@@ -254,14 +261,14 @@ export default function Statement() {
           <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68e3d7b0d43cf17863ceff88/ead868f84_7f05ce15-3511-4cb5-b883-b4c200824cfc.jpg" alt="Reality Activity" />
           <h1>Reality Activity</h1>
           <p>Extrato Financeiro Detalhado</p>
-          <p>Gerado em: ${format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
+          <p>Gerado em: ${formatDateBR(new Date().toISOString().split('T')[0])} às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
         </div>
 
         <div class="info-section">
           <h2 style="margin-top: 0; color: #a855f7;">Informações do Período</h2>
           <div class="info-row">
             <span class="info-label">Período:</span>
-            <span>${format(new Date(filters.startDate), "dd/MM/yyyy")} até ${format(new Date(filters.endDate), "dd/MM/yyyy")}</span>
+            <span>${formatDateBR(filters.startDate)} até ${formatDateBR(filters.endDate)}</span>
           </div>
           <div class="info-row">
             <span class="info-label">Total de Transações:</span>
@@ -307,7 +314,7 @@ export default function Statement() {
               
               return `
                 <tr>
-                  <td>${format(new Date(tx.date), "dd/MM/yyyy")}</td>
+                  <td>${formatDateBR(tx.date)}</td>
                   <td>${tx.description}</td>
                   <td><span class="badge" style="background: ${category?.color}20; color: ${category?.color};">${category?.name || "Sem categoria"}</span></td>
                   <td>${account?.name || "-"}</td>
@@ -581,7 +588,7 @@ export default function Statement() {
                         return (
                           <TableRow key={tx.id} className="border-b border-purple-900/20 hover:bg-purple-900/10">
                             <TableCell className="text-purple-200">
-                              {format(new Date(tx.date), "dd/MM/yyyy")}
+                              {formatDateBR(tx.date)}
                             </TableCell>
                             <TableCell className="text-white font-medium">{tx.description}</TableCell>
                             <TableCell>
