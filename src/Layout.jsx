@@ -411,15 +411,20 @@ export default function Layout({ children }) {
           background: transparent !important;
         }
 
+        /* ✅ CORRIGIDO: Hover com gradiente bonito */
         [data-sidebar-menu-button]:hover {
-          background: ${
-            theme === 'dark' ? 'rgba(139, 92, 246, 0.15)' :
-            theme === 'light' ? 'rgba(99, 102, 241, 0.1)' :
-            theme === 'purple' ? 'rgba(217, 70, 239, 0.2)' :
-            theme === 'blue' ? 'rgba(59, 130, 246, 0.2)' :
-            'rgba(16, 185, 129, 0.2)'
-          } !important;
+          background: linear-gradient(90deg, rgba(139, 92, 246, 0.15) 0%, rgba(126, 34, 206, 0.05) 100%) !important;
+          border-left: 3px solid #a855f7 !important;
+          padding-left: calc(1rem - 3px) !important;
           transition: all 0.3s ease !important;
+        }
+
+        /* ✅ Estado ativo ainda mais bonito */
+        [data-sidebar-menu-button][data-active="true"] {
+          background: linear-gradient(90deg, rgba(147, 51, 234, 0.3) 0%, rgba(126, 34, 206, 0.15) 100%) !important;
+          border-left: 4px solid #a855f7 !important;
+          padding-left: calc(1rem - 4px) !important;
+          box-shadow: 0 0 20px rgba(168, 85, 247, 0.3) !important;
         }
 
         @media (max-width: 768px) {
@@ -588,7 +593,7 @@ export default function Layout({ children }) {
           color: rgba(168, 85, 247, 0.4);
           animation: float-particle ${getAnimationDuration(6)} ease-in-out infinite;
           pointer-events: none;
-          z-index: 1; /* ensure it's behind logo */
+          z-index: 1;
         }
 
         .financial-particle:nth-child(1) {
