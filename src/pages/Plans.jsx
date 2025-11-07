@@ -41,6 +41,28 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
+// ✅ NOVA FUNÇÃO: Calcular dias restantes SEM conversão de timezone
+const calculateDaysLeft = (endDateString) => {
+  if (!endDateString) return 0;
+  
+  // Parse the date string as YYYY-MM-DD
+  const [year, month, day] = endDateString.split('-').map(Number);
+  // Create a Date object in UTC to avoid local timezone offsets for the "end of day"
+  // Month is 0-indexed in Date constructor, so month - 1
+  const endDate = new Date(Date.UTC(year, month - 1, day));
+  
+  const now = new Date();
+  // Create a Date object for today, also in UTC, to ensure consistent comparison
+  const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  
+  // Calculate difference in milliseconds
+  const diffTime = endDate.getTime() - today.getTime();
+  // Convert to days and ceil to count partial days as a full day left
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  return diffDays;
+};
+
 export default function Plans() {
   const [user, setUser] = useState(null);
   const [plans, setPlans] = useState([]);
@@ -127,18 +149,18 @@ export default function Plans() {
     try {
       // ✅ NOVO: Verificar se usuário tem plano ativo e está tentando voltar para free ou fazer downgrade
       if (user && user.subscription_status === 'active' && user.subscription_end_date) {
-        const endDate = new Date(user.subscription_end_date);
+        const endDate = new Date(user.subscription_end_date + 'T12:00:00'); // Ensure date is parsed correctly
         const now = new Date();
         
-        // Se ainda tem plano ativo
+        // If still has active plan
         if (endDate > now) {
-          // Se está tentando escolher plano free (assumindo 'monthly' com price 0 é o free)
+          // If trying to choose free plan (assuming 'monthly' with price 0 is the free)
           if (plan.price === 0) { // Changed condition to check price directly as per the code
             alert(`❌ BLOQUEADO!\n\n🔒 Você já possui uma assinatura ATIVA até ${endDate.toLocaleDateString('pt-BR')}.\n\n⚠️ Não é possível fazer downgrade para o plano gratuito enquanto sua assinatura estiver ativa.\n\n💡 Aguarde o vencimento da sua assinatura ou entre em contato com o suporte para cancelamento.`);
             return;
           }
           
-          // Se está tentando escolher plano inferior ao atual (pago para pago inferior)
+          // If trying to choose a plan inferior to the current one (paid to paid inferior)
           const currentPlanValue = getPlanValue(user.subscription_plan);
           const newPlanValue = getPlanValue(plan.plan_type);
           
@@ -436,10 +458,10 @@ export default function Plans() {
                       Plano: <strong>{formatPlanName(user.subscription_plan)}</strong>
                     </p>
                     <p className="text-purple-300 text-sm">
-                      Válido até: <strong>{new Date(user.subscription_end_date).toLocaleDateString('pt-BR')}</strong>
+                      Válido até: <strong>{new Date(user.subscription_end_date + 'T12:00:00').toLocaleDateString('pt-BR')}</strong>
                     </p>
                     {(() => {
-                      const daysLeft = Math.ceil((new Date(user.subscription_end_date) - new Date()) / (1000 * 60 * 60 * 24));
+                      const daysLeft = calculateDaysLeft(user.subscription_end_date);
                       return (
                         <p className="text-cyan-300 text-sm mt-1">
                           ⏱️ Faltam <strong>{daysLeft} dias</strong> para renovação
@@ -519,7 +541,7 @@ export default function Plans() {
             const isCurrentPlan = user?.subscription_plan === plan.plan_type;
             const hasActivePlan = user?.subscription_status === 'active' && 
                                   user?.subscription_end_date && 
-                                  new Date(user.subscription_end_date) > new Date();
+                                  new Date(user.subscription_end_date + 'T12:00:00') > new Date(); // Added T12:00:00 for consistency
             
             const isFreePlan = plan.price === 0;
             const isBlocked = hasActivePlan && isFreePlan;

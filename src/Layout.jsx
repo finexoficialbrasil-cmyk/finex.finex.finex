@@ -131,6 +131,31 @@ const navigationItems = [
   },
 ];
 
+// ✅ NOVA FUNÇÃO: Calcular dias restantes SEM conversão de timezone
+const calculateDaysLeft = (endDateString) => {
+  if (!endDateString) return 0;
+  
+  // Parse manual sem timezone
+  const [year, month, day] = endDateString.split('-').map(Number);
+  const endDate = new Date(year, month - 1, day); // Cria data local (sem UTC)
+  
+  // Data atual do Brasil (ou fuso horário local, para consistência)
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // Zera horas
+  
+  const diffTime = endDate - today;
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  console.log(`📅 Cálculo de dias:`, {
+    endDateString,
+    endDate: endDate.toLocaleDateString('pt-BR'),
+    today: today.toLocaleDateString('pt-BR'),
+    diffDays
+  });
+  
+  return diffDays;
+};
+
 // ✅ NOVO: Componente interno que tem acesso ao contexto da Sidebar
 function LayoutContent({ children }) {
   const location = useLocation();
