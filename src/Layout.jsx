@@ -131,7 +131,45 @@ const navigationItems = [
   },
 ];
 
-// ✅ NOVA FUNÇÃO: Calcular dias restantes
+// ✅ FUNÇÃO ATUALIZADA: Verificar trial OU assinatura ativa
+const hasActiveAccess = (user) => {
+  if (!user) return false;
+  if (user.role === 'admin') return true;
+  
+  // ✅ VERIFICAR TRIAL
+  if (user.subscription_status === 'trial' && user.trial_ends_at) {
+    const [year, month, day] = user.trial_ends_at.split('-').map(Number);
+    const trialEnd = new Date(year, month - 1, day);
+    
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    const trialActive = trialEnd >= today;
+    
+    console.log(`🎁 Verificação de TRIAL:`, {
+      email: user.email,
+      trialEnd: user.trial_ends_at,
+      trialActive
+    });
+    
+    return trialActive;
+  }
+  
+  // ✅ VERIFICAR ASSINATURA PAGA
+  if (user.subscription_status === 'active' && user.subscription_end_date) {
+    const [year, month, day] = user.subscription_end_date.split('-').map(Number);
+    const endDate = new Date(year, month - 1, day);
+    
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    return endDate >= today;
+  }
+  
+  return false;
+};
+
+// ✅ FUNÇÃO: Calcular dias restantes
 const calculateDaysLeft = (endDateString) => {
   if (!endDateString) return 0;
   
@@ -147,40 +185,13 @@ const calculateDaysLeft = (endDateString) => {
   return diffDays;
 };
 
-// ✅ FUNÇÃO CORRIGIDA: Verificar se assinatura está ativa
-const isSubscriptionActive = (user) => {
-  if (!user) return false;
-  if (user.role === 'admin') return true;
-  
-  if (user.subscription_status === 'active' && user.subscription_end_date) {
-    const [year, month, day] = user.subscription_end_date.split('-').map(Number);
-    const endDate = new Date(year, month - 1, day);
-    
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
-    const isActive = endDate >= today;
-    
-    console.log(`🔍 Verificação de assinatura:`, {
-      email: user.email,
-      status: user.subscription_status,
-      endDate: user.subscription_end_date,
-      isActive: isActive
-    });
-    
-    return isActive;
-  }
-  
-  return false;
-};
-
 // ✅ NOVO: Componente interno que tem acesso ao contexto da Sidebar
 function LayoutContent({ children }) {
   const location = useLocation();
   const { setOpenMobile, setOpen } = useSidebar();
   const [user, setUser] = React.useState(null);
   const [userPlan, setUserPlan] = React.useState(null);
-  const [hoveredItem, setHoveredItem] = React.useState(null);
+  // Removed: const [hoveredItem, setHoveredItem] = React.useState(null);
   const [theme, setTheme] = React.useState("dark");
   const [appName, setAppName] = React.useState("FINEX");
   const [appLogo, setAppLogo] = React.useState("");
@@ -206,7 +217,7 @@ function LayoutContent({ children }) {
 
   React.useEffect(() => {
     if (previousPath !== location.pathname && window.innerWidth < 768) {
-      console.log("📱 Rota mudou no mobile, fechando sidebar");
+      // Removed: console.log("📱 Rota mudou no mobile, fechando sidebar");
       setOpenMobile(false);
       setOpen(false);
     }
@@ -238,16 +249,16 @@ function LayoutContent({ children }) {
     } catch (error) {
       console.error("❌ Erro ao carregar dados:", error);
       setHasLayoutError(true);
-      setAppName("FINEX");
-      setAppLogo("");
-      document.title = "FINEX - Inteligência Financeira";
+      // Removed: setAppName("FINEX");
+      // Removed: setAppLogo("");
+      // Removed: document.title = "FINEX - Inteligência Financeira";
       setIsLoadingLayout(false);
     }
   };
 
   const loadAdditionalDataInBackground = async (userData) => {
     try {
-      if (userData.subscription_plan && userData.role !== 'admin' && isSubscriptionActive(userData)) {
+      if (userData.subscription_plan && userData.role !== 'admin' && hasActiveAccess(userData)) {
         const { SystemPlan } = await import("@/entities/SystemPlan");
         const plans = await SystemPlan.list();
         const plan = plans.find(p => p.plan_type === userData.subscription_plan);
@@ -276,35 +287,28 @@ function LayoutContent({ children }) {
       }
 
       if (faviconSetting && faviconSetting.value) {
-        updateFavicon(faviconSetting.value);
+        const existingFavicons = document.querySelectorAll("link[rel*='icon']");
+        existingFavicons.forEach(favicon => favicon.remove());
+
+        const link = document.createElement('link');
+        link.rel = 'icon';
+        link.type = 'image/png';
+        link.href = faviconSetting.value;
+        document.head.appendChild(link);
       }
     } catch (error) {
       console.warn("⚠️ Erro ao carregar dados secundários (não crítico):", error);
     }
   };
 
-  const updateFavicon = (faviconUrl) => {
-    const existingFavicons = document.querySelectorAll("link[rel*='icon']");
-    existingFavicons.forEach(favicon => favicon.remove());
-
-    const link = document.createElement('link');
-    link.rel = 'icon';
-    link.type = 'image/png';
-    link.href = faviconUrl;
-    document.head.appendChild(link);
-
-    console.log("✅ Favicon atualizado:", faviconUrl);
-  };
+  // Removed: const updateFavicon = (faviconUrl) => { ... }
 
   if (isLoadingLayout) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#0a0a0f] via-[#1a1a2e] to-[#0a0a0f] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="relative">
-            <Sparkles className="w-12 h-12 text-purple-400 animate-spin" />
-            <div className="absolute inset-0 w-12 h-12 rounded-full bg-purple-600/30 blur-xl animate-pulse" />
-          </div>
-          <p className="text-purple-300 text-lg font-medium">Carregando...</p>
+          <Sparkles className="w-12 h-12 text-purple-400 animate-spin" />
+          <p className="text-purple-300">Carregando...</p>
         </div>
       </div>
     );
@@ -314,7 +318,7 @@ function LayoutContent({ children }) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#0a0a0f] via-[#1a1a2e] to-[#0a0a0f] flex items-center justify-center p-4">
         <div className="text-center">
-          <p className="text-red-400 mb-4">Erro ao carregar aplicação. Por favor, tente novamente.</p>
+          <p className="text-red-400 mb-4">Erro ao carregar. Tente novamente.</p>
           <Button onClick={loadUserAndSettings} className="bg-purple-600 text-white hover:bg-purple-700">
             Tentar Novamente
           </Button>
@@ -388,7 +392,7 @@ function LayoutContent({ children }) {
   const getFilteredMenuItems = () => {
     if (!user) return [];
     
-    // ✅ Admin vê tudo + painel admin
+    // Admin vê tudo
     if (user.role === 'admin') {
       return [
         ...navigationItems,
@@ -402,14 +406,12 @@ function LayoutContent({ children }) {
       ];
     }
 
-    // ✅ MUDANÇA CRÍTICA: Se tem status 'active' e data válida, LIBERA TUDO
-    if (isSubscriptionActive(user)) {
-      console.log(`✅ Usuário ${user.email} tem acesso TOTAL - assinatura ativa`);
-      return navigationItems; // ✅ RETORNA TODAS AS PÁGINAS
+    // ✅ TRIAL ou ASSINATURA ATIVA = TUDO LIBERADO
+    if (hasActiveAccess(user)) {
+      return navigationItems;
     }
 
-    // ✅ Se não tem assinatura ativa, apenas páginas básicas
-    console.log(`⚠️ Usuário ${user.email} SEM assinatura ativa - acesso limitado`);
+    // ✅ Sem acesso = apenas páginas básicas
     return navigationItems.filter(item => 
       ["Dashboard", "Perfil", "Assinaturas"].includes(item.title)
     );

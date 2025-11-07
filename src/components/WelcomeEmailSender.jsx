@@ -1,152 +1,166 @@
-import React, { useEffect, useState } from "react";
-import { User } from "@/entities/User";
+import { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 
 export default function WelcomeEmailSender() {
   const [checked, setChecked] = useState(false);
   const [sending, setSending] = useState(false);
 
+  console.log("🔵 WelcomeEmailSender renderizando (invisível)");
+
   useEffect(() => {
     console.log("🎯 WelcomeEmailSender montado! Iniciando verificação...");
     
-    // Aguardar 3 segundos antes de verificar
     const timer = setTimeout(() => {
-      console.log("⏰ Timer acionado, verificando email de boas-vindas...");
-      checkAndSendWelcomeEmail();
+      console.log("⏰ Timer acionado, verificando trial e email...");
+      checkAndActivateTrial();
     }, 3000);
 
     return () => {
-      console.log("🧹 WelcomeEmailSender desmontado");
+      console.log("🧹 WelcomeEmailSender desmontado, limpando timer");
       clearTimeout(timer);
     };
   }, []);
 
-  const checkAndSendWelcomeEmail = async () => {
-    console.log("🔍 checkAndSendWelcomeEmail() iniciada");
-    console.log("🔍 checked:", checked, "sending:", sending);
-    
+  const checkAndActivateTrial = async () => {
+    console.log("🔍 checkAndActivateTrial() iniciada");
+    console.log(`🔍 checked: ${checked} sending: ${sending}`);
+
     if (checked || sending) {
-      console.log("⏭️ Pulando verificação (já checado ou enviando)");
+      console.log("⚠️ Já verificado ou enviando, abortando");
       return;
     }
-    
-    setSending(true);
+
     console.log("✅ setSending(true)");
-    
+    setSending(true);
+
     try {
       console.log("📡 Chamando User.me()...");
-      const user = await User.me();
+      const user = await base44.auth.me();
       console.log("✅ User.me() retornou:", user);
-      
-      console.log("👤 Email do usuário:", user.email);
-      console.log("📧 welcome_email_sent:", user.welcome_email_sent);
-      console.log("📧 Tipo de welcome_email_sent:", typeof user.welcome_email_sent);
-      
-      // Verificar se já enviou email de boas-vindas
-      if (user.welcome_email_sent === true) {
-        console.log("✅ Email de boas-vindas JÁ FOI ENVIADO anteriormente");
-        setChecked(true);
-        setSending(false);
+
+      if (!user) {
+        console.log("❌ Nenhum usuário encontrado");
         return;
       }
 
-      console.log("📤 ENVIANDO EMAIL DE BOAS-VINDAS para:", user.email);
-      console.log("📤 Nome do usuário:", user.full_name);
+      console.log("👤 Email do usuário:", user.email);
 
-      try {
-        const emailResult = await base44.integrations.Core.SendEmail({
-          from_name: "FINEX - Inteligência Financeira",
-          to: user.email,
-          subject: "🎉 Bem-vindo ao FINEX - Sua Jornada Financeira Começa Aqui!",
-          body: `
-            <!DOCTYPE html>
-            <html>
-            <head>
-              <meta charset="UTF-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            </head>
-            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-              <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-                <h1 style="color: white; margin: 0; font-size: 28px;">🎉 Bem-vindo ao FINEX!</h1>
-                <p style="color: white; margin: 10px 0 0 0;">Sua Inteligência Financeira Pessoal</p>
-              </div>
+      // ✅ ATIVAR TRIAL SE FOR NOVO USUÁRIO
+      if (!user.trial_started_at && !user.subscription_plan) {
+        console.log("🆕 NOVO USUÁRIO DETECTADO! Ativando trial de 3 dias...");
+        
+        const now = new Date();
+        const trialStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const trialEnd = new Date(trialStart);
+        trialEnd.setDate(trialEnd.getDate() + 3); // 3 dias
+        
+        const trialStartStr = `${trialStart.getFullYear()}-${String(trialStart.getMonth() + 1).padStart(2, '0')}-${String(trialStart.getDate()).padStart(2, '0')}`;
+        const trialEndStr = `${trialEnd.getFullYear()}-${String(trialEnd.getMonth() + 1).padStart(2, '0')}-${String(trialEnd.getDate()).padStart(2, '0')}`;
+        
+        console.log(`📅 Trial: ${trialStartStr} até ${trialEndStr}`);
+        
+        await base44.auth.updateMe({
+          trial_started_at: trialStartStr,
+          trial_ends_at: trialEndStr,
+          subscription_status: 'trial'
+        });
+        
+        console.log("✅ TRIAL ATIVADO! Usuário tem 3 dias de acesso total!");
+      } else if (user.trial_started_at) {
+        console.log(`✅ Usuário já tem trial ativo até: ${user.trial_ends_at}`);
+      } else if (user.subscription_plan) {
+        console.log(`✅ Usuário já tem plano ativo: ${user.subscription_plan}`);
+      }
 
-              <div style="background: white; padding: 30px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 10px 10px;">
-                <p style="font-size: 16px;">Olá <strong>${user.full_name || 'amigo(a)'}</strong>! 👋</p>
-                
-                <p>É com grande satisfação que damos as boas-vindas ao <strong>FINEX</strong> - a plataforma mais completa para gerenciar suas finanças pessoais!</p>
+      // ✅ ENVIAR EMAIL DE BOAS-VINDAS
+      console.log(`📧 welcome_email_sent: ${user.welcome_email_sent}`);
+      console.log(`📧 Tipo de welcome_email_sent: ${typeof user.welcome_email_sent}`);
 
-                <h3 style="color: #667eea; margin-top: 30px;">✨ O que você pode fazer no FINEX:</h3>
-                
-                <ul style="line-height: 2;">
-                  <li>💰 <strong>Controle Total</strong> - Gerencie receitas, despesas e saldos</li>
-                  <li>🤖 <strong>Consultor IA</strong> - Assistente inteligente para suas finanças</li>
-                  <li>📊 <strong>Relatórios</strong> - Visualize seus gastos e tendências</li>
-                  <li>🎯 <strong>Metas</strong> - Defina objetivos e acompanhe progresso</li>
-                  <li>🎙️ <strong>Comandos de Voz</strong> - Registre transações rapidamente</li>
-                </ul>
+      if (user.welcome_email_sent === true) {
+        console.log("✅ Email de boas-vindas JÁ FOI ENVIADO anteriormente");
+        return;
+      }
 
-                <h3 style="color: #667eea; margin-top: 30px;">🚀 Primeiros Passos:</h3>
-                
-                <ol style="line-height: 2;">
-                  <li>Complete seu perfil</li>
-                  <li>Crie suas contas bancárias</li>
-                  <li>Configure suas categorias</li>
-                  <li>Registre suas primeiras transações</li>
-                  <li>Explore o Consultor IA</li>
-                </ol>
+      console.log("📧 Email de boas-vindas NÃO foi enviado ainda");
+      console.log("📤 Enviando email de boas-vindas...");
 
-                <div style="text-align: center; margin: 30px 0;">
-                  <a href="${window.location.origin}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 25px; font-weight: bold;">
-                    Começar Agora 🚀
-                  </a>
-                </div>
-
-                <p style="text-align: center; color: #666; margin-top: 30px;">
-                  Precisa de ajuda? Entre em contato pelo WhatsApp!<br>
-                  <a href="https://wa.me/5565981297511?text=Olá!%20Preciso%20de%20ajuda%20com%20o%20FINEX." style="color: #667eea;">💬 Suporte WhatsApp</a>
+      await base44.integrations.Core.SendEmail({
+        from_name: "FINEX - Equipe",
+        to: user.email,
+        subject: "🎉 Bem-vindo ao FINEX! Seus 3 dias grátis começaram!",
+        body: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px;">
+            <div style="background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+              <h1 style="color: #667eea; text-align: center; margin-bottom: 20px;">
+                🎉 Bem-vindo ao FINEX!
+              </h1>
+              
+              <p style="color: #333; font-size: 16px; line-height: 1.6;">
+                Olá, <strong>${user.full_name || user.email}</strong>! 👋
+              </p>
+              
+              <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
+                <h2 style="color: white; margin: 0 0 10px 0;">✨ TRIAL GRÁTIS ATIVADO!</h2>
+                <p style="color: white; font-size: 18px; margin: 0;">
+                  Você tem <strong>3 DIAS</strong> para testar TODAS as funcionalidades!
                 </p>
               </div>
-
-              <div style="text-align: center; padding: 20px; color: #999; font-size: 12px;">
-                <p>© ${new Date().getFullYear()} FINEX - Inteligência Financeira<br>
-                Todos os direitos reservados</p>
+              
+              <p style="color: #333; font-size: 16px; line-height: 1.6;">
+                Durante o período de teste, você terá acesso completo a:
+              </p>
+              
+              <ul style="color: #333; font-size: 15px; line-height: 1.8;">
+                <li>✅ Gerenciamento de Transações</li>
+                <li>✅ Contas a Pagar e Receber</li>
+                <li>✅ Múltiplas Carteiras</li>
+                <li>✅ Metas Financeiras</li>
+                <li>✅ Relatórios e Gráficos</li>
+                <li>✅ Consultor IA</li>
+                <li>✅ E muito mais!</li>
+              </ul>
+              
+              <div style="background: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; margin: 20px 0; border-radius: 4px;">
+                <p style="color: #856404; margin: 0; font-size: 14px;">
+                  ⏰ <strong>Atenção:</strong> Após os 3 dias, você precisará escolher um plano para continuar usando o FINEX.
+                </p>
               </div>
-            </body>
-            </html>
-          `
-        });
+              
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${window.location.origin}/Dashboard" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 25px; font-weight: bold; font-size: 16px;">
+                  🚀 Começar a Usar Agora
+                </a>
+              </div>
+              
+              <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
+              
+              <p style="color: #666; font-size: 14px; text-align: center; margin: 0;">
+                Precisa de ajuda? Entre em contato conosco!<br>
+                <strong>FINEX - Sistema de Inteligência Financeira</strong>
+              </p>
+            </div>
+          </div>
+        `
+      });
 
-        console.log("✅ EMAIL ENVIADO COM SUCESSO!");
-        console.log("📧 Resultado do envio:", emailResult);
+      console.log("✅ Email de boas-vindas enviado com sucesso!");
 
-        // Marcar que o email foi enviado
-        console.log("💾 Atualizando campo welcome_email_sent...");
-        await User.update(user.id, {
-          welcome_email_sent: true
-        });
-        console.log("✅ Campo welcome_email_sent ATUALIZADO!");
-        
-        setChecked(true);
-        console.log("✅ Processo completo!");
-        
-      } catch (emailError) {
-        console.error("❌ ERRO AO ENVIAR EMAIL:", emailError);
-        console.error("❌ Detalhes do erro:", emailError.message);
-        console.error("❌ Stack:", emailError.stack);
-      }
-      
+      console.log("💾 Marcando welcome_email_sent como true...");
+      await base44.auth.updateMe({
+        welcome_email_sent: true
+      });
+
+      console.log("✅ Campo welcome_email_sent atualizado com sucesso!");
+
     } catch (error) {
-      console.error("❌ ERRO GERAL ao verificar/enviar email:", error);
-      console.error("❌ Detalhes do erro:", error.message);
-      console.error("❌ Stack:", error.stack);
+      console.error("❌ Erro ao ativar trial ou enviar email:", error);
+      console.error("Stack:", error.stack);
     } finally {
-      setSending(false);
       console.log("🏁 setSending(false) - Processo finalizado");
+      setSending(false);
+      setChecked(true);
     }
   };
 
-  // Componente invisível
-  console.log("🔵 WelcomeEmailSender renderizando (invisível)");
   return null;
 }
