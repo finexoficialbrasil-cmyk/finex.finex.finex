@@ -37,7 +37,7 @@ import {
   Wallet,
   ChevronDown,
   Star,
-  Lock // NEW: Import Lock icon
+  Lock
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -63,28 +63,29 @@ const calculateDaysLeft = (endDateString) => {
   return diffDays;
 };
 
-// ✅ NOVA FUNÇÃO: Verificar se assinatura está ativa SEM conversão de timezone
-const isSubscriptionActive = (user) => {
-  if (!user || user.subscription_status !== 'active') return false;
-  if (!user.subscription_end_date) return false;
-  
-  // Parse manual SEM timezone, treating YYYY-MM-DD as local date
-  const [year, month, day] = user.subscription_end_date.split('-').map(Number);
-  const endDate = new Date(year, month - 1, day);
+// ✅ NOVA FUNÇÃO: Verificar se tem TRIAL ou ASSINATURA ativa
+const hasActiveAccess = (user) => {
+  if (!user) return false;
+  if (user.role === 'admin') return true;
   
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  // ✅ TRIAL ativo
+  if (user.subscription_status === 'trial' && user.trial_ends_at) {
+    const [year, month, day] = user.trial_ends_at.split('-').map(Number);
+    const trialEnd = new Date(year, month - 1, day);
+    return trialEnd >= today;
+  }
   
-  const isActive = endDate >= today;
+  // ✅ Assinatura paga ativa
+  if (user.subscription_status === 'active' && user.subscription_end_date) {
+    const [year, month, day] = user.subscription_end_date.split('-').map(Number);
+    const endDate = new Date(year, month - 1, day);
+    return endDate >= today;
+  }
   
-  console.log(`🔍 Verificação de assinatura:`, {
-    endDateString: user.subscription_end_date,
-    endDate: endDate.toLocaleDateString('pt-BR'),
-    today: today.toLocaleDateString('pt-BR'),
-    isActive
-  });
-  
-  return isActive;
+  return false;
 };
 
 export default function Plans() {
@@ -105,7 +106,7 @@ export default function Plans() {
 
   useEffect(() => {
     loadData();
-    document.title = "Planos - FINEX"; // ✅ Atualizar título da aba
+    document.title = "Planos - FINEX";
   }, []);
 
   const loadData = async () => {
@@ -138,11 +139,7 @@ export default function Plans() {
     return plans.find(p => p.plan_type === user.subscription_plan);
   };
 
-  // Removed old isUserPlanActive as it's replaced by isSubscriptionActive
-
-  // ✅ NOVO: Função para atribuir valor numérico aos planos (para comparação)
   const getPlanValue = (planType) => {
-    // Assuming plan_type corresponds to the duration for comparison
     const values = {
       'monthly': 1,
       'semester': 2,
@@ -152,7 +149,6 @@ export default function Plans() {
     return values[planType] || 0;
   };
 
-  // ✅ NOVO: Formatar nome do plano
   const formatPlanName = (planType) => {
     const names = {
       'monthly': 'Mensal',
@@ -166,10 +162,10 @@ export default function Plans() {
   const handleSelectPlan = async (plan) => {
     try {
       // ✅ USAR NOVA FUNÇÃO para verificar assinatura ativa
-      if (isSubscriptionActive(user)) {
+      if (hasActiveAccess(user)) {
         // ✅ Se está tentando escolher plano free
         if (plan.price === 0) {
-          alert(`❌ BLOQUEADO!\n\n🔒 Você já possui uma assinatura ATIVA até ${new Date(user.subscription_end_date + 'T12:00:00').toLocaleDateString('pt-BR')}.\n\n⚠️ Não é possível fazer downgrade para o plano gratuito enquanto sua assinatura estiver ativa.\n\n💡 Aguarde o vencimento da sua assinatura ou entre em contato com o suporte para cancelamento.`);
+          alert(`❌ BLOQUEADO!\n\n🔒 Você já possui acesso ativo ao sistema.\n\n⚠️ Não é possível ativar o plano gratuito enquanto seu acesso estiver ativo.\n\n💡 Aguarde o vencimento ou entre em contato com o suporte.`);
           return;
         }
         
@@ -178,13 +174,13 @@ export default function Plans() {
         const newPlanValue = getPlanValue(plan.plan_type);
         
         if (newPlanValue < currentPlanValue) {
-          if (!confirm(`⚠️ ATENÇÃO: DOWNGRADE\n\nVocê está tentando mudar de um plano SUPERIOR para um plano INFERIOR.\n\nPlano atual: ${formatPlanName(user.subscription_plan)}\nNovo plano: ${plan.name}\n\n🔄 O downgrade só terá efeito após o vencimento da sua assinatura atual (${new Date(user.subscription_end_date + 'T12:00:00').toLocaleDateString('pt-BR')}).\n\nDeseja continuar?`)) {
+          if (!confirm(`⚠️ ATENÇÃO: DOWNGRADE\n\nVocê está tentando mudar de um plano SUPERIOR para um plano INFERIOR.\n\nPlano atual: ${formatPlanName(user.subscription_plan)}\nNovo plano: ${plan.name}\n\n🔄 O downgrade só terá efeito após o vencimento da sua assinatura atual.\n\nDeseja continuar?`)) {
             return;
           }
         }
       }
 
-      setSelectedPlan(plan); // Moved this line as per outline's structure logic
+      setSelectedPlan(plan);
 
       if (plan.price === 0) {
         handleActivateFreePlan(plan);
@@ -268,13 +264,24 @@ export default function Plans() {
 
   const handleActivateFreePlan = async (plan) => {
     try {
-      const endDate = new Date();
-      endDate.setMonth(endDate.getMonth() + plan.duration_months);
+      console.log("🆓 Ativando plano FREE como TRIAL de 3 dias...");
       
+      // ✅ CORRIGIDO: FREE = TRIAL de 3 dias
+      const now = new Date();
+      const trialStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const trialEnd = new Date(trialStart);
+      trialEnd.setDate(trialEnd.getDate() + 3); // 3 dias
+      
+      const trialStartStr = `${trialStart.getFullYear()}-${String(trialStart.getMonth() + 1).padStart(2, '0')}-${String(trialStart.getDate()).padStart(2, '0')}`;
+      const trialEndStr = `${trialEnd.getFullYear()}-${String(trialEnd.getMonth() + 1).padStart(2, '0')}-${String(trialEnd.getDate()).padStart(2, '0')}`;
+      
+      // ✅ ATIVAR TRIAL (não plano vitalício!)
       await User.updateMyUserData({
-        subscription_plan: plan.plan_type,
-        subscription_status: 'active',
-        subscription_end_date: endDate.toISOString().split('T')[0]
+        subscription_plan: null, // ✅ SEM plano
+        subscription_status: 'trial', // ✅ Status TRIAL
+        subscription_end_date: null, // ✅ SEM data de vencimento de assinatura
+        trial_started_at: trialStartStr,
+        trial_ends_at: trialEndStr
       });
 
       await Subscription.create({
@@ -283,14 +290,14 @@ export default function Plans() {
         status: "active",
         amount_paid: 0,
         payment_method: "free",
-        notes: "Plano gratuito ativado automaticamente"
+        notes: "Trial de 3 dias ativado"
       });
 
-      alert("✅ Plano gratuito ativado com sucesso! Atualize a página.");
+      alert(`✅ Trial de 3 dias ativado!\n\nVocê tem acesso completo até ${trialEnd.toLocaleDateString('pt-BR')}.\n\nAtualize a página para começar!`);
       loadData();
     } catch (error) {
-      console.error("Erro ao ativar plano gratuito:", error);
-      alert("❌ Erro ao ativar plano.");
+      console.error("Erro ao ativar trial:", error);
+      alert("❌ Erro ao ativar trial.");
     }
   };
 
@@ -361,7 +368,7 @@ export default function Plans() {
   };
 
   const currentPlan = getCurrentPlan();
-  const planActive = isSubscriptionActive(user); // ✅ USAR NOVA FUNÇÃO
+  const hasUserActiveAccess = hasActiveAccess(user); // ✅ USAR NOVA FUNÇÃO
 
   // ✅ NOVO: Ordenar planos - PAGOS PRIMEIRO, gratuito por último
   const sortedPlans = useMemo(() => {
@@ -416,8 +423,7 @@ export default function Plans() {
             Controle total, relatórios inteligentes e muito mais
           </p>
 
-          {/* ✅ MELHORADO: Mostrar vantagens apenas se NÃO tiver plano ativo */}
-          {!isSubscriptionActive(user) && (
+          {!hasUserActiveAccess && (
             <div className="max-w-3xl mx-auto mb-8 p-6 rounded-xl bg-gradient-to-r from-green-900/20 to-emerald-900/20 border border-green-700/30">
               <h3 className="text-xl font-bold text-green-300 mb-3">
                 💎 Por que escolher um plano Premium?
@@ -451,8 +457,44 @@ export default function Plans() {
           </Button>
         </motion.div>
 
-        {/* Current Plan Info */}
-        {isSubscriptionActive(user) && (
+        {/* Current Plan Info - Trial */}
+        {user?.subscription_status === 'trial' && user?.trial_ends_at && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-4xl mx-auto mb-8"
+          >
+            <Card className="glass-card border-0 border-l-4 border-yellow-500">
+              <CardContent className="p-6">
+                <div className="flex items-start gap-4">
+                  <div className="p-3 rounded-xl bg-yellow-600/20">
+                    <Sparkles className="w-6 h-6 text-yellow-400" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-white font-bold text-lg mb-2">🎁 Trial Gratuito Ativo</h3>
+                    <p className="text-yellow-300 mb-2">
+                      Você tem acesso completo a TODAS as funcionalidades!
+                    </p>
+                    <p className="text-purple-300 text-sm">
+                      Válido até: <strong>{new Date(user.trial_ends_at + 'T12:00:00').toLocaleDateString('pt-BR')}</strong>
+                    </p>
+                    {(() => {
+                      const daysLeft = calculateDaysLeft(user.trial_ends_at);
+                      return (
+                        <p className="text-cyan-300 text-sm mt-1">
+                          ⏱️ Faltam <strong>{daysLeft} dias</strong> de teste grátis
+                        </p>
+                      );
+                    })()}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* Current Plan Info - Active Subscription */}
+        {hasUserActiveAccess && user?.subscription_status === 'active' && user?.subscription_end_date && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -551,7 +593,7 @@ export default function Plans() {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
           {sortedPlans.map((plan, index) => {
             const isCurrentPlan = user?.subscription_plan === plan.plan_type;
-            const hasActivePlan = isSubscriptionActive(user); // ✅ USAR NOVA FUNÇÃO
+            const hasActivePlan = hasActiveAccess(user); // ✅ USAR NOVA FUNÇÃO
             
             const isFreePlan = plan.price === 0;
             const isBlocked = hasActivePlan && isFreePlan;
@@ -628,6 +670,13 @@ export default function Plans() {
                         </p>
                       )}
                       
+                      {/* ✅ MOSTRAR "3 DIAS GRÁTIS" no plano free */}
+                      {isFreePlan && (
+                        <p className="text-yellow-300 text-sm mt-1">
+                          🎁 3 dias de teste
+                        </p>
+                      )}
+                      
                       {!isFreePlan && plan.duration_months >= 6 && (
                         <Badge className="mt-2 bg-green-600 text-white">
                           💰 Melhor Custo-Benefício
@@ -665,7 +714,7 @@ export default function Plans() {
                             Bloqueado
                           </Button>
                           <p className="text-xs text-center text-red-400">
-                            ⚠️ Você já possui uma assinatura ativa
+                            ⚠️ Você já possui acesso ativo
                           </p>
                         </div>
                       ) : isCurrentPlan ? (
@@ -690,7 +739,7 @@ export default function Plans() {
                           ) : (
                             <>
                               <Zap className="w-4 h-4 mr-2" />
-                              {hasActivePlan ? 'Fazer Upgrade' : plan.price === 0 ? 'Começar Grátis' : 'Assinar Agora'}
+                              {hasActivePlan ? 'Fazer Upgrade' : plan.price === 0 ? '🎁 Testar 3 Dias Grátis' : 'Assinar Agora'}
                             </>
                           )}
                         </Button>
