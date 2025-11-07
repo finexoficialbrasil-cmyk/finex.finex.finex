@@ -42,7 +42,8 @@ import {
   CheckCircle,
   MoreVertical,
   DollarSign,
-  Info
+  Info,
+  Loader2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, differenceInDays, isBefore } from "date-fns";
@@ -68,6 +69,7 @@ export default function GoalsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingGoal, setEditingGoal] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false); // ✅ NOVO: Estado de submissão
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -82,6 +84,7 @@ export default function GoalsPage() {
   const [contributionAmount, setContributionAmount] = useState("");
   const [showContributionModal, setShowContributionModal] = useState(false);
   const [contributingGoal, setContributingGoal] = useState(null);
+  const [isSubmittingContribution, setIsSubmittingContribution] = useState(false); // ✅ NOVO
 
   useEffect(() => {
     loadGoals();
@@ -102,21 +105,37 @@ export default function GoalsPage() {
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
-    const data = {
-      ...formData,
-      target_amount: parseFloat(formData.target_amount),
-      current_amount: parseFloat(formData.current_amount || 0),
-      deadline: format(formData.deadline, 'yyyy-MM-dd')
-    };
-
-    if (editingGoal) {
-      await Goal.update(editingGoal.id, data);
-    } else {
-      await Goal.create(data);
+    
+    // ✅ BLOQUEAR cliques duplos
+    if (isSubmitting) {
+      console.log("⚠️ Já está processando, ignorando clique duplo");
+      return;
     }
+    
+    setIsSubmitting(true);
+    
+    try {
+      const data = {
+        ...formData,
+        target_amount: parseFloat(formData.target_amount),
+        current_amount: parseFloat(formData.current_amount || 0),
+        deadline: format(formData.deadline, 'yyyy-MM-dd')
+      };
 
-    resetForm();
-    loadGoals();
+      if (editingGoal) {
+        await Goal.update(editingGoal.id, data);
+      } else {
+        await Goal.create(data);
+      }
+
+      resetForm();
+      loadGoals();
+    } catch (error) {
+      console.error("❌ Erro ao salvar meta:", error);
+      alert("Erro ao salvar meta. Tente novamente.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
   
   const resetForm = () => {
@@ -163,18 +182,33 @@ export default function GoalsPage() {
   };
 
   const handleContributionSubmit = async () => {
+    // ✅ BLOQUEAR cliques duplos
+    if (isSubmittingContribution) {
+      console.log("⚠️ Já está processando, ignorando clique duplo");
+      return;
+    }
+    
     const amount = parseFloat(contributionAmount);
     if (!amount || amount <= 0) return;
 
-    const newCurrentAmount = (contributingGoal.current_amount || 0) + amount;
+    setIsSubmittingContribution(true);
     
-    await Goal.update(contributingGoal.id, {
-      current_amount: newCurrentAmount
-    });
+    try {
+      const newCurrentAmount = (contributingGoal.current_amount || 0) + amount;
+      
+      await Goal.update(contributingGoal.id, {
+        current_amount: newCurrentAmount
+      });
 
-    setShowContributionModal(false);
-    setContributingGoal(null);
-    loadGoals();
+      setShowContributionModal(false);
+      setContributingGoal(null);
+      loadGoals();
+    } catch (error) {
+      console.error("❌ Erro ao fazer aporte:", error);
+      alert("Erro ao fazer aporte. Tente novamente.");
+    } finally {
+      setIsSubmittingContribution(false);
+    }
   };
   
   const handleMarkAsCompleted = async (goal) => {
@@ -192,162 +226,157 @@ export default function GoalsPage() {
     <SubscriptionGuard>
       <FeatureGuard featureName="has_goals" featureLabel="Metas Financeiras">
         <div className="min-h-screen bg-gradient-to-br from-[#0a0a0f] via-[#1a1a2e] to-[#0a0a0f] p-4 md:p-8">
-          <div className="max-w-7xl mx-auto">
-            {/* Header */}
-            <motion.div 
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8"
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8"
+          >
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent flex items-center gap-3">
+                <Target className="w-8 h-8" />
+                Metas Financeiras
+              </h1>
+              <p className="text-purple-300 mt-2">
+                Defina, acompanhe e conquiste seus objetivos financeiros.
+              </p>
+            </div>
+            <Button
+              onClick={() => setShowForm(true)}
+              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 neon-glow"
             >
-              <div>
-                <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent flex items-center gap-3">
-                  <Target className="w-8 h-8" />
-                  Metas Financeiras
-                </h1>
-                <p className="text-purple-300 mt-2">
-                  Defina, acompanhe e conquiste seus objetivos financeiros.
-                </p>
-              </div>
-              <Button
-                onClick={() => setShowForm(true)}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 neon-glow"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Criar Nova Meta
-              </Button>
-            </motion.div>
-            
-            {isLoading ? (
-              <div className="text-center text-purple-300">Carregando metas...</div>
-            ) : (
-              <>
-                {/* Metas Ativas */}
-                <h2 className="text-2xl font-bold text-white mb-6">Metas Ativas ({activeGoals.length})</h2>
-                {activeGoals.length > 0 ? (
-                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <AnimatePresence>
-                      {activeGoals.map((goal, index) => {
-                        const progress = (goal.current_amount / goal.target_amount) * 100;
-                        const daysLeft = differenceInDays(new Date(goal.deadline), new Date());
-                        const isOverdue = isBefore(new Date(goal.deadline), new Date()) && daysLeft < 0;
+              <Plus className="w-4 h-4 mr-2" />
+              Criar Nova Meta
+            </Button>
+          </motion.div>
+          
+          {isLoading ? (
+            <div className="text-center text-purple-300">Carregando metas...</div>
+          ) : (
+            <>
+              <h2 className="text-2xl font-bold text-white mb-6">Metas Ativas ({activeGoals.length})</h2>
+              {activeGoals.length > 0 ? (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <AnimatePresence>
+                    {activeGoals.map((goal, index) => {
+                      const progress = (goal.current_amount / goal.target_amount) * 100;
+                      const daysLeft = differenceInDays(new Date(goal.deadline), new Date());
+                      const isOverdue = isBefore(new Date(goal.deadline), new Date()) && daysLeft < 0;
 
-                        return (
-                          <motion.div
-                            key={goal.id}
-                            layout
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.8 }}
-                            transition={{ delay: index * 0.05 }}
-                          >
-                            <Card className="glass-card border-0 neon-glow h-full flex flex-col">
-                              <CardHeader className="flex-shrink-0">
-                                <div className="flex justify-between items-start">
-                                  <div className="flex items-center gap-4">
-                                    <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${goal.color} flex items-center justify-center text-3xl`}>
-                                      {goal.icon}
-                                    </div>
-                                    <div>
-                                      <CardTitle className="text-xl text-white">{goal.title}</CardTitle>
-                                      <p className="text-sm text-purple-300 line-clamp-1">{goal.description}</p>
-                                    </div>
-                                  </div>
-                                  <Popover>
-                                    <PopoverTrigger asChild>
-                                      <Button variant="ghost" size="icon" className="h-8 w-8 text-purple-300"><MoreVertical className="w-4 h-4" /></Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-48 p-2">
-                                      <Button variant="ghost" className="w-full justify-start" onClick={() => handleEdit(goal)}><Edit className="w-4 h-4 mr-2" /> Editar</Button>
-                                      <Button variant="ghost" className="w-full justify-start text-red-400 hover:text-red-500" onClick={() => handleDelete(goal.id)}><Trash2 className="w-4 h-4 mr-2" /> Excluir</Button>
-                                      <Button variant="ghost" className="w-full justify-start" onClick={() => handleMarkAsCompleted(goal)}><CheckCircle className="w-4 h-4 mr-2" /> Concluir</Button>
-                                    </PopoverContent>
-                                  </Popover>
-                                </div>
-                              </CardHeader>
-                              <CardContent className="flex-grow flex flex-col justify-between">
-                                <div className="space-y-4">
-                                  <div className="text-center">
-                                    <p className="text-3xl font-bold text-white">
-                                      R$ {goal.current_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                    </p>
-                                    <p className="text-sm text-purple-300">
-                                      de R$ {goal.target_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                    </p>
+                      return (
+                        <motion.div
+                          key={goal.id}
+                          layout
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.8 }}
+                          transition={{ delay: index * 0.05 }}
+                        >
+                          <Card className="glass-card border-0 neon-glow h-full flex flex-col">
+                            <CardHeader className="flex-shrink-0">
+                              <div className="flex justify-between items-start">
+                                <div className="flex items-center gap-4">
+                                  <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${goal.color} flex items-center justify-center text-3xl`}>
+                                    {goal.icon}
                                   </div>
                                   <div>
-                                    <Progress value={progress} className={`[&>*]:bg-gradient-to-r ${goal.color}`} />
-                                    <p className="text-center text-sm font-bold mt-2" style={{ color: `var(--tw-gradient-from)` }}>{progress.toFixed(1)}%</p>
-                                  </div>
-                                  <div className="flex justify-between text-xs text-purple-400">
-                                    <div className="flex items-center gap-1">
-                                      <CalendarIcon className="w-3 h-3" />
-                                      {isOverdue ? (
-                                        <span className="text-red-400">Atrasado</span>
-                                      ) : (
-                                        <span>{daysLeft} dias restantes</span>
-                                      )}
-                                    </div>
-                                    <Badge variant="outline" className={`border-opacity-50 text-xs ${goal.status === 'active' ? 'border-green-500 text-green-400' : 'border-gray-500 text-gray-400'}`}>
-                                      {goal.status === 'active' ? 'Ativa' : 'Pausada'}
-                                    </Badge>
+                                    <CardTitle className="text-xl text-white">{goal.title}</CardTitle>
+                                    <p className="text-sm text-purple-300 line-clamp-1">{goal.description}</p>
                                   </div>
                                 </div>
-                                <Button 
-                                  onClick={() => handleOpenContribution(goal)}
-                                  className="w-full mt-4 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white"
-                                >
-                                  <DollarSign className="w-4 h-4 mr-2" /> Fazer Aporte
-                                </Button>
-                              </CardContent>
-                            </Card>
-                          </motion.div>
-                        );
-                      })}
-                    </AnimatePresence>
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-purple-300"><MoreVertical className="w-4 h-4" /></Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-48 p-2">
+                                    <Button variant="ghost" className="w-full justify-start" onClick={() => handleEdit(goal)}><Edit className="w-4 h-4 mr-2" /> Editar</Button>
+                                    <Button variant="ghost" className="w-full justify-start text-red-400 hover:text-red-500" onClick={() => handleDelete(goal.id)}><Trash2 className="w-4 h-4 mr-2" /> Excluir</Button>
+                                    <Button variant="ghost" className="w-full justify-start" onClick={() => handleMarkAsCompleted(goal)}><CheckCircle className="w-4 h-4 mr-2" /> Concluir</Button>
+                                  </PopoverContent>
+                                </Popover>
+                              </div>
+                            </CardHeader>
+                            <CardContent className="flex-grow flex flex-col justify-between">
+                              <div className="space-y-4">
+                                <div className="text-center">
+                                  <p className="text-3xl font-bold text-white">
+                                    R$ {goal.current_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  </p>
+                                  <p className="text-sm text-purple-300">
+                                    de R$ {goal.target_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  </p>
+                                </div>
+                                <div>
+                                  <Progress value={progress} className={`[&>*]:bg-gradient-to-r ${goal.color}`} />
+                                  <p className="text-center text-sm font-bold mt-2" style={{ color: `var(--tw-gradient-from)` }}>{progress.toFixed(1)}%</p>
+                                </div>
+                                <div className="flex justify-between text-xs text-purple-400">
+                                  <div className="flex items-center gap-1">
+                                    <CalendarIcon className="w-3 h-3" />
+                                    {isOverdue ? (
+                                      <span className="text-red-400">Atrasado</span>
+                                    ) : (
+                                      <span>{daysLeft} dias restantes</span>
+                                    )}
+                                  </div>
+                                  <Badge variant="outline" className={`border-opacity-50 text-xs ${goal.status === 'active' ? 'border-green-500 text-green-400' : 'border-gray-500 text-gray-400'}`}>
+                                    {goal.status === 'active' ? 'Ativa' : 'Pausada'}
+                                  </Badge>
+                                </div>
+                              </div>
+                              <Button 
+                                onClick={() => handleOpenContribution(goal)}
+                                className="w-full mt-4 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white"
+                              >
+                                <DollarSign className="w-4 h-4 mr-2" /> Fazer Aporte
+                              </Button>
+                            </CardContent>
+                          </Card>
+                        </motion.div>
+                      );
+                    })}
+                  </AnimatePresence>
+                </div>
+              ) : (
+                <Card className="glass-card border-dashed border-purple-800/60">
+                  <CardContent className="p-12 text-center">
+                    <Target className="w-16 h-16 text-purple-400 mx-auto mb-4" />
+                    <h3 className="text-xl font-bold text-white">Nenhuma meta ativa</h3>
+                    <p className="text-purple-300 mt-2">Comece a planejar seus sonhos. Crie sua primeira meta!</p>
+                    <Button onClick={() => setShowForm(true)} className="mt-6 bg-gradient-to-r from-purple-600 to-pink-600">
+                      <Plus className="w-4 h-4 mr-2" /> Criar Meta
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+              
+              {completedGoals.length > 0 && (
+                <>
+                  <h2 className="text-2xl font-bold text-white mt-12 mb-6">Metas Concluídas ({completedGoals.length})</h2>
+                  <div className="space-y-3">
+                    {completedGoals.map(goal => (
+                      <Card key={goal.id} className="glass-card border-0 neon-glow opacity-70">
+                        <CardContent className="p-4 flex justify-between items-center">
+                          <div className="flex items-center gap-4">
+                            <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${goal.color} flex items-center justify-center text-2xl`}>
+                              {goal.icon}
+                            </div>
+                            <div>
+                              <p className="font-semibold text-white line-through">{goal.title}</p>
+                              <p className="text-xs text-purple-300">Concluída em {format(new Date(goal.updated_date), 'dd/MM/yyyy')}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 text-green-400 font-bold">
+                            <CheckCircle className="w-5 h-5" />
+                            R$ {goal.target_amount.toLocaleString('pt-BR')}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
                   </div>
-                ) : (
-                  <Card className="glass-card border-dashed border-purple-800/60">
-                    <CardContent className="p-12 text-center">
-                      <Target className="w-16 h-16 text-purple-400 mx-auto mb-4" />
-                      <h3 className="text-xl font-bold text-white">Nenhuma meta ativa</h3>
-                      <p className="text-purple-300 mt-2">Comece a planejar seus sonhos. Crie sua primeira meta!</p>
-                      <Button onClick={() => setShowForm(true)} className="mt-6 bg-gradient-to-r from-purple-600 to-pink-600">
-                        <Plus className="w-4 h-4 mr-2" /> Criar Meta
-                      </Button>
-                    </CardContent>
-                  </Card>
-                )}
-                
-                {/* Metas Concluídas */}
-                {completedGoals.length > 0 && (
-                  <>
-                    <h2 className="text-2xl font-bold text-white mt-12 mb-6">Metas Concluídas ({completedGoals.length})</h2>
-                    <div className="space-y-3">
-                      {completedGoals.map(goal => (
-                        <Card key={goal.id} className="glass-card border-0 neon-glow opacity-70">
-                          <CardContent className="p-4 flex justify-between items-center">
-                            <div className="flex items-center gap-4">
-                              <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${goal.color} flex items-center justify-center text-2xl`}>
-                                {goal.icon}
-                              </div>
-                              <div>
-                                <p className="font-semibold text-white line-through">{goal.title}</p>
-                                <p className="text-xs text-purple-300">Concluída em {format(new Date(goal.updated_date), 'dd/MM/yyyy')}</p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2 text-green-400 font-bold">
-                              <CheckCircle className="w-5 h-5" />
-                              R$ {goal.target_amount.toLocaleString('pt-BR')}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </>
-            )}
-          </div>
+                </>
+              )}
+            </>
+          )}
           
           {/* Formulário Modal */}
           <Dialog open={showForm} onOpenChange={setShowForm}>
@@ -429,8 +458,28 @@ export default function GoalsPage() {
                    </div>
                 </div>
                  <DialogFooter>
-                    <Button type="button" variant="ghost" onClick={resetForm}>Cancelar</Button>
-                    <Button type="submit" className="bg-gradient-to-r from-purple-600 to-pink-600">{editingGoal ? 'Salvar Alterações' : 'Criar Meta'}</Button>
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      onClick={resetForm}
+                      disabled={isSubmitting}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button 
+                      type="submit" 
+                      className="bg-gradient-to-r from-purple-600 to-pink-600"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Salvando...
+                        </>
+                      ) : (
+                        editingGoal ? 'Salvar Alterações' : 'Criar Meta'
+                      )}
+                    </Button>
                  </DialogFooter>
               </form>
             </DialogContent>
@@ -452,8 +501,27 @@ export default function GoalsPage() {
                    </div>
                 </div>
                 <DialogFooter>
-                   <Button variant="ghost" onClick={() => setShowContributionModal(false)}>Cancelar</Button>
-                   <Button onClick={handleContributionSubmit} className="bg-gradient-to-r from-green-500 to-emerald-500">Adicionar</Button>
+                   <Button 
+                     variant="ghost" 
+                     onClick={() => setShowContributionModal(false)}
+                     disabled={isSubmittingContribution}
+                   >
+                     Cancelar
+                   </Button>
+                   <Button 
+                     onClick={handleContributionSubmit} 
+                     className="bg-gradient-to-r from-green-500 to-emerald-500"
+                     disabled={isSubmittingContribution}
+                   >
+                     {isSubmittingContribution ? (
+                       <>
+                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                         Adicionando...
+                       </>
+                     ) : (
+                       'Adicionar'
+                     )}
+                   </Button>
                 </DialogFooter>
              </DialogContent>
           </Dialog>

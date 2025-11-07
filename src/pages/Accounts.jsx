@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Account } from "@/entities/all";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Wallet, Plus, Edit, Trash2, TrendingUp, TrendingDown, Check } from "lucide-react";
+import { Wallet, Plus, Edit, Trash2, TrendingUp, TrendingDown, Check, Loader2 } from "lucide-react"; // Added Loader2
 import { motion, AnimatePresence } from "framer-motion";
 import FeatureGuard from "../components/FeatureGuard";
 
@@ -58,6 +59,7 @@ export default function Accounts() {
   const [showForm, setShowForm] = useState(false);
   const [editingAccount, setEditingAccount] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false); // ✅ NOVO: Estado de submissão
   const [formData, setFormData] = useState({
     name: "",
     type: "checking",
@@ -87,12 +89,21 @@ export default function Accounts() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const data = {
-      ...formData,
-      balance: parseFloat(formData.balance)
-    };
-
+    
+    // ✅ BLOQUEAR cliques duplos
+    if (isSubmitting) {
+      console.log("⚠️ Já está processando, ignorando clique duplo");
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
     try {
+      const data = {
+        ...formData,
+        balance: parseFloat(formData.balance)
+      };
+
       if (editingAccount) {
         await Account.update(editingAccount.id, data);
       } else {
@@ -114,6 +125,8 @@ export default function Accounts() {
     } catch (error) {
       console.error("Erro ao salvar conta:", error);
       alert("Erro ao salvar conta");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -305,7 +318,7 @@ export default function Accounts() {
           )}
         </div>
 
-        {/* ✨ NOVO FORMULÁRIO MELHORADO */}
+        {/* Formulário Modal */}
         <Dialog open={showForm} onOpenChange={setShowForm}>
           <DialogContent className="glass-card border-purple-700/50 text-white max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader className="sticky top-0 bg-[#1a1a2e] z-10 pb-4">
@@ -414,7 +427,7 @@ export default function Accounts() {
                       key={emoji}
                       type="button"
                       onClick={() => setFormData({ ...formData, icon: emoji })}
-                      className={`p-3 rounded-lg text-2xl hover:scale-110 transition-all ${
+                      className={`relative p-3 rounded-lg text-2xl hover:scale-110 transition-all ${
                         formData.icon === emoji
                           ? 'bg-purple-600 shadow-lg'
                           : 'bg-purple-900/20 hover:bg-purple-900/40'
@@ -466,14 +479,23 @@ export default function Accounts() {
                   variant="outline"
                   onClick={() => setShowForm(false)}
                   className="flex-1 border-purple-700 text-purple-300 h-12"
+                  disabled={isSubmitting}
                 >
                   Cancelar
                 </Button>
                 <Button
                   type="submit"
                   className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 h-12 text-base font-semibold"
+                  disabled={isSubmitting}
                 >
-                  {editingAccount ? "💾 Atualizar Conta" : "✨ Criar Conta"}
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    editingAccount ? "💾 Atualizar Conta" : "✨ Criar Conta"
+                  )}
                 </Button>
               </div>
             </form>

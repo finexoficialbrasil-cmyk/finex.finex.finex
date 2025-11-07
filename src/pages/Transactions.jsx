@@ -29,7 +29,8 @@ import {
   Filter,
   Edit,
   Trash2,
-  X
+  X,
+  Loader2 // Added import for Loader2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
@@ -66,6 +67,7 @@ export default function TransactionsPage() {
   const [sortBy, setSortBy] = useState("-created_date"); // NEW: Default sorting by latest creation date
   const [showForm, setShowForm] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false); // ✅ NOVO: Estado de submissão
   const [formData, setFormData] = useState({
     description: "",
     amount: "",
@@ -159,45 +161,60 @@ export default function TransactionsPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // ✅ GARANTIR que a data seja sempre a do Brasil se for nova transação
-    const finalDate = editingTransaction ? formData.date : getBrazilDate();
-    
-    console.log("📝 Criando transação com data:", finalDate);
-    
-    const data = {
-      ...formData,
-      amount: parseFloat(formData.amount),
-      date: finalDate // ✅ Usar data garantida
-    };
-
-    let oldAccountId = null;
-
-    if (editingTransaction) {
-      oldAccountId = editingTransaction.account_id;
-      await Transaction.update(editingTransaction.id, data);
-    } else {
-      await Transaction.create(data);
+    // ✅ BLOQUEAR cliques duplos
+    if (isSubmitting) {
+      console.log("⚠️ Já está processando, ignorando clique duplo");
+      return;
     }
     
-    // ✅ ATUALIZAR SALDOS APÓS SUBMISSÃO
-    await updateAccountBalance(data.account_id);
-    if (oldAccountId && oldAccountId !== data.account_id) {
-      await updateAccountBalance(oldAccountId);
-    }
+    setIsSubmitting(true);
+    
+    try {
+      // ✅ GARANTIR que a data seja sempre a do Brasil se for nova transação
+      const finalDate = editingTransaction ? formData.date : getBrazilDate();
+      
+      console.log("📝 Criando transação com data:", finalDate);
+      
+      const data = {
+        ...formData,
+        amount: parseFloat(formData.amount),
+        date: finalDate // ✅ Usar data garantida
+      };
 
-    setShowForm(false);
-    setEditingTransaction(null);
-    setFormData({
-      description: "",
-      amount: "",
-      type: "expense",
-      category_id: "",
-      account_id: "",
-      date: getBrazilDate(), // ✅ Resetar com data do Brasil
-      status: "completed",
-      notes: ""
-    });
-    loadData(); // Reload data after submission
+      let oldAccountId = null;
+
+      if (editingTransaction) {
+        oldAccountId = editingTransaction.account_id;
+        await Transaction.update(editingTransaction.id, data);
+      } else {
+        await Transaction.create(data);
+      }
+      
+      // ✅ ATUALIZAR SALDOS APÓS SUBMISSÃO
+      await updateAccountBalance(data.account_id);
+      if (oldAccountId && oldAccountId !== data.account_id) {
+        await updateAccountBalance(oldAccountId);
+      }
+
+      setShowForm(false);
+      setEditingTransaction(null);
+      setFormData({
+        description: "",
+        amount: "",
+        type: "expense",
+        category_id: "",
+        account_id: "",
+        date: getBrazilDate(), // ✅ Resetar com data do Brasil
+        status: "completed",
+        notes: ""
+      });
+      loadData(); // Reload data after submission
+    } catch (error) {
+      console.error("❌ Erro ao salvar transação:", error);
+      alert("Erro ao salvar transação. Tente novamente.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleEdit = (tx) => {
@@ -507,14 +524,23 @@ export default function TransactionsPage() {
                     variant="outline"
                     onClick={() => setShowForm(false)}
                     className="flex-1 border-purple-700 text-purple-300"
+                    disabled={isSubmitting} // Disable during submission
                   >
                     Cancelar
                   </Button>
                   <Button
                     type="submit"
                     className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                    disabled={isSubmitting} // Disable during submission
                   >
-                    {editingTransaction ? "Atualizar" : "Criar"}
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Salvando...
+                      </>
+                    ) : (
+                      editingTransaction ? "Atualizar" : "Criar"
+                    )}
                   </Button>
                 </div>
               </form>

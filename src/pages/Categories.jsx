@@ -21,7 +21,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Tags, Plus, Edit, Trash2, TrendingUp, TrendingDown, Lock } from "lucide-react";
+import { Tags, Plus, Edit, Trash2, TrendingUp, TrendingDown, Lock, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 
 const colorOptions = [
@@ -43,6 +43,7 @@ export default function Categories() {
   const [showForm, setShowForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [isLoading, setIsLoading] = useState(true); // New state for loading
+  const [isSubmitting, setIsSubmitting] = useState(false); // ✅ NOVO: Estado de submissão
   const [filterType, setFilterType] = useState("all"); // New state for filter
   const [formData, setFormData] = useState({
     name: "",
@@ -81,19 +82,35 @@ export default function Categories() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const data = {
-      ...formData,
-      budget_limit: formData.budget_limit ? parseFloat(formData.budget_limit) : undefined
-    };
     
-    if (editingCategory) {
-      await Category.update(editingCategory.id, data);
-    } else {
-      await Category.create(data);
+    // ✅ BLOQUEAR cliques duplos
+    if (isSubmitting) {
+      console.log("⚠️ Já está processando, ignorando clique duplo");
+      return;
     }
     
-    resetForm();
-    loadCategories();
+    setIsSubmitting(true);
+    
+    try {
+      const data = {
+        ...formData,
+        budget_limit: formData.budget_limit ? parseFloat(formData.budget_limit) : undefined
+      };
+      
+      if (editingCategory) {
+        await Category.update(editingCategory.id, data);
+      } else {
+        await Category.create(data);
+      }
+      
+      resetForm();
+      loadCategories();
+    } catch (error) {
+      console.error("❌ Erro ao salvar categoria:", error);
+      alert("Erro ao salvar categoria. Tente novamente.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const resetForm = () => {
@@ -389,6 +406,7 @@ export default function Categories() {
                 <Select
                   value={formData.type}
                   onValueChange={(value) => setFormData({ ...formData, type: value })}
+                  disabled={isSubmitting}
                 >
                   <SelectTrigger className="bg-purple-900/20 border-purple-700/50 text-white mt-1">
                     <SelectValue />
@@ -409,6 +427,7 @@ export default function Categories() {
                   onChange={(e) => setFormData({ ...formData, budget_limit: e.target.value })}
                   placeholder="0.00"
                   className="bg-purple-900/20 border-purple-700/50 text-white"
+                  disabled={isSubmitting}
                 />
               </div>
 
@@ -425,6 +444,7 @@ export default function Categories() {
                       }`}
                       style={{ backgroundColor: color.value }}
                       title={color.label}
+                      disabled={isSubmitting}
                     />
                   ))}
                 </div>
@@ -436,14 +456,23 @@ export default function Categories() {
                   variant="outline"
                   onClick={resetForm}
                   className="flex-1 border-purple-700 text-purple-300"
+                  disabled={isSubmitting}
                 >
                   Cancelar
                 </Button>
                 <Button
                   type="submit"
                   className="flex-1 bg-gradient-to-r from-pink-600 to-rose-600"
+                  disabled={isSubmitting}
                 >
-                  {editingCategory ? "Atualizar" : "Criar"}
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    editingCategory ? "Atualizar" : "Criar"
+                  )}
                 </Button>
               </div>
             </form>

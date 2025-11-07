@@ -34,7 +34,8 @@ import {
   Calendar,
   FileText,
   RepeatIcon,
-  Users // ✅ Adicionado Users icon
+  Users, // ✅ Adicionado Users icon
+  Loader2 // ✅ NOVO: Adicionado Loader2 icon
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, differenceInDays, isBefore } from "date-fns";
@@ -50,6 +51,7 @@ export default function Payables() {
   const [showReceipt, setShowReceipt] = useState(false);
   const [receiptData, setReceiptData] = useState(null);
   const [isLoading, setIsLoading] = useState(true); // ✅ NOVO: Estado de carregamento
+  const [isSubmitting, setIsSubmitting] = useState(false); // ✅ NOVO: Estado de submissão
   const [formData, setFormData] = useState({
     description: "",
     amount: "",
@@ -113,19 +115,35 @@ export default function Payables() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const data = {
-      ...formData,
-      amount: parseFloat(formData.amount)
-    };
-
-    if (editingBill) {
-      await Bill.update(editingBill.id, data);
-    } else {
-      await Bill.create(data);
+    
+    // ✅ BLOQUEAR cliques duplos
+    if (isSubmitting) {
+      console.log("⚠️ Já está processando, ignorando clique duplo");
+      return;
     }
+    
+    setIsSubmitting(true);
+    
+    try {
+      const data = {
+        ...formData,
+        amount: parseFloat(formData.amount)
+      };
 
-    resetForm();
-    loadData();
+      if (editingBill) {
+        await Bill.update(editingBill.id, data);
+      } else {
+        await Bill.create(data);
+      }
+
+      resetForm();
+      loadData();
+    } catch (error) {
+      console.error("❌ Erro ao salvar conta:", error);
+      alert("Erro ao salvar conta. Tente novamente.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const resetForm = () => {
@@ -702,6 +720,7 @@ export default function Payables() {
                       size="sm"
                       onClick={selectContact}
                       className="border-purple-700 text-purple-300 hover:bg-purple-900/20"
+                      disabled={isSubmitting}
                     >
                       <Users className="w-4 h-4 mr-2" />
                       Buscar na Agenda
@@ -779,6 +798,7 @@ export default function Payables() {
                       checked={formData.is_recurring}
                       onChange={(e) => setFormData({ ...formData, is_recurring: e.target.checked })}
                       className="w-4 h-4 rounded border-purple-700 bg-purple-900/20"
+                      disabled={isSubmitting}
                     />
                     <Label htmlFor="is_recurring" className="text-purple-200 text-sm flex items-center gap-2 cursor-pointer">
                       <RepeatIcon className="w-4 h-4 text-blue-400" />
@@ -792,6 +812,7 @@ export default function Payables() {
                       <Select
                         value={formData.recurring_type}
                         onValueChange={(value) => setFormData({ ...formData, recurring_type: value })}
+                        disabled={isSubmitting}
                       >
                         <SelectTrigger className="bg-purple-900/20 border-purple-700/50 text-white mt-1">
                           <SelectValue />
@@ -826,14 +847,23 @@ export default function Payables() {
                   variant="outline"
                   onClick={resetForm}
                   className="flex-1 border-purple-700 text-purple-300"
+                  disabled={isSubmitting}
                 >
                   Cancelar
                 </Button>
                 <Button
                   type="submit"
                   className="flex-1 bg-gradient-to-r from-red-600 to-orange-600"
+                  disabled={isSubmitting}
                 >
-                  {editingBill ? "Atualizar" : "Criar"}
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    editingBill ? "Atualizar" : "Criar"
+                  )}
                 </Button>
               </div>
             </form>

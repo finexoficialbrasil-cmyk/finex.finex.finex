@@ -37,7 +37,8 @@ import {
   FileText, // Changed from Download to FileText
   RepeatIcon,
   Users,
-  DollarSign
+  DollarSign,
+  Loader2 // Import Loader2 for spinner
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, differenceInDays, isBefore } from "date-fns";
@@ -53,6 +54,7 @@ export default function Receivables() {
   const [showReceipt, setShowReceipt] = useState(false);
   const [receiptData, setReceiptData] = useState(null);
   const [isLoading, setIsLoading] = useState(true); // Added isLoading state
+  const [isSubmitting, setIsSubmitting] = useState(false); // ✅ NOVO: Estado de submissão
   const [formData, setFormData] = useState({
     description: "",
     amount: "",
@@ -116,13 +118,21 @@ export default function Receivables() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true); // Indicate loading when submitting form
-    const data = {
-      ...formData,
-      amount: parseFloat(formData.amount)
-    };
+    
+    // ✅ BLOQUEAR cliques duplos
+    if (isSubmitting) {
+      console.log("⚠️ Já está processando, ignorando clique duplo");
+      return;
+    }
+    
+    setIsSubmitting(true);
     
     try {
+      const data = {
+        ...formData,
+        amount: parseFloat(formData.amount)
+      };
+      
       if (editingBill) {
         await Bill.update(editingBill.id, data);
       } else {
@@ -130,12 +140,12 @@ export default function Receivables() {
       }
       
       resetForm();
-      await loadData(); // Reload data to reflect changes
+      await loadData();
     } catch (error) {
       console.error("Erro ao salvar conta:", error);
       alert("❌ Erro ao salvar conta. Tente novamente.");
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -900,14 +910,23 @@ Agradecemos pela atenção e confiança!
                   variant="outline"
                   onClick={resetForm}
                   className="flex-1 border-purple-700 text-purple-300"
+                  disabled={isSubmitting}
                 >
                   Cancelar
                 </Button>
                 <Button
                   type="submit"
                   className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                  disabled={isSubmitting}
                 >
-                  {editingBill ? "Atualizar" : "Criar"}
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    editingBill ? "Atualizar" : "Criar"
+                  )}
                 </Button>
               </div>
             </form>
