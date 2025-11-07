@@ -48,6 +48,14 @@ const getTodayLocal = () => {
   return `${year}-${month}-${day}`;
 };
 
+// ✅ NOVA FUNÇÃO: Formatar data sem problema de timezone
+const formatDateLocal = (dateString) => {
+  if (!dateString) return '';
+  // Assuming dateString is in YYYY-MM-DD format
+  const [year, month, day] = dateString.split('-');
+  return `${day}/${month}/${year}`;
+};
+
 export default function Payables() {
   const [bills, setBills] = useState([]);
   const [accounts, setAccounts] = useState([]);
@@ -485,8 +493,7 @@ export default function Payables() {
                   <div className="p-3 rounded-xl bg-yellow-600/20">
                     <Clock className="w-6 h-6 text-yellow-400" />
                   </div>
-                </div>
-              </CardContent>
+                </CardContent>
             </Card>
 
             <Card className="glass-card border-0 neon-glow">
@@ -591,7 +598,7 @@ export default function Payables() {
                               <div className="flex items-center gap-2 mt-1 flex-wrap">
                                 <span className="text-xs text-purple-300 flex items-center gap-1">
                                   <Calendar className="w-3 h-3" />
-                                  Vence: {format(new Date(bill.due_date), "dd/MM/yyyy")}
+                                  Vence: {formatDateLocal(bill.due_date)}
                                 </span>
                                 <Badge
                                   className="text-xs"

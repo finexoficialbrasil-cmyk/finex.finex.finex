@@ -33,7 +33,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+// import { ptBR } from "date-fns/locale"; // Removed since formatDateLocal handles it
 import SubscriptionGuard from "../components/SubscriptionGuard";
 import FeatureGuard from "../components/FeatureGuard"; // Added import
 
@@ -44,6 +44,15 @@ const getTodayLocal = () => {
   const month = String(today.getMonth() + 1).padStart(2, '0');
   const day = String(today.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+};
+
+// ✅ NOVA FUNÇÃO: Formatar data sem problema de timezone
+const formatDateLocal = (dateString) => {
+  if (!dateString) return '';
+  // Separar a data em partes (YYYY-MM-DD)
+  const [year, month, day] = dateString.split('-');
+  // Retornar formatado como DD/MM/YYYY
+  return `${day}/${month}/${year}`;
 };
 
 export default function TransactionsPage() {
@@ -316,7 +325,7 @@ export default function TransactionsPage() {
                                 <p className="font-medium text-white text-sm sm:text-base truncate">{tx.description}</p>
                                 <div className="flex items-center gap-2 mt-1 flex-wrap">
                                   <span className="text-xs text-purple-300">
-                                    {format(new Date(tx.date), "dd/MM/yyyy")}
+                                    {formatDateLocal(tx.date)}
                                   </span>
                                   <span className="text-xs text-purple-400">•</span>
                                   <span className="text-xs text-purple-300 truncate max-w-[100px]">{account.name}</span>
