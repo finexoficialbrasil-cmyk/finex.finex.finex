@@ -37,6 +37,18 @@ import { ptBR } from "date-fns/locale";
 import SubscriptionGuard from "../components/SubscriptionGuard";
 import FeatureGuard from "../components/FeatureGuard"; // Added import
 
+// ✅ NOVA FUNÇÃO: Obter data atual no timezone do Brasil
+const getBrazilDate = () => {
+  const now = new Date();
+  const brazilTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+  
+  const year = brazilTime.getFullYear();
+  const month = String(brazilTime.getMonth() + 1).padStart(2, '0');
+  const day = String(brazilTime.getDate()).padStart(2, '0');
+  
+  return `${year}-${month}-${day}`;
+};
+
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState([]);
   const [accounts, setAccounts] = useState([]);
@@ -53,7 +65,7 @@ export default function TransactionsPage() {
     type: "expense",
     category_id: "",
     account_id: "",
-    date: new Date().toISOString().split('T')[0],
+    date: getBrazilDate(), // ✅ USAR FUNÇÃO CORRIGIDA
     status: "completed",
     notes: ""
   });
@@ -156,7 +168,7 @@ export default function TransactionsPage() {
       type: "expense",
       category_id: "",
       account_id: "",
-      date: new Date().toISOString().split('T')[0],
+      date: getBrazilDate(), // ✅ USAR FUNÇÃO CORRIGIDA
       status: "completed",
       notes: ""
     });

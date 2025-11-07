@@ -9,6 +9,27 @@ import { Mic, MicOff, Sparkles, Loader2, Check, X, AlertCircle } from "lucide-re
 import { motion, AnimatePresence } from "framer-motion";
 import { format, parseISO } from 'date-fns';
 
+// ✅ NOVA FUNÇÃO: Obter data atual no timezone do Brasil
+const getBrazilDate = () => {
+  const now = new Date();
+  // Converter para timezone de Brasília (UTC-3)
+  const brazilTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+  
+  const year = brazilTime.getFullYear();
+  const month = String(brazilTime.getMonth() + 1).padStart(2, '0');
+  const day = String(brazilTime.getDate()).padStart(2, '0');
+  
+  const formattedDate = `${year}-${month}-${day}`;
+  
+  console.log(`📅 getBrazilDate():`, {
+    input: now.toString(),
+    brazilTime: brazilTime.toString(),
+    formatted: formattedDate
+  });
+  
+  return formattedDate;
+};
+
 export default function VoiceAssistant({ onSuccess }) {
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -281,24 +302,10 @@ Extrair: action, type, amount, description, date, category_id`,
         });
       }
 
-      // ✅ CORRIGIDO V2: Usar timezone do Brasil EXPLICITAMENTE
-      const now = new Date();
+      // ✅ USAR FUNÇÃO CORRIGIDA
+      const todayDate = getBrazilDate();
       
-      // Obter data no timezone de Brasília (UTC-3)
-      const brazilDate = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
-      
-      const todayDate = `${brazilDate.getFullYear()}-${String(brazilDate.getMonth() + 1).padStart(2, '0')}-${String(brazilDate.getDate()).padStart(2, '0')}`;
-      
-      console.log(`📅 DEBUG DATA:`);
-      console.log(`  - now (raw): ${now.toString()}`);
-      console.log(`  - brazilDate: ${brazilDate.toString()}`);
-      console.log(`  - todayDate formatado: ${todayDate}`);
-      console.log(`  - aiResponse.date: ${aiResponse.date}`);
-      
-      if (!aiResponse.date) {
-        aiResponse.date = todayDate;
-        console.log(`  - Usando data de hoje: ${todayDate}`);
-      }
+      if (!aiResponse.date) aiResponse.date = todayDate;
 
       // ✅ Categoria
       let category = allCategories.find(c => c.id === aiResponse.category_id);
@@ -507,12 +514,8 @@ Extrair: action, type, amount, description, date, category_id`,
       if (firstCat) category_id = firstCat.id;
     }
 
-    // ✅ CORRIGIDO V2: Usar timezone do Brasil
-    const now = new Date();
-    const brazilDate = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
-    const todayDate = `${brazilDate.getFullYear()}-${String(brazilDate.getMonth() + 1).padStart(2, '0')}-${String(brazilDate.getDate()).padStart(2, '0')}`;
-
-    console.log(`📅 parseCommandLocally - Data Brasil: ${todayDate}`);
+    // ✅ USAR FUNÇÃO CORRIGIDA
+    const todayDate = getBrazilDate();
 
     return {
       confidence: 'high',
