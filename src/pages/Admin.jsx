@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
@@ -34,6 +35,7 @@ const TabLoading = () => (
 export default function Admin() {
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [isFixingSubscriptions, setIsFixingSubscriptions] = useState(false); // ✅ NOVO
 
   React.useEffect(() => {
     checkAdmin();
@@ -73,6 +75,33 @@ export default function Admin() {
     }
   };
 
+  // ✅ NOVA FUNÇÃO: Corrigir assinaturas de todos os usuários
+  const handleFixSubscriptions = async () => {
+    if (!confirm("🔧 CORRIGIR STATUS DE ASSINATURAS\n\nEsta ação irá:\n\n1. Verificar TODOS os usuários do sistema\n2. Recalcular se a assinatura está ativa baseado na data de vencimento\n3. Atualizar o status automaticamente\n\n⚠️ Esta operação é segura e reversível.\n\nDeseja continuar?")) {
+      return;
+    }
+
+    setIsFixingSubscriptions(true);
+
+    try {
+      // Dynamic import
+      const { fixUserSubscriptions } = await import("@/functions/fixUserSubscriptions");
+      const response = await fixUserSubscriptions();
+
+      if (response.data.success) {
+        const stats = response.data.stats;
+        alert(`✅ CORREÇÃO CONCLUÍDA!\n\n📊 Resultado:\n\n✔️ ${stats.fixed} usuários ATIVADOS\n⏰ ${stats.expired} usuários EXPIRADOS\n✅ ${stats.alreadyCorrect} já estavam corretos\n\n📋 Total processado: ${stats.total} usuários\n\n🔄 Recarregue a página para ver as mudanças.`);
+      } else {
+        throw new Error(response.data.error || "Erro desconhecido");
+      }
+    } catch (error) {
+      console.error("Erro ao corrigir assinaturas:", error);
+      alert(`❌ Erro ao corrigir assinaturas:\n\n${error.message}\n\nTente novamente ou verifique os logs.`);
+    } finally {
+      setIsFixingSubscriptions(false);
+    }
+  };
+
   if (!user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#0a0a0f] via-[#1a1a2e] to-[#0a0a0f] flex items-center justify-center">
@@ -94,6 +123,35 @@ export default function Admin() {
           <p className="text-purple-300 text-lg">
             Gerencie usuários, planos, configurações e integrações do sistema
           </p>
+        </div>
+
+        {/* ✅ NOVO: Botões de Ação Rápida */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Button
+            onClick={handleDownloadChecklist}
+            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+          >
+            <FileText className="w-4 h-4 mr-2" />
+            📥 Download Checklist PDF
+          </Button>
+
+          <Button
+            onClick={handleFixSubscriptions}
+            disabled={isFixingSubscriptions}
+            className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+          >
+            {isFixingSubscriptions ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Corrigindo...
+              </>
+            ) : (
+              <>
+                <Zap className="w-4 h-4 mr-2" />
+                🔧 Corrigir Status de Assinaturas
+              </>
+            )}
+          </Button>
         </div>
 
         <Card className="glass-card border-0 neon-glow">
@@ -140,16 +198,6 @@ export default function Admin() {
                 <span className="hidden md:inline">Config</span>
               </TabsTrigger>
             </TabsList>
-
-            <div className="mt-4 flex justify-end">
-              <Button
-                onClick={handleDownloadChecklist}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-              >
-                <FileText className="w-4 h-4 mr-2" />
-                📥 Download Checklist PDF
-              </Button>
-            </div>
 
             <div className="p-6">
               <React.Suspense fallback={<TabLoading />}>
