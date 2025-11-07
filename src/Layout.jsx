@@ -411,31 +411,36 @@ export default function Layout({ children }) {
           background: transparent !important;
         }
 
-        /* ✅ CORRIGIDO: Remover TODOS os backgrounds padrão */
-        [data-sidebar-menu-button],
-        [data-sidebar-menu-button] * {
-          background: transparent !important;
-        }
-
-        /* ✅ Hover com gradiente roxo - FORÇAR com !important */
-        [data-sidebar-menu-button]:hover:not([data-active="true"]) {
-          background: linear-gradient(90deg, rgba(139, 92, 246, 0.25) 0%, rgba(168, 85, 247, 0.15) 100%) !important;
-          border-left: 3px solid #a855f7 !important;
-          padding-left: calc(1rem - 3px) !important;
+        /* ✅ FORÇAR estilos nos botões do menu */
+        .sidebar-menu-item {
+          background: transparent !important; /* Ensure base is transparent */
           transition: all 0.3s ease !important;
         }
 
-        /* ✅ Estado ativo com gradiente mais forte */
-        [data-sidebar-menu-button][data-active="true"] {
+        .sidebar-menu-item:hover {
+          background: linear-gradient(90deg, rgba(139, 92, 246, 0.25) 0%, rgba(168, 85, 247, 0.15) 100%) !important;
+          border-left: 3px solid #a855f7 !important;
+          padding-left: calc(1rem - 3px) !important;
+        }
+
+        .sidebar-menu-item.active {
           background: linear-gradient(90deg, rgba(147, 51, 234, 0.4) 0%, rgba(168, 85, 247, 0.25) 100%) !important;
           border-left: 4px solid #a855f7 !important;
           padding-left: calc(1rem - 4px) !important;
           box-shadow: 0 0 20px rgba(168, 85, 247, 0.3) !important;
         }
 
-        /* ✅ GARANTIR que nenhum elemento filho sobrescreva */
-        [data-sidebar-menu-button]:hover:not([data-active="true"]) > *,
-        [data-sidebar-menu-button][data-active="true"] > * {
+        /* Remover todos os backgrounds padrão dos componentes da UI lib */
+        [data-sidebar-menu-button],
+        [data-sidebar-menu-button] * {
+          background: transparent !important;
+        }
+
+        [data-sidebar-menu-button]:hover {
+          background: transparent !important;
+        }
+
+        [data-sidebar-menu-button][data-active="true"] {
           background: transparent !important;
         }
 
@@ -785,30 +790,7 @@ export default function Layout({ children }) {
                         <SidebarMenuButton asChild data-active={isActive ? "true" : "false"}>
                           <Link 
                             to={item.url} 
-                            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                              isActive 
-                                ? theme === 'dark' 
-                                  ? 'bg-gradient-to-r from-purple-600/30 to-purple-800/20 border-l-4 border-purple-500 shadow-lg shadow-purple-500/20'
-                                  : theme === 'light'
-                                  ? 'bg-gradient-to-r from-indigo-100 to-purple-50 border-l-4 border-indigo-500 shadow-md'
-                                  : theme === 'purple'
-                                  ? 'bg-gradient-to-r from-fuchsia-600/40 to-pink-600/20 border-l-4 border-fuchsia-500 shadow-lg shadow-fuchsia-500/25'
-                                  : theme === 'blue'
-                                  ? 'bg-gradient-to-r from-blue-600/35 to-cyan-600/20 border-l-4 border-blue-500 shadow-lg shadow-blue-500/25'
-                                  : 'bg-gradient-to-r from-green-600/35 to-emerald-600/20 border-l-4 border-green-500 shadow-lg shadow-green-500/25'
-                                : 'hover:bg-purple-900/20'
-                            }`}
-                            style={isActive ? {
-                              background: theme === 'dark' 
-                                ? 'linear-gradient(90deg, rgba(147, 51, 234, 0.3), rgba(126, 34, 206, 0.15))'
-                                : theme === 'light'
-                                ? 'linear-gradient(90deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.1))'
-                                : theme === 'purple'
-                                ? 'linear-gradient(90deg, rgba(217, 70, 239, 0.4), rgba(192, 38, 211, 0.2))'
-                                : theme === 'blue'
-                                ? 'linear-gradient(90deg, rgba(59, 130, 246, 0.35), rgba(37, 99, 235, 0.2))'
-                                : 'linear-gradient(90deg, rgba(16, 185, 129, 0.35), rgba(5, 150, 105, 0.2))'
-                            } : {}}
+                            className={`sidebar-menu-item ${isActive ? 'active' : ''} flex items-center gap-3 px-4 py-3 rounded-lg`}
                           >
                             <div className={`p-2 rounded-lg bg-gradient-to-br ${item.gradient}`}>
                               <item.icon className="w-5 h-5 text-white" />
