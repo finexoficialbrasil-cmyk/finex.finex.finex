@@ -37,7 +37,7 @@ import {
   Wallet,
   ChevronDown,
   Star,
-  Lock // NEW: Import Lock icon
+  Lock 
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -59,7 +59,7 @@ export default function Plans() {
 
   useEffect(() => {
     loadData();
-    document.title = "Planos - FINEX"; // ✅ Atualizar título da aba
+    document.title = "Planos - FINEX"; 
   }, []);
 
   const loadData = async () => {
@@ -132,13 +132,13 @@ export default function Plans() {
         
         // Se ainda tem plano ativo
         if (endDate > now) {
-          // Se está tentando escolher plano free (assumindo 'monthly' com price 0 é o free)
-          if (plan.price === 0) { // Changed condition to check price directly as per the code
+          // Se está tentando escolher plano free
+          if (plan.price === 0) { 
             alert(`❌ BLOQUEADO!\n\n🔒 Você já possui uma assinatura ATIVA até ${endDate.toLocaleDateString('pt-BR')}.\n\n⚠️ Não é possível fazer downgrade para o plano gratuito enquanto sua assinatura estiver ativa.\n\n💡 Aguarde o vencimento da sua assinatura ou entre em contato com o suporte para cancelamento.`);
             return;
           }
           
-          // Se está tentando escolher plano inferior ao atual (pago para pago inferior)
+          // Se está tentando escolher plano inferior ao atual
           const currentPlanValue = getPlanValue(user.subscription_plan);
           const newPlanValue = getPlanValue(plan.plan_type);
           
@@ -150,18 +150,27 @@ export default function Plans() {
         }
       }
 
-      setSelectedPlan(plan); // Moved this line as per outline's structure logic
+      setSelectedPlan(plan);
 
       if (plan.price === 0) {
         handleActivateFreePlan(plan);
         return;
       }
 
-      // Se Asaas configurado, usar pagamento automático
-      if (paymentSettings.asaas_api_key) {
+      // ✅ CORRIGIDO: Verificar TANTO a API key QUANTO o toggle de ativação
+      const autoPaymentEnabled = paymentSettings.asaas_auto_payment_enabled === "true";
+      const hasApiKey = !!paymentSettings.asaas_api_key;
+
+      console.log("🔍 Verificando modo de pagamento:");
+      console.log("   API Key configurada:", hasApiKey);
+      console.log("   Pagamento automático habilitado:", autoPaymentEnabled);
+
+      if (autoPaymentEnabled && hasApiKey) {
+        console.log("✅ Usando pagamento automático (Asaas)");
         handleAsaasPayment(plan);
       } else {
-        // Senão, pagamento manual
+        console.log("✋ Usando pagamento manual");
+        // Pagamento manual
         setPaymentData({
           payment_proof_url: "",
           notes: "",
