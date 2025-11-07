@@ -35,7 +35,7 @@ import {
   SidebarFooter,
   SidebarProvider,
   SidebarTrigger,
-  useSidebar, // ✅ NOVO: Hook para controlar sidebar
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { User as UserEntity } from "@/entities/User";
 import { motion, AnimatePresence } from "framer-motion";
@@ -134,13 +134,14 @@ const navigationItems = [
 // ✅ NOVO: Componente interno que tem acesso ao contexto da Sidebar
 function LayoutContent({ children }) {
   const location = useLocation();
-  const { setOpenMobile, setOpen } = useSidebar(); // ✅ Adicionar setOpen também
+  const { setOpenMobile, setOpen } = useSidebar();
   const [user, setUser] = React.useState(null);
   const [userPlan, setUserPlan] = React.useState(null);
   const [hoveredItem, setHoveredItem] = React.useState(null);
   const [theme, setTheme] = React.useState("dark");
   const [appName, setAppName] = React.useState("FINEX");
   const [appLogo, setAppLogo] = React.useState("");
+  const [previousPath, setPreviousPath] = React.useState(location.pathname); // ✅ NOVO: Track previous path
   
   const [themeSettings, setThemeSettings] = React.useState({
     particles: true,
@@ -160,13 +161,15 @@ function LayoutContent({ children }) {
     loadUserAndSettings();
   }, []);
 
-  // ✅ NOVO: Fechar sidebar automaticamente quando a rota mudar (mobile)
+  // ✅ MELHORADO: Fechar sidebar apenas quando a ROTA MUDAR (não no mount inicial)
   React.useEffect(() => {
-    if (window.innerWidth < 768) {
+    if (previousPath !== location.pathname && window.innerWidth < 768) {
+      console.log("📱 Rota mudou no mobile, fechando sidebar");
       setOpenMobile(false);
       setOpen(false);
     }
-  }, [location.pathname, setOpenMobile, setOpen]);
+    setPreviousPath(location.pathname);
+  }, [location.pathname, previousPath, setOpenMobile, setOpen]);
 
   const loadUserAndSettings = async () => {
     setIsLoadingLayout(true);
@@ -381,11 +384,10 @@ function LayoutContent({ children }) {
         case "Contas a Pagar": pageName = "Payables"; break;
         case "Contas a Receber": pageName = "Receivables"; break;
         case "Transações": pageName = "Transactions"; break;
-        case "Importar Dados": pageName = "Import"; break; // Added mapping for Importar Dados
+        case "Importar Dados": pageName = "Import"; break;
         case "Carteiras": pageName = "Accounts"; break;
         case "Categorias": pageName = "Categories"; break;
         case "Metas Financeiras": pageName = "Goals"; break;
-        // 'Relatórios IA' case is no longer needed here as it's removed from navigationItems
         case "Extrato Financeiro": pageName = "Statement"; break;
         case "Tutoriais": pageName = "Tutorials"; break;
         case "Perfil": pageName = "Profile"; break;
@@ -401,13 +403,9 @@ function LayoutContent({ children }) {
 
   const menuItems = getFilteredMenuItems();
 
-  // ✅ MELHORADO: Fechar sidebar ao clicar no link (mobile)
+  // ✅ SIMPLIFICADO: Apenas logar o clique (o useEffect cuida do fechamento)
   const handleMenuItemClick = () => {
-    // Fechar sidebar no mobile
-    if (window.innerWidth < 768) {
-      setOpenMobile(false);
-      setOpen(false);
-    }
+    console.log("🔗 Item do menu clicado");
   };
 
   return (
@@ -908,6 +906,7 @@ function LayoutContent({ children }) {
           </header>
 
           <div className="flex-1 overflow-auto" style={{ background: theme === 'light' ? '#f9fafb' : '#0a0a0f' }}>
+            <ReceivablesNotification />
             <SubscriptionGuard>
               {children}
             </SubscriptionGuard>
