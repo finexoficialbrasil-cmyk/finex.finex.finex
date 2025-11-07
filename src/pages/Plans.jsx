@@ -47,13 +47,13 @@ const calculateDaysLeft = (endDateString) => {
   
   // Parse the date string as YYYY-MM-DD
   const [year, month, day] = endDateString.split('-').map(Number);
-  // Create a Date object in UTC to avoid local timezone offsets for the "end of day"
+  // Create a Date object in local timezone
   // Month is 0-indexed in Date constructor, so month - 1
-  const endDate = new Date(Date.UTC(year, month - 1, day));
+  const endDate = new Date(year, month - 1, day);
   
   const now = new Date();
-  // Create a Date object for today, also in UTC, to ensure consistent comparison
-  const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  // Create a Date object for today, also in local timezone
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   
   // Calculate difference in milliseconds
   const diffTime = endDate.getTime() - today.getTime();
@@ -61,6 +61,30 @@ const calculateDaysLeft = (endDateString) => {
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   
   return diffDays;
+};
+
+// ✅ NOVA FUNÇÃO: Verificar se assinatura está ativa SEM conversão de timezone
+const isSubscriptionActive = (user) => {
+  if (!user || user.subscription_status !== 'active') return false;
+  if (!user.subscription_end_date) return false;
+  
+  // Parse manual SEM timezone, treating YYYY-MM-DD as local date
+  const [year, month, day] = user.subscription_end_date.split('-').map(Number);
+  const endDate = new Date(year, month - 1, day);
+  
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  
+  const isActive = endDate >= today;
+  
+  console.log(`🔍 Verificação de assinatura:`, {
+    endDateString: user.subscription_end_date,
+    endDate: endDate.toLocaleDateString('pt-BR'),
+    today: today.toLocaleDateString('pt-BR'),
+    isActive
+  });
+  
+  return isActive;
 };
 
 export default function Plans() {
@@ -114,13 +138,7 @@ export default function Plans() {
     return plans.find(p => p.plan_type === user.subscription_plan);
   };
 
-  const isUserPlanActive = () => {
-    if (!user || user.subscription_status !== 'active') return false;
-    if (!user.subscription_end_date) return false;
-    
-    const endDate = new Date(user.subscription_end_date);
-    return endDate > new Date();
-  };
+  // Removed old isUserPlanActive as it's replaced by isSubscriptionActive
 
   // ✅ NOVO: Função para atribuir valor numérico aos planos (para comparação)
   const getPlanValue = (planType) => {
@@ -147,27 +165,21 @@ export default function Plans() {
 
   const handleSelectPlan = async (plan) => {
     try {
-      // ✅ NOVO: Verificar se usuário tem plano ativo e está tentando voltar para free ou fazer downgrade
-      if (user && user.subscription_status === 'active' && user.subscription_end_date) {
-        const endDate = new Date(user.subscription_end_date + 'T12:00:00'); // Ensure date is parsed correctly
-        const now = new Date();
+      // ✅ USAR NOVA FUNÇÃO para verificar assinatura ativa
+      if (isSubscriptionActive(user)) {
+        // ✅ Se está tentando escolher plano free
+        if (plan.price === 0) {
+          alert(`❌ BLOQUEADO!\n\n🔒 Você já possui uma assinatura ATIVA até ${new Date(user.subscription_end_date + 'T12:00:00').toLocaleDateString('pt-BR')}.\n\n⚠️ Não é possível fazer downgrade para o plano gratuito enquanto sua assinatura estiver ativa.\n\n💡 Aguarde o vencimento da sua assinatura ou entre em contato com o suporte para cancelamento.`);
+          return;
+        }
         
-        // If still has active plan
-        if (endDate > now) {
-          // If trying to choose free plan (assuming 'monthly' with price 0 is the free)
-          if (plan.price === 0) { // Changed condition to check price directly as per the code
-            alert(`❌ BLOQUEADO!\n\n🔒 Você já possui uma assinatura ATIVA até ${endDate.toLocaleDateString('pt-BR')}.\n\n⚠️ Não é possível fazer downgrade para o plano gratuito enquanto sua assinatura estiver ativa.\n\n💡 Aguarde o vencimento da sua assinatura ou entre em contato com o suporte para cancelamento.`);
+        // ✅ Se está tentando fazer downgrade
+        const currentPlanValue = getPlanValue(user.subscription_plan);
+        const newPlanValue = getPlanValue(plan.plan_type);
+        
+        if (newPlanValue < currentPlanValue) {
+          if (!confirm(`⚠️ ATENÇÃO: DOWNGRADE\n\nVocê está tentando mudar de um plano SUPERIOR para um plano INFERIOR.\n\nPlano atual: ${formatPlanName(user.subscription_plan)}\nNovo plano: ${plan.name}\n\n🔄 O downgrade só terá efeito após o vencimento da sua assinatura atual (${new Date(user.subscription_end_date + 'T12:00:00').toLocaleDateString('pt-BR')}).\n\nDeseja continuar?`)) {
             return;
-          }
-          
-          // If trying to choose a plan inferior to the current one (paid to paid inferior)
-          const currentPlanValue = getPlanValue(user.subscription_plan);
-          const newPlanValue = getPlanValue(plan.plan_type);
-          
-          if (newPlanValue < currentPlanValue) {
-            if (!confirm(`⚠️ ATENÇÃO: DOWNGRADE\n\nVocê está tentando mudar de um plano SUPERIOR para um plano INFERIOR.\n\nPlano atual: ${formatPlanName(user.subscription_plan)}\nNovo plano: ${plan.name}\n\n🔄 O downgrade só terá efeito após o vencimento da sua assinatura atual (${endDate.toLocaleDateString('pt-BR')}).\n\nDeseja continuar?`)) {
-              return;
-            }
           }
         }
       }
@@ -349,7 +361,7 @@ export default function Plans() {
   };
 
   const currentPlan = getCurrentPlan();
-  const planActive = isUserPlanActive();
+  const planActive = isSubscriptionActive(user); // ✅ USAR NOVA FUNÇÃO
 
   // ✅ NOVO: Ordenar planos - PAGOS PRIMEIRO, gratuito por último
   const sortedPlans = useMemo(() => {
@@ -404,8 +416,8 @@ export default function Plans() {
             Controle total, relatórios inteligentes e muito mais
           </p>
 
-          {/* ✅ NOVO: Destacar vantagens dos planos pagos */}
-          {!user?.subscription_plan && (
+          {/* ✅ MELHORADO: Mostrar vantagens apenas se NÃO tiver plano ativo */}
+          {!isSubscriptionActive(user) && (
             <div className="max-w-3xl mx-auto mb-8 p-6 rounded-xl bg-gradient-to-r from-green-900/20 to-emerald-900/20 border border-green-700/30">
               <h3 className="text-xl font-bold text-green-300 mb-3">
                 💎 Por que escolher um plano Premium?
@@ -440,7 +452,7 @@ export default function Plans() {
         </motion.div>
 
         {/* Current Plan Info */}
-        {user?.subscription_status === 'active' && user?.subscription_end_date && (
+        {isSubscriptionActive(user) && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -539,9 +551,7 @@ export default function Plans() {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
           {sortedPlans.map((plan, index) => {
             const isCurrentPlan = user?.subscription_plan === plan.plan_type;
-            const hasActivePlan = user?.subscription_status === 'active' && 
-                                  user?.subscription_end_date && 
-                                  new Date(user.subscription_end_date + 'T12:00:00') > new Date(); // Added T12:00:00 for consistency
+            const hasActivePlan = isSubscriptionActive(user); // ✅ USAR NOVA FUNÇÃO
             
             const isFreePlan = plan.price === 0;
             const isBlocked = hasActivePlan && isFreePlan;
