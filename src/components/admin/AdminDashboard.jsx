@@ -22,14 +22,16 @@ export default function AdminDashboard() {
     try {
       console.log("🔄 Admin Dashboard carregando estatísticas rápidas...");
       
+      // ✅ OTIMIZADO: Carregar apenas dados essenciais COM LIMITES
       const [users, recentTxs, tutorials] = await Promise.all([
-        User.list("-created_date", 100),
-        Transaction.list("-created_date", 50),
-        SystemTutorial.list("-created_date", 20)
+        User.list("-created_date", 100), // ✅ Limite de 100 usuários
+        Transaction.list("-created_date", 50), // ✅ Apenas últimas 50 transações
+        SystemTutorial.list("-created_date", 20) // ✅ Apenas 20 tutoriais
       ]);
 
       console.log(`✅ Dashboard: ${users.length} usuários, ${recentTxs.length} transações recentes`);
 
+      // ✅ Calcular usuários ativos (últimos 30 dias)
       const now = new Date();
       const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       
@@ -38,12 +40,13 @@ export default function AdminDashboard() {
         return lastActivity >= thirtyDaysAgo;
       }).length;
 
+      // ✅ Somar visualizações dos tutoriais
       const totalViews = tutorials.reduce((sum, t) => sum + (t.views_count || 0), 0);
 
       setStats({
         totalUsers: users.length,
         activeUsers: activeUsers,
-        totalTransactions: recentTxs.length,
+        totalTransactions: recentTxs.length, // ✅ Mostrar apenas transações recentes
         totalTutorialsViews: totalViews,
         recentUsers: users.slice(0, 5)
       });
@@ -90,7 +93,7 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="space-y-6 pt-6">
+    <div className="space-y-6">
       {/* Stats Grid */}
       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((stat, index) => (

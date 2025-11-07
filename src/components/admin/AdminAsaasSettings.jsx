@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { base44 } from "@/api/base44Client"; // ✅ ADICIONADO
 import { SystemSettings } from "@/entities/SystemSettings";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,39 +8,42 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Switch } from "@/components/ui/switch"; // ✅ NOVO: Importar Switch
-import { DollarSign, Save, Loader2, CheckCircle, AlertTriangle, ExternalLink, Key, Shield, Zap, XCircle, Copy, Rocket, ToggleLeft, ToggleRight } from "lucide-react"; // ✅ NOVO: ToggleLeft, ToggleRight
+import { DollarSign, Save, Loader2, CheckCircle, AlertTriangle, ExternalLink, Key, Shield, Zap, XCircle, Copy, Rocket } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function AdminAsaasSettings() {
   const [settings, setSettings] = useState({
     asaas_api_key: "",
-    asaas_webhook_token: "",
-    asaas_auto_payment_enabled: false // ✅ NOVO ESTADO
+    asaas_webhook_token: ""
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [detectedEnvironment, setDetectedEnvironment] = useState(null);
-  const [appId, setAppId] = useState("");
+  const [appId, setAppId] = useState(""); // ✅ NOVO: guardar o app_id
+
+  // New states for manual activation of pending subscriptions
   const [isActivatingPending, setIsActivatingPending] = useState(false);
-  const [activationStatus, setActivationStatus] = useState("idle");
+  const [activationStatus, setActivationStatus] = useState("idle"); // 'idle', 'loading', 'success', 'error'
   const [activationMessage, setActivationMessage] = useState("");
 
   useEffect(() => {
     loadSettings();
-    detectAppId();
+    detectAppId(); // ✅ NOVO: detectar app_id
   }, []);
 
+  // ✅ NOVA FUNÇÃO: Detectar app_id automaticamente
   const detectAppId = () => {
     const hostname = window.location.hostname;
-    let detected = "seu-app-id";
+    let detected = "seu-app-id"; // Default value if not found
 
     if (hostname.startsWith('preview--')) {
+      // Formato: preview--appid.base44.app
       const parts = hostname.split('.');
       if (parts.length > 0) {
         detected = parts[0].replace('preview--', '');
       }
     } else if (hostname.includes('.base44.app')) {
+      // Formato: appid.base44.app
       const parts = hostname.split('.');
       if (parts.length > 0) {
         detected = parts[0];
@@ -51,6 +54,7 @@ export default function AdminAsaasSettings() {
   };
 
   useEffect(() => {
+    // Detectar ambiente quando API key muda
     if (settings.asaas_api_key) {
       const isSandbox = settings.asaas_api_key.includes('_hmlg_') || settings.asaas_api_key.includes('sandbox');
       setDetectedEnvironment(isSandbox ? 'sandbox' : 'production');
@@ -65,12 +69,10 @@ export default function AdminAsaasSettings() {
       
       const apiKey = allSettings.find(s => s.key === "asaas_api_key");
       const webhookToken = allSettings.find(s => s.key === "asaas_webhook_token");
-      const autoPaymentEnabled = allSettings.find(s => s.key === "asaas_auto_payment_enabled"); // ✅ NOVO: carregar estado
       
       setSettings({
         asaas_api_key: apiKey?.value || "",
-        asaas_webhook_token: webhookToken?.value || "",
-        asaas_auto_payment_enabled: autoPaymentEnabled?.value === "true" // ✅ NOVO: parsear como boolean
+        asaas_webhook_token: webhookToken?.value || ""
       });
     } catch (error) {
       console.error("Erro ao carregar configurações:", error);
@@ -85,9 +87,8 @@ export default function AdminAsaasSettings() {
   };
 
   const handleSave = async () => {
-    // ✅ NOVO: Validação para API Key se o pagamento automático estiver habilitado
-    if (!settings.asaas_api_key && settings.asaas_auto_payment_enabled) {
-      alert("❌ Para ativar o modo automático, você precisa configurar a API Key do Asaas!");
+    if (!settings.asaas_api_key) {
+      alert("❌ Por favor, insira a API Key do Asaas!");
       return;
     }
 
@@ -97,8 +98,7 @@ export default function AdminAsaasSettings() {
       
       const settingsToSave = {
         asaas_api_key: settings.asaas_api_key,
-        asaas_webhook_token: settings.asaas_webhook_token || crypto.randomUUID(),
-        asaas_auto_payment_enabled: settings.asaas_auto_payment_enabled ? "true" : "false" // ✅ NOVO: Salvar como string
+        asaas_webhook_token: settings.asaas_webhook_token || crypto.randomUUID()
       };
 
       for (const [key, value] of Object.entries(settingsToSave)) {
@@ -122,7 +122,7 @@ export default function AdminAsaasSettings() {
       }
       
       alert("✅ Configurações do Asaas salvas com sucesso!");
-      loadSettings();
+      loadSettings(); // Reload settings to ensure webhook token is updated in state if newly generated
     } catch (error) {
       console.error("Erro ao salvar configurações:", error);
       alert("❌ Erro ao salvar configurações.");
@@ -143,6 +143,7 @@ export default function AdminAsaasSettings() {
 
       console.log("🔄 Chamando função de ativação...");
       
+      // ✅ Chamar função backend corretamente
       const response = await base44.functions.invoke('activatePendingSubscriptions');
 
       console.log("📊 Resposta:", response.data);
@@ -174,92 +175,6 @@ export default function AdminAsaasSettings() {
 
   return (
     <div className="space-y-6">
-      {/* ✅ CARD DE MODO DE PAGAMENTO - PRIMEIRO E DESTACADO */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <Card className="glass-card border-yellow-700/50 neon-glow bg-gradient-to-r from-yellow-900/20 to-orange-900/20">
-          <CardHeader className="border-b border-yellow-900/30">
-            <CardTitle className="text-white flex items-center gap-2 text-2xl">
-              {settings.asaas_auto_payment_enabled ? (
-                <ToggleRight className="w-6 h-6 text-green-400 animate-pulse" />
-              ) : (
-                <ToggleLeft className="w-6 h-6 text-yellow-400" />
-              )}
-              Modo de Pagamento PIX
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="space-y-6">
-              <div className="flex items-center justify-between p-6 rounded-xl bg-gradient-to-r from-purple-900/30 to-pink-900/30 border-2 border-purple-700/50">
-                <div className="flex-1">
-                  <Label className="text-white font-bold text-xl flex items-center gap-3 mb-3">
-                    {settings.asaas_auto_payment_enabled ? (
-                      <>
-                        <div className="p-2 rounded-lg bg-green-600/30">
-                          <Zap className="w-6 h-6 text-green-400" />
-                        </div>
-                        PIX Automático (Asaas)
-                      </>
-                    ) : (
-                      <>
-                        <div className="p-2 rounded-lg bg-yellow-600/30">
-                          <DollarSign className="w-6 h-6 text-yellow-400" />
-                        </div>
-                        PIX Manual
-                      </>
-                    )}
-                  </Label>
-                  <p className="text-purple-200 text-base ml-14">
-                    {settings.asaas_auto_payment_enabled
-                      ? "✅ Pagamentos são gerados automaticamente via Asaas com QR Code PIX instantâneo"
-                      : "✋ Você receberá comprovantes manualmente dos clientes e aprovará cada pagamento no painel Admin"}
-                  </p>
-                </div>
-                <Switch
-                  checked={settings.asaas_auto_payment_enabled}
-                  onCheckedChange={(checked) => setSettings({...settings, asaas_auto_payment_enabled: checked})}
-                  className="data-[state=checked]:bg-green-600 scale-150"
-                />
-              </div>
-
-              {settings.asaas_auto_payment_enabled ? (
-                <Alert className="bg-green-900/20 border-green-700/30 border-2">
-                  <AlertDescription className="flex items-start gap-3 text-green-200">
-                    <CheckCircle className="w-6 h-6 text-green-400 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-bold mb-2 text-lg">⚡ Modo Automático Ativado</p>
-                      <ul className="text-sm space-y-1">
-                        <li>• QR Codes gerados automaticamente pelo Asaas</li>
-                        <li>• Ativação instantânea via webhook após confirmação do pagamento</li>
-                        <li>• Sem necessidade de aprovação manual</li>
-                        <li>• Requer API Key e Webhook configurados corretamente</li>
-                      </ul>
-                    </div>
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                <Alert className="bg-yellow-900/20 border-yellow-700/30 border-2">
-                  <AlertDescription className="flex items-start gap-3 text-yellow-200">
-                    <AlertTriangle className="w-6 h-6 text-yellow-400 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-bold mb-2 text-lg">✋ Modo Manual Ativado</p>
-                      <ul className="text-sm space-y-1">
-                        <li>• Clientes enviam comprovantes de pagamento PIX</li>
-                        <li>• Você aprova manualmente em Admin → Assinaturas</li>
-                        <li>• Sem taxas de intermediação do Asaas</li>
-                        <li>• Não requer integração com Asaas</li>
-                      </ul>
-                    </div>
-                  </AlertDescription>
-                </Alert>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
-
       {/* Detector de Ambiente */}
       {detectedEnvironment && (
         <Alert className={detectedEnvironment === 'production' ? 'border-green-500 bg-green-900/20' : 'border-yellow-500 bg-yellow-900/20'}>
@@ -609,7 +524,7 @@ export default function AdminAsaasSettings() {
             {/* Buttons */}
             <Button
               onClick={handleSave}
-              disabled={isSaving || (!settings.asaas_api_key && settings.asaas_auto_payment_enabled)} // Desabilita se API key vazia e auto-payment ligado
+              disabled={isSaving || !settings.asaas_api_key}
               className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
             >
               {isSaving ? (

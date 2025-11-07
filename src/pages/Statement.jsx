@@ -27,13 +27,6 @@ import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-f
 import { ptBR } from "date-fns/locale";
 import { motion } from "framer-motion";
 
-// ✅ NOVA FUNÇÃO: Formatar data sem problema de timezone
-const formatDateLocal = (dateString) => {
-  if (!dateString) return '';
-  const [year, month, day] = dateString.split('-');
-  return `${day}/${month}/${year}`;
-};
-
 export default function Statement() {
   const [transactions, setTransactions] = useState([]);
   const [accounts, setAccounts] = useState([]);
@@ -268,7 +261,7 @@ export default function Statement() {
           <h2 style="margin-top: 0; color: #a855f7;">Informações do Período</h2>
           <div class="info-row">
             <span class="info-label">Período:</span>
-            <span>${formatDateLocal(filters.startDate)} até ${formatDateLocal(filters.endDate)}</span>
+            <span>${format(new Date(filters.startDate), "dd/MM/yyyy")} até ${format(new Date(filters.endDate), "dd/MM/yyyy")}</span>
           </div>
           <div class="info-row">
             <span class="info-label">Total de Transações:</span>
@@ -314,7 +307,7 @@ export default function Statement() {
               
               return `
                 <tr>
-                  <td>${formatDateLocal(tx.date)}</td>
+                  <td>${format(new Date(tx.date), "dd/MM/yyyy")}</td>
                   <td>${tx.description}</td>
                   <td><span class="badge" style="background: ${category?.color}20; color: ${category?.color};">${category?.name || "Sem categoria"}</span></td>
                   <td>${account?.name || "-"}</td>
@@ -588,7 +581,7 @@ export default function Statement() {
                         return (
                           <TableRow key={tx.id} className="border-b border-purple-900/20 hover:bg-purple-900/10">
                             <TableCell className="text-purple-200">
-                              {formatDateLocal(tx.date)}
+                              {format(new Date(tx.date), "dd/MM/yyyy")}
                             </TableCell>
                             <TableCell className="text-white font-medium">{tx.description}</TableCell>
                             <TableCell>

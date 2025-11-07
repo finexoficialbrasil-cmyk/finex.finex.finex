@@ -39,23 +39,6 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { format, differenceInDays, isBefore } from "date-fns";
 
-// ✅ NOVA FUNÇÃO: Obter data local sem problema de timezone
-const getTodayLocal = () => {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, '0');
-  const day = String(today.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
-
-// ✅ NOVA FUNÇÃO: Formatar data sem problema de timezone
-const formatDateLocal = (dateString) => {
-  if (!dateString) return '';
-  // Assuming dateString is in YYYY-MM-DD format
-  const [year, month, day] = dateString.split('-');
-  return `${day}/${month}/${year}`;
-};
-
 export default function Payables() {
   const [bills, setBills] = useState([]);
   const [accounts, setAccounts] = useState([]);
@@ -248,7 +231,7 @@ export default function Payables() {
       return;
     }
 
-    const paymentDate = getTodayLocal(); // ✅ CORRIGIDO
+    const paymentDate = new Date().toISOString().split('T')[0];
 
     // Verificar saldo
     if (account.balance < bill.amount) {
@@ -599,7 +582,7 @@ export default function Payables() {
                               <div className="flex items-center gap-2 mt-1 flex-wrap">
                                 <span className="text-xs text-purple-300 flex items-center gap-1">
                                   <Calendar className="w-3 h-3" />
-                                  Vence: {formatDateLocal(bill.due_date)}
+                                  Vence: {format(new Date(bill.due_date), "dd/MM/yyyy")}
                                 </span>
                                 <Badge
                                   className="text-xs"

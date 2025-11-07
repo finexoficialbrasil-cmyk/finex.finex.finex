@@ -42,22 +42,6 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { format, differenceInDays, isBefore } from "date-fns";
 
-// ✅ NOVA FUNÇÃO: Obter data local sem problema de timezone
-const getTodayLocal = () => {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, '0');
-  const day = String(today.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
-
-// ✅ NOVA FUNÇÃO: Formatar data sem problema de timezone
-const formatDateLocal = (dateString) => {
-  if (!dateString) return '';
-  const [year, month, day] = dateString.split('-');
-  return `${day}/${month}/${year}`;
-};
-
 export default function Receivables() {
   const [bills, setBills] = useState([]);
   const [accounts, setAccounts] = useState([]);
@@ -261,7 +245,7 @@ export default function Receivables() {
       return;
     }
 
-    const paymentDate = getTodayLocal(); // ✅ CORRIGIDO
+    const paymentDate = new Date().toISOString().split('T')[0];
 
     try {
       await Bill.update(bill.id, {
@@ -376,7 +360,7 @@ export default function Receivables() {
 
 Estamos passando para informar que ainda não consta o pagamento referente a: *${bill.description}*
 
-📅 *Vencimento:* ${formatDateLocal(bill.due_date)}
+📅 *Vencimento:* ${format(new Date(bill.due_date), "dd/MM/yyyy")}
 💰 *Valor:* R$ ${bill.amount.toFixed(2)}
 
 Se o pagamento já foi realizado, por gentileza, envie o comprovante para conferência.
@@ -648,7 +632,7 @@ Agradecemos pela atenção e confiança!
                               <div className="flex items-center gap-2 mt-1 flex-wrap">
                                 <span className="text-xs text-purple-300 flex items-center gap-1">
                                   <Calendar className="w-3 h-3" />
-                                  Vence: {formatDateLocal(bill.due_date)}
+                                  Vence: {format(new Date(bill.due_date), "dd/MM/yyyy")}
                                 </span>
                                 {bill.contact_name && (
                                   <span className="text-xs text-purple-300">
@@ -1045,7 +1029,7 @@ Agradecemos pela atenção e confiança!
                     <div className="p-4 rounded-2xl bg-white/60 backdrop-blur-sm border border-purple-200/30 shadow-sm print:bg-white print:border-purple-200 print:shadow-none print:backdrop-blur-none print:p-3">
                       <p className="text-xs text-purple-600/70 mb-1 font-semibold tracking-wide uppercase print:text-purple-700">Vencimento</p>
                       <p className="text-gray-800 font-medium print:text-black">
-                        {formatDateLocal(receiptData.bill.due_date)}
+                        {format(new Date(receiptData.bill.due_date), "dd/MM/yyyy")}
                       </p>
                     </div>
 
