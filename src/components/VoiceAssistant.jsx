@@ -281,13 +281,24 @@ Extrair: action, type, amount, description, date, category_id`,
         });
       }
 
-      // ✅ CORRIGIDO: Usar data local do usuário (não UTC)
-      const today = new Date();
-      const todayDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      // ✅ CORRIGIDO V2: Usar timezone do Brasil EXPLICITAMENTE
+      const now = new Date();
       
-      console.log(`📅 Data local correta: ${todayDate}`);
+      // Obter data no timezone de Brasília (UTC-3)
+      const brazilDate = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
       
-      if (!aiResponse.date) aiResponse.date = todayDate;
+      const todayDate = `${brazilDate.getFullYear()}-${String(brazilDate.getMonth() + 1).padStart(2, '0')}-${String(brazilDate.getDate()).padStart(2, '0')}`;
+      
+      console.log(`📅 DEBUG DATA:`);
+      console.log(`  - now (raw): ${now.toString()}`);
+      console.log(`  - brazilDate: ${brazilDate.toString()}`);
+      console.log(`  - todayDate formatado: ${todayDate}`);
+      console.log(`  - aiResponse.date: ${aiResponse.date}`);
+      
+      if (!aiResponse.date) {
+        aiResponse.date = todayDate;
+        console.log(`  - Usando data de hoje: ${todayDate}`);
+      }
 
       // ✅ Categoria
       let category = allCategories.find(c => c.id === aiResponse.category_id);
@@ -304,7 +315,7 @@ Extrair: action, type, amount, description, date, category_id`,
           ? oldBalance + aiResponse.amount
           : oldBalance - aiResponse.amount;
 
-        console.log("💰 Criando transação...");
+        console.log("💰 Criando transação com data:", aiResponse.date);
 
         await Promise.all([
           Transaction.create({
@@ -313,7 +324,7 @@ Extrair: action, type, amount, description, date, category_id`,
             type: aiResponse.type,
             category_id: category?.id || null,
             account_id: defaultAccount.id,
-            date: todayDate,
+            date: aiResponse.date, // Use the determined date here
             status: "completed",
             notes: `Criado por comando de voz: "${text}"`
           }),
@@ -327,7 +338,7 @@ Extrair: action, type, amount, description, date, category_id`,
           })
         ]);
 
-        console.log("✅ Transação criada!");
+        console.log("✅ Transação criada com data:", aiResponse.date);
 
         setResult({
           type: "success",
@@ -338,7 +349,7 @@ Extrair: action, type, amount, description, date, category_id`,
             description: aiResponse.description,
             category: category,
             account: defaultAccount,
-            date: todayDate,
+            date: aiResponse.date, // Use the determined date here
             oldBalance: oldBalance,
             newBalance: newBalance,
             transaction_id: 'criada'
@@ -354,7 +365,7 @@ Extrair: action, type, amount, description, date, category_id`,
           type: aiResponse.action === "conta_pagar" ? "payable" : "receivable",
           category_id: category?.id || null,
           account_id: defaultAccount.id,
-          due_date: aiResponse.date,
+          due_date: aiResponse.date, // Use the determined date here
           status: "pending",
           notes: `Criado por comando de voz: "${text}"`
         });
@@ -370,7 +381,7 @@ Extrair: action, type, amount, description, date, category_id`,
             description: aiResponse.description,
             category: category,
             account: defaultAccount,
-            due_date: aiResponse.date,
+            due_date: aiResponse.date, // Use the determined date here
             status: "pending",
             bill_id: 'criada'
           }
@@ -496,9 +507,12 @@ Extrair: action, type, amount, description, date, category_id`,
       if (firstCat) category_id = firstCat.id;
     }
 
-    // ✅ CORRIGIDO: Usar data local
-    const today = new Date();
-    const todayDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    // ✅ CORRIGIDO V2: Usar timezone do Brasil
+    const now = new Date();
+    const brazilDate = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+    const todayDate = `${brazilDate.getFullYear()}-${String(brazilDate.getMonth() + 1).padStart(2, '0')}-${String(brazilDate.getDate()).padStart(2, '0')}`;
+
+    console.log(`📅 parseCommandLocally - Data Brasil: ${todayDate}`);
 
     return {
       confidence: 'high',
