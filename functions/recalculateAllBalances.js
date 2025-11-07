@@ -10,75 +10,85 @@ Deno.serve(async (req) => {
             return Response.json({ error: 'Acesso negado. Apenas administradores.' }, { status: 403 });
         }
 
-        console.log(`🚀 Iniciando recálculo de saldos - Admin: ${user.email}`);
+        console.log(`🚀 INÍCIO - Admin: ${user.email}`);
 
         let accountsProcessed = 0;
         let accountsUpdated = 0;
         const errors = [];
 
-        // ✅ CORRIGIDO: Buscar TODAS as contas de uma vez (limite razoável)
-        console.log(`📖 Buscando contas...`);
-        const allAccounts = await base44.asServiceRole.entities.Account.list(null, 1000);
+        // ✅ SUPER SIMPLES: Buscar contas sem parâmetros complexos
+        console.log(`📖 Buscando todas as contas...`);
+        const allAccounts = await base44.asServiceRole.entities.Account.list();
         
-        console.log(`📊 Total de contas encontradas: ${allAccounts.length}`);
+        console.log(`📊 Total: ${allAccounts.length} contas`);
 
-        // ✅ Processar em lotes para evitar sobrecarga
-        const batchSize = 10; // Processa 10 contas por vez
-        
-        for (let i = 0; i < allAccounts.length; i += batchSize) {
-            const batch = allAccounts.slice(i, i + batchSize);
-            console.log(`⚙️ Processando lote ${Math.floor(i/batchSize) + 1}/${Math.ceil(allAccounts.length/batchSize)}`);
-            
-            // Processar contas do lote em paralelo
-            await Promise.all(batch.map(async (account) => {
-                try {
-                    accountsProcessed++;
-                    
-                    // Buscar transações completadas da conta
-                    const accountTransactions = await base44.asServiceRole.entities.Transaction.filter(
-                        { account_id: account.id, status: 'completed' }, 
-                        null, 
-                        10000
-                    );
+        // ✅ PROCESSAR UMA POR VEZ (sem paralelismo)
+        for (const account of allAccounts) {
+            try {
+                console.log(`⚙️ Processando: ${account.name || account.id}`);
+                accountsProcessed++;
+                
+                // Buscar transações da conta
+                const accountTransactions = await base44.asServiceRole.entities.Account.filter(
+                    { account_id: account.id, status: 'completed' }
+                );
 
-                    // Calcular saldo correto
-                    const correctBalance = accountTransactions.reduce((balance, tx) => {
-                        const amount = Number(tx.amount) || 0;
-                        return tx.type === 'income' ? balance + amount : balance - amount;
-                    }, 0);
+                console.log(`  📋 ${accountTransactions.length} transações encontradas`);
 
-                    const currentBalance = Number(account.balance) || 0;
-
-                    // Atualizar apenas se diferente
-                    if (Math.abs(currentBalance - correctBalance) > 0.01) {
-                        console.log(`⚠️ Corrigindo conta ${account.name || account.id}: R$ ${currentBalance.toFixed(2)} → R$ ${correctBalance.toFixed(2)}`);
-                        
-                        await base44.asServiceRole.entities.Account.update(account.id, {
-                            balance: parseFloat(correctBalance.toFixed(2))
-                        });
-                        
-                        accountsUpdated++;
+                // Calcular saldo correto
+                let correctBalance = 0;
+                for (const tx of accountTransactions) {
+                    const amount = parseFloat(tx.amount) || 0;
+                    if (tx.type === 'income') {
+                        correctBalance += amount;
+                    } else if (tx.type === 'expense') {
+                        correctBalance -= amount;
                     }
-                } catch (error) {
-                    const errorMessage = `Erro na conta ${account.id}: ${error.message}`;
-                    console.error(`❌ ${errorMessage}`);
-                    errors.push(errorMessage);
                 }
-            }));
+
+                const currentBalance = parseFloat(account.balance) || 0;
+
+                console.log(`  💰 Saldo atual: R$ ${currentBalance.toFixed(2)}`);
+                console.log(`  💰 Saldo correto: R$ ${correctBalance.toFixed(2)}`);
+
+                // Atualizar se diferente (tolerância de 1 centavo)
+                if (Math.abs(currentBalance - correctBalance) > 0.01) {
+                    console.log(`  ✏️ ATUALIZANDO...`);
+                    
+                    await base44.asServiceRole.entities.Account.update(account.id, {
+                        balance: parseFloat(correctBalance.toFixed(2))
+                    });
+                    
+                    accountsUpdated++;
+                    console.log(`  ✅ Conta atualizada!`);
+                } else {
+                    console.log(`  ✅ Saldo já correto, nada a fazer`);
+                }
+
+            } catch (error) {
+                const errorMessage = `Erro na conta ${account.id}: ${error.message}`;
+                console.error(`  ❌ ${errorMessage}`);
+                errors.push(errorMessage);
+            }
         }
 
-        console.log(`✅ Concluído! ${accountsProcessed} processadas, ${accountsUpdated} corrigidas.`);
+        console.log(`\n✅ CONCLUÍDO!`);
+        console.log(`📊 Processadas: ${accountsProcessed}`);
+        console.log(`✅ Corrigidas: ${accountsUpdated}`);
+        console.log(`❌ Erros: ${errors.length}`);
 
         return Response.json({
             success: true,
-            message: `✅ Recálculo concluído com sucesso!`,
+            message: `Recálculo concluído!`,
             accountsProcessed,
             accountsUpdated,
-            errors: errors.length > 0 ? errors.slice(0, 10) : undefined, // Limitar erros retornados
+            errors: errors.length > 0 ? errors : undefined
         });
 
     } catch (error) {
-        console.error(`❌ Erro fatal:`, error);
+        console.error(`❌ ERRO FATAL:`, error.message);
+        console.error(`Stack:`, error.stack);
+        
         return Response.json({ 
             success: false,
             error: error.message,
