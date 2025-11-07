@@ -28,8 +28,8 @@ Deno.serve(async (req) => {
                 console.log(`⚙️ Processando: ${account.name || account.id}`);
                 accountsProcessed++;
                 
-                // Buscar transações da conta
-                const accountTransactions = await base44.asServiceRole.entities.Account.filter(
+                // ✅ CORRIGIDO: Buscar Transaction, não Account
+                const accountTransactions = await base44.asServiceRole.entities.Transaction.filter(
                     { account_id: account.id, status: 'completed' }
                 );
 
