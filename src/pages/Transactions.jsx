@@ -65,10 +65,21 @@ export default function TransactionsPage() {
     type: "expense",
     category_id: "",
     account_id: "",
-    date: getBrazilDate(), // ✅ USAR FUNÇÃO CORRIGIDA
+    date: getBrazilDate(), // ✅ Data inicial
     status: "completed",
     notes: ""
   });
+
+  // ✅ NOVO: Atualizar data quando abre formulário para NOVA transação
+  useEffect(() => {
+    if (showForm && !editingTransaction) {
+      console.log("📅 Atualizando data do formulário para:", getBrazilDate());
+      setFormData(prev => ({
+        ...prev,
+        date: getBrazilDate() // ✅ Sempre pegar data atual do Brasil
+      }));
+    }
+  }, [showForm, editingTransaction]);
 
   // ✅ NOVO: Função para recalcular e atualizar o saldo de uma conta
   const updateAccountBalance = async (accountId) => {
@@ -140,9 +151,16 @@ export default function TransactionsPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // ✅ GARANTIR que a data seja sempre a do Brasil se for nova transação
+    const finalDate = editingTransaction ? formData.date : getBrazilDate();
+    
+    console.log("📝 Criando transação com data:", finalDate);
+    
     const data = {
       ...formData,
-      amount: parseFloat(formData.amount)
+      amount: parseFloat(formData.amount),
+      date: finalDate // ✅ Usar data garantida
     };
 
     let oldAccountId = null;
@@ -168,7 +186,7 @@ export default function TransactionsPage() {
       type: "expense",
       category_id: "",
       account_id: "",
-      date: getBrazilDate(), // ✅ USAR FUNÇÃO CORRIGIDA
+      date: getBrazilDate(), // ✅ Resetar com data do Brasil
       status: "completed",
       notes: ""
     });
