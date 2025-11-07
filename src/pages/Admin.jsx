@@ -35,7 +35,7 @@ const TabLoading = () => (
 export default function Admin() {
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState("dashboard");
-  const [isFixingSubscriptions, setIsFixingSubscriptions] = useState(false); // ✅ NOVO
+  const [isFixingSubscriptions, setIsFixingSubscriptions] = useState(false);
 
   React.useEffect(() => {
     checkAdmin();
@@ -75,7 +75,7 @@ export default function Admin() {
     }
   };
 
-  // ✅ NOVA FUNÇÃO: Corrigir assinaturas de todos os usuários
+  // ✅ CORRIGIDO: Usar base44.functions.invoke ao invés de import dinâmico
   const handleFixSubscriptions = async () => {
     if (!confirm("🔧 CORRIGIR STATUS DE ASSINATURAS\n\nEsta ação irá:\n\n1. Verificar TODOS os usuários do sistema\n2. Recalcular se a assinatura está ativa baseado na data de vencimento\n3. Atualizar o status automaticamente\n\n⚠️ Esta operação é segura e reversível.\n\nDeseja continuar?")) {
       return;
@@ -84,19 +84,32 @@ export default function Admin() {
     setIsFixingSubscriptions(true);
 
     try {
-      // Dynamic import
-      const { fixUserSubscriptions } = await import("@/functions/fixUserSubscriptions");
-      const response = await fixUserSubscriptions();
+      console.log("🔧 Chamando função fixUserSubscriptions...");
+      
+      const response = await base44.functions.invoke('fixUserSubscriptions', {});
+      
+      console.log("✅ Resposta recebida:", response.data);
 
       if (response.data.success) {
         const stats = response.data.stats;
-        alert(`✅ CORREÇÃO CONCLUÍDA!\n\n📊 Resultado:\n\n✔️ ${stats.fixed} usuários ATIVADOS\n⏰ ${stats.expired} usuários EXPIRADOS\n✅ ${stats.alreadyCorrect} já estavam corretos\n\n📋 Total processado: ${stats.total} usuários\n\n🔄 Recarregue a página para ver as mudanças.`);
+        
+        let message = `✅ CORREÇÃO CONCLUÍDA!\n\n📊 Resultado:\n\n✔️ ${stats.fixed} usuários ATIVADOS\n⏰ ${stats.expired} usuários EXPIRADOS\n✅ ${stats.alreadyCorrect} já estavam corretos\n\n📋 Total processado: ${stats.total} usuários`;
+        
+        if (stats.errors > 0) {
+          message += `\n\n⚠️ ${stats.errors} erros encontrados`;
+        }
+        
+        message += '\n\n🔄 Peça aos usuários para recarregar a página (Ctrl + F5).';
+        
+        alert(message);
       } else {
         throw new Error(response.data.error || "Erro desconhecido");
       }
     } catch (error) {
-      console.error("Erro ao corrigir assinaturas:", error);
-      alert(`❌ Erro ao corrigir assinaturas:\n\n${error.message}\n\nTente novamente ou verifique os logs.`);
+      console.error("❌ Erro completo:", error);
+      console.error("❌ Response:", error.response);
+      
+      alert(`❌ Erro ao corrigir assinaturas:\n\n${error.message}\n\nVerifique o console para mais detalhes.`);
     } finally {
       setIsFixingSubscriptions(false);
     }
@@ -125,7 +138,7 @@ export default function Admin() {
           </p>
         </div>
 
-        {/* ✅ NOVO: Botões de Ação Rápida */}
+        {/* ✅ Botões de Ação Rápida */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button
             onClick={handleDownloadChecklist}
