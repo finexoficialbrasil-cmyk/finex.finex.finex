@@ -134,7 +134,7 @@ const navigationItems = [
 // ✅ NOVO: Componente interno que tem acesso ao contexto da Sidebar
 function LayoutContent({ children }) {
   const location = useLocation();
-  const { setOpenMobile } = useSidebar(); // ✅ Hook para controlar sidebar mobile
+  const { setOpenMobile, setOpen } = useSidebar(); // ✅ Adicionar setOpen também
   const [user, setUser] = React.useState(null);
   const [userPlan, setUserPlan] = React.useState(null);
   const [hoveredItem, setHoveredItem] = React.useState(null);
@@ -159,6 +159,14 @@ function LayoutContent({ children }) {
   React.useEffect(() => {
     loadUserAndSettings();
   }, []);
+
+  // ✅ NOVO: Fechar sidebar automaticamente quando a rota mudar (mobile)
+  React.useEffect(() => {
+    if (window.innerWidth < 768) {
+      setOpenMobile(false);
+      setOpen(false);
+    }
+  }, [location.pathname, setOpenMobile, setOpen]);
 
   const loadUserAndSettings = async () => {
     setIsLoadingLayout(true);
@@ -393,11 +401,12 @@ function LayoutContent({ children }) {
 
   const menuItems = getFilteredMenuItems();
 
-  // ✅ NOVA FUNÇÃO: Fechar sidebar ao clicar no link (mobile)
+  // ✅ MELHORADO: Fechar sidebar ao clicar no link (mobile)
   const handleMenuItemClick = () => {
     // Fechar sidebar no mobile
     if (window.innerWidth < 768) {
       setOpenMobile(false);
+      setOpen(false);
     }
   };
 
