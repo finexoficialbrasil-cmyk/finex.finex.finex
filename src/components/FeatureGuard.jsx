@@ -9,34 +9,26 @@ import { Badge } from "@/components/ui/badge";
 import { Crown, Lock, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
 
-// ✅ NOVA FUNÇÃO: Verificar se assinatura está ativa SEM conversão de timezone
+// ✅ FUNÇÃO CORRIGIDA: Verificar se assinatura está ativa
 const isSubscriptionActive = (user) => {
   if (!user) return false;
   if (user.role === 'admin') return true;
-  if (user.subscription_status !== 'active') return false;
-  if (!user.subscription_end_date) return false;
   
-  const [year, month, day] = user.subscription_end_date.split('-').map(Number);
-  const endDate = new Date(year, month - 1, day);
+  if (user.subscription_status === 'active' && user.subscription_end_date) {
+    const [year, month, day] = user.subscription_end_date.split('-').map(Number);
+    const endDate = new Date(year, month - 1, day);
+    
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    return endDate >= today;
+  }
   
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  
-  const isActive = endDate >= today;
-  
-  console.log(`🔍 FeatureGuard - Verificação:`, {
-    user: user.email,
-    endDateString: user.subscription_end_date,
-    endDate: endDate.toLocaleDateString('pt-BR'),
-    today: today.toLocaleDateString('pt-BR'),
-    isActive
-  });
-  
-  return isActive;
+  return false;
 };
 
 export default function FeatureGuard({ children, pageName, featureName, featureLabel }) {
-  const [hasAccess, setHasAccess] = useState(true); // ✅ Otimista
+  const [hasAccess, setHasAccess] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPlan, setCurrentPlan] = useState(null);
 
@@ -48,14 +40,12 @@ export default function FeatureGuard({ children, pageName, featureName, featureL
     try {
       const user = await User.me();
       
-      // Admin sempre tem acesso
       if (user.role === 'admin') {
         setHasAccess(true);
         setIsLoading(false);
         return;
       }
 
-      // ✅ USAR NOVA FUNÇÃO para verificar se está ativo
       const isActive = isSubscriptionActive(user);
       
       if (!isActive) {
@@ -64,7 +54,6 @@ export default function FeatureGuard({ children, pageName, featureName, featureL
         return;
       }
 
-      // Se tem plano ativo, verificar permissões de página
       if (user.subscription_plan) {
         const plans = await SystemPlan.list();
         const plan = plans.find(p => p.plan_type === user.subscription_plan);
@@ -72,17 +61,20 @@ export default function FeatureGuard({ children, pageName, featureName, featureL
         if (plan) {
           setCurrentPlan(plan);
           
-          // Se está verificando por página
           if (pageName) {
             const hasPageAccess = plan.allowed_pages?.includes(pageName) || 
                                  ['Dashboard', 'Profile', 'Plans'].includes(pageName);
+            
+            console.log(`✅ FeatureGuard (${pageName}):`, {
+              email: user.email,
+              plan: plan.name,
+              hasAccess: hasPageAccess
+            });
+            
             setHasAccess(hasPageAccess);
-          }
-          // Se está verificando por feature
-          else if (featureName) {
+          } else if (featureName) {
             setHasAccess(plan[featureName] === true);
-          }
-          else {
+          } else {
             setHasAccess(true);
           }
         } else {
@@ -92,14 +84,19 @@ export default function FeatureGuard({ children, pageName, featureName, featureL
         setHasAccess(false);
       }
     } catch (error) {
-      console.error("Erro ao verificar acesso:", error);
-      setHasAccess(true); // ✅ Em caso de erro, liberar
+      console.error("❌ Erro FeatureGuard:", error);
+      setHasAccess(true);
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (!hasAccess && !isLoading) {
+  // ✅ NÃO BLOQUEAR ENQUANTO CARREGA
+  if (isLoading) {
+    return children;
+  }
+
+  if (!hasAccess) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#0a0a0f] via-[#1a1a2e] to-[#0a0a0f] flex items-center justify-center p-4">
         <motion.div
