@@ -7,7 +7,7 @@ import { base44 } from "@/api/base44Client";
 import { Transaction, Bill, Account, Category, SystemCategory } from "@/entities/all";
 import { Mic, MicOff, Sparkles, Loader2, Check, X, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 
 export default function VoiceAssistant({ onSuccess }) {
   const [isListening, setIsListening] = useState(false);
@@ -535,6 +535,14 @@ Extrair: action, type, amount, description, date, category_id`,
     }
   };
 
+  // ✅ NOVA FUNÇÃO: Formatar data sem conversão de timezone
+  const formatDateWithoutTimezone = (dateString) => {
+    if (!dateString) return '-';
+    // Split "2025-11-07" → ["2025", "11", "07"]
+    const [year, month, day] = dateString.split('-');
+    return `${day}/${month}/${year}`;
+  };
+
   return (
     <div className="fixed bottom-6 right-6 z-50">
       <AnimatePresence>
@@ -622,7 +630,7 @@ Extrair: action, type, amount, description, date, category_id`,
 
                       <div className="flex justify-between items-center pb-2 border-b border-purple-700/30">
                         <span className="text-purple-300">Data:</span>
-                        <span className="text-white">{format(new Date(result.data.date), "dd/MM/yyyy")}</span>
+                        <span className="text-white">{formatDateWithoutTimezone(result.data.date)}</span>
                       </div>
 
                       <div className="flex justify-between items-center pb-2 border-b border-purple-700/30">
@@ -684,7 +692,7 @@ Extrair: action, type, amount, description, date, category_id`,
 
                       <div className="flex justify-between items-center pb-2 border-b border-purple-700/30">
                         <span className="text-purple-300">Vencimento:</span>
-                        <span className="text-white">{format(new Date(result.data.due_date), "dd/MM/yyyy")}</span>
+                        <span className="text-white">{formatDateWithoutTimezone(result.data.due_date)}</span>
                       </div>
 
                       <div className="flex justify-between items-center pb-2">
