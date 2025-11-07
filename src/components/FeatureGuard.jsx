@@ -9,11 +9,23 @@ import { Badge } from "@/components/ui/badge";
 import { Crown, Lock, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
 
-// ✅ FUNÇÃO CORRIGIDA: Verificar se assinatura está ativa
-const isSubscriptionActive = (user) => {
+// ✅ FUNÇÃO ATUALIZADA: Verificar TRIAL ou ASSINATURA
+const hasActiveAccess = (user) => {
   if (!user) return false;
   if (user.role === 'admin') return true;
   
+  // ✅ TRIAL ativo = acesso completo
+  if (user.subscription_status === 'trial' && user.trial_ends_at) {
+    const [year, month, day] = user.trial_ends_at.split('-').map(Number);
+    const trialEnd = new Date(year, month - 1, day);
+    
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    return trialEnd >= today;
+  }
+  
+  // ✅ Assinatura paga ativa
   if (user.subscription_status === 'active' && user.subscription_end_date) {
     const [year, month, day] = user.subscription_end_date.split('-').map(Number);
     const endDate = new Date(year, month - 1, day);
@@ -46,10 +58,17 @@ export default function FeatureGuard({ children, pageName, featureName, featureL
         return;
       }
 
-      const isActive = isSubscriptionActive(user);
+      const isActive = hasActiveAccess(user);
       
       if (!isActive) {
         setHasAccess(false);
+        setIsLoading(false);
+        return;
+      }
+
+      // ✅ TRIAL = acesso total
+      if (user.subscription_status === 'trial') {
+        setHasAccess(true);
         setIsLoading(false);
         return;
       }
@@ -64,13 +83,6 @@ export default function FeatureGuard({ children, pageName, featureName, featureL
           if (pageName) {
             const hasPageAccess = plan.allowed_pages?.includes(pageName) || 
                                  ['Dashboard', 'Profile', 'Plans'].includes(pageName);
-            
-            console.log(`✅ FeatureGuard (${pageName}):`, {
-              email: user.email,
-              plan: plan.name,
-              hasAccess: hasPageAccess
-            });
-            
             setHasAccess(hasPageAccess);
           } else if (featureName) {
             setHasAccess(plan[featureName] === true);
@@ -91,7 +103,6 @@ export default function FeatureGuard({ children, pageName, featureName, featureL
     }
   };
 
-  // ✅ NÃO BLOQUEAR ENQUANTO CARREGA
   if (isLoading) {
     return children;
   }

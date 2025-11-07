@@ -7,12 +7,23 @@ import { Button } from "@/components/ui/button";
 import { Crown, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
 
-// ✅ FUNÇÃO CORRIGIDA: Verificar se assinatura está ativa
-const isSubscriptionActive = (user) => {
+// ✅ FUNÇÃO ATUALIZADA: Verificar TRIAL ou ASSINATURA
+const hasActiveAccess = (user) => {
   if (!user) return false;
-  if (user.role === 'admin') return true; // Admin sempre tem acesso
+  if (user.role === 'admin') return true;
   
-  // ✅ MUDANÇA CRÍTICA: Considerar "active" E verificar data
+  // ✅ VERIFICAR TRIAL (3 dias grátis)
+  if (user.subscription_status === 'trial' && user.trial_ends_at) {
+    const [year, month, day] = user.trial_ends_at.split('-').map(Number);
+    const trialEnd = new Date(year, month - 1, day);
+    
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    return trialEnd >= today;
+  }
+  
+  // ✅ VERIFICAR ASSINATURA PAGA
   if (user.subscription_status === 'active' && user.subscription_end_date) {
     const [year, month, day] = user.subscription_end_date.split('-').map(Number);
     const endDate = new Date(year, month - 1, day);
@@ -44,15 +55,7 @@ export default function SubscriptionGuard({ children, requireActive = false }) {
         return;
       }
 
-      const isActive = isSubscriptionActive(user);
-      
-      console.log(`✅ SubscriptionGuard:`, {
-        email: user.email,
-        status: user.subscription_status,
-        endDate: user.subscription_end_date,
-        hasAccess: isActive
-      });
-      
+      const isActive = hasActiveAccess(user);
       setHasAccess(isActive);
     } catch (error) {
       console.error("❌ Erro SubscriptionGuard:", error);
@@ -62,7 +65,6 @@ export default function SubscriptionGuard({ children, requireActive = false }) {
     }
   };
 
-  // ✅ NÃO BLOQUEAR ENQUANTO CARREGA
   if (isLoading) {
     return children;
   }
@@ -81,17 +83,17 @@ export default function SubscriptionGuard({ children, requireActive = false }) {
                 <AlertCircle className="w-12 h-12 text-white" />
               </div>
               <CardTitle className="text-3xl bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
-                Assinatura Necessária
+                Período de Teste Expirado
               </CardTitle>
             </CardHeader>
             
             <CardContent className="p-6 md:p-8 space-y-6">
               <div className="text-center space-y-4">
                 <p className="text-purple-300 text-lg">
-                  Você precisa de uma assinatura ativa para acessar esta funcionalidade
+                  Seu período de teste de 3 dias terminou! 🎉
                 </p>
                 <p className="text-purple-400">
-                  Escolha um plano e desbloqueie todo o potencial do FINEX!
+                  Para continuar usando todas as funcionalidades, escolha um plano agora!
                 </p>
               </div>
 
