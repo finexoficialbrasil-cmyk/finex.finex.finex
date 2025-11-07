@@ -1,98 +1,92 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.7.1';
 
 Deno.serve(async (req) => {
+    const base44 = createClientFromRequest(req);
+    
     try {
-        const base44 = createClientFromRequest(req);
+        // ✅ Autenticar usuário
         const user = await base44.auth.me();
 
-        // ✅ Apenas admin pode executar
+        // ✅ Verificar se é admin
         if (!user || user.role !== 'admin') {
-            return Response.json({ error: 'Unauthorized - Admin only' }, { status: 401 });
+            console.log("❌ Acesso negado - usuário não é admin");
+            return Response.json({ 
+                success: false,
+                error: 'Unauthorized - Admin only' 
+            }, { status: 401 });
         }
 
         console.log("🔧 Iniciando correção de assinaturas...");
         console.log("👤 Executado por:", user.email);
 
-        // ✅ Buscar todos os usuários com service role
+        // ✅ Buscar todos os usuários
         const allUsers = await base44.asServiceRole.entities.User.list();
-        console.log(`👥 Total de usuários encontrados: ${allUsers.length}`);
+        console.log(`👥 Total de usuários: ${allUsers.length}`);
 
         let fixed = 0;
         let alreadyCorrect = 0;
         let expired = 0;
         const errors = [];
-        const updates = [];
 
+        // ✅ Processar cada usuário
         for (const usr of allUsers) {
             try {
                 // Pular admins
                 if (usr.role === 'admin') {
-                    console.log(`⏭️ Pulando admin: ${usr.email}`);
                     continue;
                 }
 
-                // Se não tem plano ou data de vencimento, pular
+                // Pular se não tem dados de assinatura
                 if (!usr.subscription_plan || !usr.subscription_end_date) {
-                    console.log(`⏭️ ${usr.email} - sem plano/data (${usr.subscription_plan}, ${usr.subscription_end_date})`);
                     continue;
                 }
 
                 // ✅ Validar formato da data
-                if (!usr.subscription_end_date.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                    console.warn(`⚠️ ${usr.email} - formato de data inválido: ${usr.subscription_end_date}`);
-                    errors.push({ email: usr.email, error: 'Data em formato inválido' });
+                const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+                if (!dateRegex.test(usr.subscription_end_date)) {
+                    console.warn(`⚠️ Data inválida: ${usr.email}`);
+                    errors.push({ email: usr.email, error: 'Formato de data inválido' });
                     continue;
                 }
 
-                // ✅ Parse da data SEM timezone
-                const [year, month, day] = usr.subscription_end_date.split('-').map(Number);
-                const endDate = new Date(year, month - 1, day);
+                // ✅ Calcular se está ativo (SEM timezone)
+                const parts = usr.subscription_end_date.split('-');
+                const endYear = parseInt(parts[0]);
+                const endMonth = parseInt(parts[1]) - 1;
+                const endDay = parseInt(parts[2]);
+                const endDate = new Date(endYear, endMonth, endDay);
                 
                 const now = new Date();
                 const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
                 
-                const isActive = endDate >= today;
+                const shouldBeActive = endDate >= today;
                 const currentStatus = usr.subscription_status;
 
-                console.log(`📊 ${usr.email}:`, {
-                    plan: usr.subscription_plan,
-                    endDate: usr.subscription_end_date,
-                    endDateFormatted: endDate.toLocaleDateString('pt-BR'),
-                    today: today.toLocaleDateString('pt-BR'),
-                    shouldBeActive: isActive,
-                    currentStatus: currentStatus
-                });
-
-                // ✅ Corrigir se necessário - ATUALIZAR APENAS O STATUS
-                if (isActive && currentStatus !== 'active') {
-                    console.log(`🔧 ATIVANDO: ${usr.email}`);
+                // ✅ Atualizar apenas se necessário
+                if (shouldBeActive && currentStatus !== 'active') {
+                    console.log(`🔧 Ativando: ${usr.email}`);
                     
-                    // ✅ IMPORTANTE: Atualizar APENAS o campo subscription_status
                     await base44.asServiceRole.entities.User.update(usr.id, {
                         subscription_status: 'active'
                     });
                     
                     fixed++;
-                    updates.push(`✅ ${usr.email} - ATIVADO`);
                     
-                } else if (!isActive && currentStatus === 'active') {
-                    console.log(`⏰ EXPIRANDO: ${usr.email}`);
+                } else if (!shouldBeActive && currentStatus === 'active') {
+                    console.log(`⏰ Expirando: ${usr.email}`);
                     
                     await base44.asServiceRole.entities.User.update(usr.id, {
                         subscription_status: 'expired'
                     });
                     
                     expired++;
-                    updates.push(`⏰ ${usr.email} - EXPIRADO`);
                     
                 } else {
-                    console.log(`✅ ${usr.email} - já está correto (${currentStatus})`);
                     alreadyCorrect++;
                 }
 
             } catch (userError) {
-                console.error(`❌ Erro ao processar ${usr.email}:`, userError);
-                console.error("Stack:", userError.stack);
+                console.error(`❌ Erro em ${usr.email}:`, userError.message);
                 errors.push({
                     email: usr.email,
                     error: userError.message
@@ -100,45 +94,32 @@ Deno.serve(async (req) => {
             }
         }
 
-        console.log("\n✅ ========== CORREÇÃO COMPLETA ==========");
-        console.log(`✔️ ${fixed} usuários ATIVADOS`);
-        console.log(`⏰ ${expired} usuários EXPIRADOS`);
-        console.log(`✅ ${alreadyCorrect} já estavam corretos`);
-        console.log(`❌ ${errors.length} erros`);
-        console.log("========================================\n");
-
-        if (updates.length > 0) {
-            console.log("📋 MUDANÇAS REALIZADAS:");
-            updates.forEach(u => console.log(u));
-        }
-
-        if (errors.length > 0) {
-            console.log("\n❌ ERROS:");
-            errors.forEach(e => console.log(`  - ${e.email}: ${e.error}`));
-        }
+        console.log("✅ Correção completa!");
+        console.log(`  ✔️ ${fixed} ativados`);
+        console.log(`  ⏰ ${expired} expirados`);
+        console.log(`  ✅ ${alreadyCorrect} corretos`);
+        console.log(`  ❌ ${errors.length} erros`);
 
         return Response.json({
             success: true,
-            message: "Correção de assinaturas concluída!",
             stats: {
                 total: allUsers.length,
-                fixed,
-                expired,
-                alreadyCorrect,
+                fixed: fixed,
+                expired: expired,
+                alreadyCorrect: alreadyCorrect,
                 errors: errors.length
             },
-            updates: updates.length > 0 ? updates : undefined,
-            errorDetails: errors.length > 0 ? errors : undefined
+            errorDetails: errors.length > 0 ? errors : null
         });
 
     } catch (error) {
-        console.error("❌ ERRO GERAL ao corrigir assinaturas:", error);
-        console.error("Stack completo:", error.stack);
+        console.error("❌ ERRO GERAL:", error);
+        console.error("Stack:", error.stack);
         
         return Response.json({ 
             success: false,
-            error: error.message,
-            details: error.stack
+            error: error.message || 'Erro desconhecido',
+            stack: error.stack
         }, { status: 500 });
     }
 });
