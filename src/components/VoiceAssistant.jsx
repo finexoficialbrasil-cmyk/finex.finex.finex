@@ -281,8 +281,12 @@ Extrair: action, type, amount, description, date, category_id`,
         });
       }
 
-      // ✅ Data padrão = HOJE
-      const todayDate = new Date().toISOString().split('T')[0];
+      // ✅ CORRIGIDO: Usar data local do usuário (não UTC)
+      const today = new Date();
+      const todayDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      
+      console.log(`📅 Data local correta: ${todayDate}`);
+      
       if (!aiResponse.date) aiResponse.date = todayDate;
 
       // ✅ Categoria
@@ -492,13 +496,17 @@ Extrair: action, type, amount, description, date, category_id`,
       if (firstCat) category_id = firstCat.id;
     }
 
+    // ✅ CORRIGIDO: Usar data local
+    const today = new Date();
+    const todayDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
     return {
       confidence: 'high',
       action,
       type,
       amount,
       description,
-      date: new Date().toISOString().split('T')[0],
+      date: todayDate,
       category_id
     };
   };
@@ -727,7 +735,7 @@ Extrair: action, type, amount, description, date, category_id`,
           } neon-glow`}
         >
           {isProcessing ? (
-            <Loader2 className="w-8 h-8 animate-spin" />
+            <Loader2 className="w-8 h-8" />
           ) : isListening ? (
             <MicOff className="w-8 h-8" />
           ) : (
