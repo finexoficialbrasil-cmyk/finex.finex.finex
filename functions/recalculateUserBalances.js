@@ -4,7 +4,7 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     
     try {
-        // ✅ Verificar usuário autenticado
+        // ✅ Verificar usuário autenticado PRIMEIRO
         console.log("1️⃣ Verificando autenticação...");
         const user = await base44.auth.me();
         
@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
         let processadas = 0;
         let corrigidas = 0;
 
-        // ✅ Buscar apenas MINHAS contas
+        // ✅ CORRIGIDO: Buscar contas do usuário com permissões normais
         console.log("2️⃣ Buscando suas contas...");
         const accounts = await base44.entities.Account.list();
         console.log(`✅ ${accounts.length} contas encontradas`);
@@ -35,17 +35,17 @@ Deno.serve(async (req) => {
         // ✅ Processar cada conta
         for (const conta of accounts) {
             try {
-                console.log(`\n3️⃣ Processando: ${conta.name}`);
+                console.log(`\n3️⃣ Processando: ${conta.name} (${conta.id})`);
                 processadas++;
                 
-                // Buscar transações completadas
+                // ✅ Buscar transações completadas (permissões normais)
                 console.log("   📋 Buscando transações...");
                 const transactions = await base44.entities.Transaction.filter({
                     account_id: conta.id,
                     status: 'completed'
                 });
                 
-                console.log(`   ✅ ${transactions.length} transações`);
+                console.log(`   ✅ ${transactions.length} transações encontradas`);
 
                 // Calcular saldo correto
                 let saldoCorreto = 0;
@@ -70,20 +70,23 @@ Deno.serve(async (req) => {
                 // Atualizar se diferente
                 const diferenca = Math.abs(saldoAtual - saldoCorreto);
                 if (diferenca > 0.01) {
-                    console.log(`   ✏️ CORRIGINDO...`);
+                    console.log(`   ✏️ CORRIGINDO com service role...`);
                     
-                    await base44.entities.Account.update(conta.id, {
+                    // ✅ CORRIGIDO: Usar asServiceRole para atualizar
+                    await base44.asServiceRole.entities.Account.update(conta.id, {
                         balance: parseFloat(saldoCorreto.toFixed(2))
                     });
                     
                     corrigidas++;
-                    console.log(`   ✅ Corrigido!`);
+                    console.log(`   ✅ Conta atualizada com sucesso!`);
                 } else {
-                    console.log(`   ✅ Já está correto`);
+                    console.log(`   ✅ Saldo já está correto`);
                 }
 
             } catch (erroConta) {
-                console.error(`   ❌ Erro: ${erroConta.message}`);
+                console.error(`   ❌ Erro na conta ${conta.id}:`, erroConta.message);
+                console.error(`   Stack:`, erroConta.stack);
+                // Continuar para próxima conta mesmo com erro
             }
         }
 
@@ -93,13 +96,15 @@ Deno.serve(async (req) => {
 
         return Response.json({
             success: true,
-            message: "Recálculo concluído!",
+            message: corrigidas > 0 
+                ? `${corrigidas} conta(s) corrigida(s) com sucesso!` 
+                : "Todas as contas já estavam corretas",
             accountsProcessed: processadas,
             accountsUpdated: corrigidas
         });
 
     } catch (error) {
-        console.error("💥 ERRO:");
+        console.error("💥 ERRO FATAL:");
         console.error("Mensagem:", error.message);
         console.error("Stack:", error.stack);
         
