@@ -28,6 +28,14 @@ export default function VoiceAssistant({ onSuccess }) {
     preloadData(); // ✅ Carregar dados antecipadamente
   }, []);
 
+  // ✅ NOVA FUNÇÃO: Formatar data sem problema de timezone
+  const formatDateLocal = (dateString) => {
+    if (!dateString) return '';
+    // Assumes dateString is in 'YYYY-MM-DD' format, as it comes from toISOString().split('T')[0]
+    const [year, month, day] = dateString.split('-');
+    return `${day}/${month}/${year}`;
+  };
+
   // ✅ OTIMIZADO: Pré-carregar dados COM LIMITE e retry
   const preloadData = async () => {
     if (isPreloading) return; // Evitar múltiplas chamadas
@@ -600,7 +608,7 @@ Extrair: action, type, amount, description, date, category_id`,
 
                       <div className="flex justify-between items-center pb-2 border-b border-purple-700/30">
                         <span className="text-purple-300">Data:</span>
-                        <span className="text-white">{format(new Date(result.data.date), "dd/MM/yyyy")}</span>
+                        <span className="text-white">{formatDateLocal(result.data.date)}</span>
                       </div>
 
                       <div className="flex justify-between items-center pb-2 border-b border-purple-700/30">
@@ -662,7 +670,7 @@ Extrair: action, type, amount, description, date, category_id`,
 
                       <div className="flex justify-between items-center pb-2 border-b border-purple-700/30">
                         <span className="text-purple-300">Vencimento:</span>
-                        <span className="text-white">{format(new Date(result.data.due_date), "dd/MM/yyyy")}</span>
+                        <span className="text-white">{formatDateLocal(result.data.due_date)}</span>
                       </div>
 
                       <div className="flex justify-between items-center pb-2">
