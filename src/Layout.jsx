@@ -411,9 +411,15 @@ export default function Layout({ children }) {
           background: transparent !important;
         }
 
-        /* ✅ CORRIGIDO NOVAMENTE: Hover com gradiente roxo suave */
+        /* ✅ CORRIGIDO: Remover TODOS os backgrounds padrão */
+        [data-sidebar-menu-button],
+        [data-sidebar-menu-button] * {
+          background: transparent !important;
+        }
+
+        /* ✅ Hover com gradiente roxo - FORÇAR com !important */
         [data-sidebar-menu-button]:hover:not([data-active="true"]) {
-          background: linear-gradient(90deg, rgba(139, 92, 246, 0.2) 0%, rgba(168, 85, 247, 0.1) 100%) !important;
+          background: linear-gradient(90deg, rgba(139, 92, 246, 0.25) 0%, rgba(168, 85, 247, 0.15) 100%) !important;
           border-left: 3px solid #a855f7 !important;
           padding-left: calc(1rem - 3px) !important;
           transition: all 0.3s ease !important;
@@ -421,14 +427,15 @@ export default function Layout({ children }) {
 
         /* ✅ Estado ativo com gradiente mais forte */
         [data-sidebar-menu-button][data-active="true"] {
-          background: linear-gradient(90deg, rgba(147, 51, 234, 0.35) 0%, rgba(168, 85, 247, 0.2) 100%) !important;
+          background: linear-gradient(90deg, rgba(147, 51, 234, 0.4) 0%, rgba(168, 85, 247, 0.25) 100%) !important;
           border-left: 4px solid #a855f7 !important;
           padding-left: calc(1rem - 4px) !important;
           box-shadow: 0 0 20px rgba(168, 85, 247, 0.3) !important;
         }
 
-        /* ✅ IMPORTANTE: Sobrescrever estilos padrão do shadcn */
-        [data-sidebar-menu-button] {
+        /* ✅ GARANTIR que nenhum elemento filho sobrescreva */
+        [data-sidebar-menu-button]:hover:not([data-active="true"]) > *,
+        [data-sidebar-menu-button][data-active="true"] > * {
           background: transparent !important;
         }
 
