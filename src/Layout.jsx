@@ -411,20 +411,25 @@ export default function Layout({ children }) {
           background: transparent !important;
         }
 
-        /* ✅ CORRIGIDO: Hover com gradiente bonito */
-        [data-sidebar-menu-button]:hover {
-          background: linear-gradient(90deg, rgba(139, 92, 246, 0.15) 0%, rgba(126, 34, 206, 0.05) 100%) !important;
+        /* ✅ CORRIGIDO NOVAMENTE: Hover com gradiente roxo suave */
+        [data-sidebar-menu-button]:hover:not([data-active="true"]) {
+          background: linear-gradient(90deg, rgba(139, 92, 246, 0.2) 0%, rgba(168, 85, 247, 0.1) 100%) !important;
           border-left: 3px solid #a855f7 !important;
           padding-left: calc(1rem - 3px) !important;
           transition: all 0.3s ease !important;
         }
 
-        /* ✅ Estado ativo ainda mais bonito */
+        /* ✅ Estado ativo com gradiente mais forte */
         [data-sidebar-menu-button][data-active="true"] {
-          background: linear-gradient(90deg, rgba(147, 51, 234, 0.3) 0%, rgba(126, 34, 206, 0.15) 100%) !important;
+          background: linear-gradient(90deg, rgba(147, 51, 234, 0.35) 0%, rgba(168, 85, 247, 0.2) 100%) !important;
           border-left: 4px solid #a855f7 !important;
           padding-left: calc(1rem - 4px) !important;
           box-shadow: 0 0 20px rgba(168, 85, 247, 0.3) !important;
+        }
+
+        /* ✅ IMPORTANTE: Sobrescrever estilos padrão do shadcn */
+        [data-sidebar-menu-button] {
+          background: transparent !important;
         }
 
         @media (max-width: 768px) {
