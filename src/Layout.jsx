@@ -21,7 +21,7 @@ import {
   Sparkles,
   Crown,
   MessageCircle,
-  Upload // Added Upload icon
+  Upload
 } from "lucide-react";
 import {
   Sidebar,
@@ -35,6 +35,7 @@ import {
   SidebarFooter,
   SidebarProvider,
   SidebarTrigger,
+  useSidebar, // ✅ NOVO: Hook para controlar sidebar
 } from "@/components/ui/sidebar";
 import { User as UserEntity } from "@/entities/User";
 import { motion, AnimatePresence } from "framer-motion";
@@ -130,8 +131,10 @@ const navigationItems = [
   },
 ];
 
-export default function Layout({ children }) {
+// ✅ NOVO: Componente interno que tem acesso ao contexto da Sidebar
+function LayoutContent({ children }) {
   const location = useLocation();
+  const { setOpenMobile } = useSidebar(); // ✅ Hook para controlar sidebar mobile
   const [user, setUser] = React.useState(null);
   const [userPlan, setUserPlan] = React.useState(null);
   const [hoveredItem, setHoveredItem] = React.useState(null);
@@ -390,8 +393,16 @@ export default function Layout({ children }) {
 
   const menuItems = getFilteredMenuItems();
 
+  // ✅ NOVA FUNÇÃO: Fechar sidebar ao clicar no link (mobile)
+  const handleMenuItemClick = () => {
+    // Fechar sidebar no mobile
+    if (window.innerWidth < 768) {
+      setOpenMobile(false);
+    }
+  };
+
   return (
-    <SidebarProvider>
+    <>
       <style>{`
         body {
           background: ${theme === 'light' ? '#f9fafb' : '#0a0a0f'} !important;
@@ -791,6 +802,7 @@ export default function Layout({ children }) {
                           <Link 
                             to={item.url} 
                             className={`sidebar-menu-item ${isActive ? 'active' : ''} flex items-center gap-3 px-4 py-3 rounded-lg`}
+                            onClick={handleMenuItemClick}
                           >
                             <div className={`p-2 rounded-lg bg-gradient-to-br ${item.gradient}`}>
                               <item.icon className="w-5 h-5 text-white" />
@@ -893,6 +905,14 @@ export default function Layout({ children }) {
           </div>
         </main>
       </div>
+    </>
+  );
+}
+
+export default function Layout({ children }) {
+  return (
+    <SidebarProvider>
+      <LayoutContent>{children}</LayoutContent>
     </SidebarProvider>
   );
 }
