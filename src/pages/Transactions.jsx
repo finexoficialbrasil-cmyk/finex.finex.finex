@@ -37,6 +37,15 @@ import { ptBR } from "date-fns/locale";
 import SubscriptionGuard from "../components/SubscriptionGuard";
 import FeatureGuard from "../components/FeatureGuard"; // Added import
 
+// ✅ NOVA FUNÇÃO: Obter data local sem problema de timezone
+const getTodayLocal = () => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState([]);
   const [accounts, setAccounts] = useState([]);
@@ -53,7 +62,7 @@ export default function TransactionsPage() {
     type: "expense",
     category_id: "",
     account_id: "",
-    date: new Date().toISOString().split('T')[0],
+    date: getTodayLocal(), // ✅ CORRIGIDO
     status: "completed",
     notes: ""
   });
@@ -156,7 +165,7 @@ export default function TransactionsPage() {
       type: "expense",
       category_id: "",
       account_id: "",
-      date: new Date().toISOString().split('T')[0],
+      date: getTodayLocal(), // ✅ CORRIGIDO
       status: "completed",
       notes: ""
     });

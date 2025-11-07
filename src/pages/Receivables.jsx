@@ -42,6 +42,15 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { format, differenceInDays, isBefore } from "date-fns";
 
+// ✅ NOVA FUNÇÃO: Obter data local sem problema de timezone
+const getTodayLocal = () => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export default function Receivables() {
   const [bills, setBills] = useState([]);
   const [accounts, setAccounts] = useState([]);
@@ -245,7 +254,7 @@ export default function Receivables() {
       return;
     }
 
-    const paymentDate = new Date().toISOString().split('T')[0];
+    const paymentDate = getTodayLocal(); // ✅ CORRIGIDO
 
     try {
       await Bill.update(bill.id, {
