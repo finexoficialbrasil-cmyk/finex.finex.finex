@@ -131,48 +131,48 @@ const navigationItems = [
   },
 ];
 
-// ✅ NOVA FUNÇÃO: Calcular dias restantes SEM conversão de timezone
+// ✅ NOVA FUNÇÃO: Calcular dias restantes
 const calculateDaysLeft = (endDateString) => {
   if (!endDateString) return 0;
   
-  // Parse manual sem timezone
   const [year, month, day] = endDateString.split('-').map(Number);
-  const endDate = new Date(year, month - 1, day); // Cria data local (sem UTC)
+  const endDate = new Date(year, month - 1, day);
   
-  // Data atual do Brasil (ou fuso horário local, para consistência)
   const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // Zera horas
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   
   const diffTime = endDate - today;
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   
-  console.log(`📅 Cálculo de dias:`, {
-    endDateString,
-    endDate: endDate.toLocaleDateString('pt-BR'),
-    today: today.toLocaleDateString('pt-BR'),
-    diffDays
-  });
-  
   return diffDays;
 };
 
-// ✅ NOVA FUNÇÃO: Verificar se assinatura está ativa
+// ✅ FUNÇÃO CORRIGIDA: Verificar se assinatura está ativa
 const isSubscriptionActive = (user) => {
   if (!user) return false;
-  if (user.role === 'admin') return true; // Admins always have access
-  if (user.subscription_status !== 'active') return false;
-  if (!user.subscription_end_date) return false;
+  if (user.role === 'admin') return true;
   
-  // Parse manual without timezone to avoid issues
-  const [year, month, day] = user.subscription_end_date.split('-').map(Number);
-  const endDate = new Date(year, month - 1, day); // Local date
+  if (user.subscription_status === 'active' && user.subscription_end_date) {
+    const [year, month, day] = user.subscription_end_date.split('-').map(Number);
+    const endDate = new Date(year, month - 1, day);
+    
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    const isActive = endDate >= today;
+    
+    console.log(`🔍 Verificação de assinatura:`, {
+      email: user.email,
+      status: user.subscription_status,
+      endDate: user.subscription_end_date,
+      isActive: isActive
+    });
+    
+    return isActive;
+  }
   
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // Today's date, 00:00:00
-  
-  return endDate >= today; // Subscription is active if end date is today or in the future
+  return false;
 };
-
 
 // ✅ NOVO: Componente interno que tem acesso ao contexto da Sidebar
 function LayoutContent({ children }) {
@@ -184,7 +184,7 @@ function LayoutContent({ children }) {
   const [theme, setTheme] = React.useState("dark");
   const [appName, setAppName] = React.useState("FINEX");
   const [appLogo, setAppLogo] = React.useState("");
-  const [previousPath, setPreviousPath] = React.useState(location.pathname); // ✅ NOVO: Track previous path
+  const [previousPath, setPreviousPath] = React.useState(location.pathname);
   
   const [themeSettings, setThemeSettings] = React.useState({
     particles: true,
@@ -204,7 +204,6 @@ function LayoutContent({ children }) {
     loadUserAndSettings();
   }, []);
 
-  // ✅ MELHORADO: Fechar sidebar apenas quando a ROTA MUDAR (não no mount inicial)
   React.useEffect(() => {
     if (previousPath !== location.pathname && window.innerWidth < 768) {
       console.log("📱 Rota mudou no mobile, fechando sidebar");
@@ -218,7 +217,6 @@ function LayoutContent({ children }) {
     setIsLoadingLayout(true);
     setHasLayoutError(false);
     try {
-      // ✅ OTIMIZADO: Carregar apenas o essencial primeiro
       const userData = await UserEntity.me();
       setUser(userData);
       setTheme(userData.theme || "dark");
@@ -234,10 +232,7 @@ function LayoutContent({ children }) {
         animationSpeed: userData.theme_animation_speed || "normal"
       });
 
-      // ✅ LIBERAR A UI IMEDIATAMENTE
       setIsLoadingLayout(false);
-
-      // ✅ Carregar resto em segundo plano (não bloqueia)
       loadAdditionalDataInBackground(userData);
       
     } catch (error) {
@@ -246,15 +241,12 @@ function LayoutContent({ children }) {
       setAppName("FINEX");
       setAppLogo("");
       document.title = "FINEX - Inteligência Financeira";
-      setIsLoadingLayout(false); // ✅ Mesmo com erro, liberar UI
+      setIsLoadingLayout(false);
     }
   };
 
-  // ✅ NOVO: Carregar dados secundários em segundo plano
   const loadAdditionalDataInBackground = async (userData) => {
     try {
-      // Carregar plano do usuário (se necessário)
-      // ✅ USAR NOVA FUNÇÃO para verificar se tem plano ativo
       if (userData.subscription_plan && userData.role !== 'admin' && isSubscriptionActive(userData)) {
         const { SystemPlan } = await import("@/entities/SystemPlan");
         const plans = await SystemPlan.list();
@@ -262,7 +254,6 @@ function LayoutContent({ children }) {
         setUserPlan(plan);
       }
 
-      // Carregar configurações do sistema
       const { SystemSettings } = await import("@/entities/SystemSettings");
       const allSettings = await SystemSettings.list();
       
@@ -274,14 +265,14 @@ function LayoutContent({ children }) {
         setAppName(appNameSetting.value);
         document.title = `${appNameSetting.value} - Inteligência Financeira`;
       } else {
-        setAppName("FINEX"); // Default if not found
+        setAppName("FINEX");
         document.title = "FINEX - Inteligência Financeira";
       }
       
       if (appLogoSetting && appLogoSetting.value) {
         setAppLogo(appLogoSetting.value);
       } else {
-        setAppLogo(""); // Default if not found
+        setAppLogo("");
       }
 
       if (faviconSetting && faviconSetting.value) {
@@ -305,7 +296,6 @@ function LayoutContent({ children }) {
     console.log("✅ Favicon atualizado:", faviconUrl);
   };
 
-  // ✅ LOADING MAIS RÁPIDO E BONITO
   if (isLoadingLayout) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#0a0a0f] via-[#1a1a2e] to-[#0a0a0f] flex items-center justify-center">
@@ -398,6 +388,7 @@ function LayoutContent({ children }) {
   const getFilteredMenuItems = () => {
     if (!user) return [];
     
+    // ✅ Admin vê tudo + painel admin
     if (user.role === 'admin') {
       return [
         ...navigationItems,
@@ -411,53 +402,21 @@ function LayoutContent({ children }) {
       ];
     }
 
-    // ✅ USAR NOVA FUNÇÃO para verificar se está ativo
-    if (!isSubscriptionActive(user)) {
-      return navigationItems.filter(item => 
-        ["Dashboard", "Perfil", "Assinaturas"].includes(item.title)
-      );
+    // ✅ MUDANÇA CRÍTICA: Se tem status 'active' e data válida, LIBERA TUDO
+    if (isSubscriptionActive(user)) {
+      console.log(`✅ Usuário ${user.email} tem acesso TOTAL - assinatura ativa`);
+      return navigationItems; // ✅ RETORNA TODAS AS PÁGINAS
     }
 
-    if (!userPlan) {
-      // This state means they have an active subscription according to `isSubscriptionActive`,
-      // but `userPlan` data hasn't loaded or plan type didn't match.
-      // So, restrict to base pages as a safe fallback.
-      return navigationItems.filter(item => 
-        ["Dashboard", "Perfil", "Assinaturas"].includes(item.title)
-      );
-    }
-
-    const allowedPages = userPlan.allowed_pages || [];
-    const basePages = ["Dashboard", "Profile", "Plans"];
-
-    return navigationItems.filter(item => {
-      let pageName = item.title;
-      
-      switch(item.title) {
-        case "Consultor IA": pageName = "Consultor"; break;
-        case "Contas a Pagar": pageName = "Payables"; break;
-        case "Contas a Receber": pageName = "Receivables"; break;
-        case "Transações": pageName = "Transactions"; break;
-        case "Importar Dados": pageName = "Import"; break;
-        case "Carteiras": pageName = "Accounts"; break;
-        case "Categorias": pageName = "Categories"; break;
-        case "Metas Financeiras": pageName = "Goals"; break;
-        case "Extrato Financeiro": pageName = "Statement"; break;
-        case "Tutoriais": pageName = "Tutorials"; break;
-        case "Perfil": pageName = "Profile"; break;
-        case "Assinaturas": pageName = "Plans"; break;
-        case "Dashboard": pageName = "Dashboard"; break;
-        case "Baixar App": pageName = "DownloadApp"; break;
-        default: pageName = item.title.replace(/\s/g, '');
-      }
-      
-      return allowedPages.includes(pageName) || basePages.includes(pageName);
-    });
+    // ✅ Se não tem assinatura ativa, apenas páginas básicas
+    console.log(`⚠️ Usuário ${user.email} SEM assinatura ativa - acesso limitado`);
+    return navigationItems.filter(item => 
+      ["Dashboard", "Perfil", "Assinaturas"].includes(item.title)
+    );
   };
 
   const menuItems = getFilteredMenuItems();
 
-  // ✅ SIMPLIFICADO: Apenas logar o clique (o useEffect cuida do fechamento)
   const handleMenuItemClick = () => {
     console.log("🔗 Item do menu clicado");
   };
@@ -552,7 +511,6 @@ function LayoutContent({ children }) {
 
         [role="option"], [data-radix-select-item] {
           color: ${theme === 'light' ? '#1f2937' : '#ffffff'} !important;
-          background: transparent !important;
           font-size: 14px !important;
           font-weight: 500 !important;
           padding: 12px 16px !important;
