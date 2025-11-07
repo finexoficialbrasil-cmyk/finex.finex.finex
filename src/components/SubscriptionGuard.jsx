@@ -7,35 +7,27 @@ import { Button } from "@/components/ui/button";
 import { Crown, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
 
-// ✅ NOVA FUNÇÃO: Verificar se assinatura está ativa SEM conversão de timezone
+// ✅ FUNÇÃO CORRIGIDA: Verificar se assinatura está ativa
 const isSubscriptionActive = (user) => {
   if (!user) return false;
   if (user.role === 'admin') return true; // Admin sempre tem acesso
-  if (user.subscription_status !== 'active') return false;
-  if (!user.subscription_end_date) return false;
   
-  // Parse manual SEM timezone
-  const [year, month, day] = user.subscription_end_date.split('-').map(Number);
-  const endDate = new Date(year, month - 1, day);
+  // ✅ MUDANÇA CRÍTICA: Considerar "active" E verificar data
+  if (user.subscription_status === 'active' && user.subscription_end_date) {
+    const [year, month, day] = user.subscription_end_date.split('-').map(Number);
+    const endDate = new Date(year, month - 1, day);
+    
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    return endDate >= today;
+  }
   
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  
-  const isActive = endDate >= today;
-  
-  console.log(`🔍 SubscriptionGuard - Verificação:`, {
-    user: user.email,
-    endDateString: user.subscription_end_date,
-    endDate: endDate.toLocaleDateString('pt-BR'),
-    today: today.toLocaleDateString('pt-BR'),
-    isActive
-  });
-  
-  return isActive;
+  return false;
 };
 
 export default function SubscriptionGuard({ children, requireActive = false }) {
-  const [hasAccess, setHasAccess] = useState(true); // ✅ Começar com true (otimista)
+  const [hasAccess, setHasAccess] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -46,25 +38,36 @@ export default function SubscriptionGuard({ children, requireActive = false }) {
     try {
       const user = await User.me();
       
-      // Se não requer assinatura ativa, liberar
       if (!requireActive) {
         setHasAccess(true);
         setIsLoading(false);
         return;
       }
 
-      // ✅ USAR NOVA FUNÇÃO para verificar se está ativo
       const isActive = isSubscriptionActive(user);
+      
+      console.log(`✅ SubscriptionGuard:`, {
+        email: user.email,
+        status: user.subscription_status,
+        endDate: user.subscription_end_date,
+        hasAccess: isActive
+      });
+      
       setHasAccess(isActive);
     } catch (error) {
-      console.error("Erro ao verificar assinatura:", error);
-      setHasAccess(true); // ✅ Em caso de erro, liberar (melhor UX)
+      console.error("❌ Erro SubscriptionGuard:", error);
+      setHasAccess(true);
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (!hasAccess && !isLoading) {
+  // ✅ NÃO BLOQUEAR ENQUANTO CARREGA
+  if (isLoading) {
+    return children;
+  }
+
+  if (!hasAccess) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#0a0a0f] via-[#1a1a2e] to-[#0a0a0f] flex items-center justify-center p-4">
         <motion.div
@@ -112,6 +115,5 @@ export default function SubscriptionGuard({ children, requireActive = false }) {
     );
   }
 
-  // ✅ Mostra conteúdo imediatamente (mesmo se ainda carregando)
   return children;
 }
