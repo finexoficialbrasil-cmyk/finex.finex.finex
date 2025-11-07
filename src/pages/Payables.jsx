@@ -493,7 +493,8 @@ export default function Payables() {
                   <div className="p-3 rounded-xl bg-yellow-600/20">
                     <Clock className="w-6 h-6 text-yellow-400" />
                   </div>
-                </CardContent>
+                </div>
+              </CardContent>
             </Card>
 
             <Card className="glass-card border-0 neon-glow">
