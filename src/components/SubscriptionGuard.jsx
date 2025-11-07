@@ -7,6 +7,33 @@ import { Button } from "@/components/ui/button";
 import { Crown, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
 
+// ✅ NOVA FUNÇÃO: Verificar se assinatura está ativa SEM conversão de timezone
+const isSubscriptionActive = (user) => {
+  if (!user) return false;
+  if (user.role === 'admin') return true; // Admin sempre tem acesso
+  if (user.subscription_status !== 'active') return false;
+  if (!user.subscription_end_date) return false;
+  
+  // Parse manual SEM timezone
+  const [year, month, day] = user.subscription_end_date.split('-').map(Number);
+  const endDate = new Date(year, month - 1, day);
+  
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  
+  const isActive = endDate >= today;
+  
+  console.log(`🔍 SubscriptionGuard - Verificação:`, {
+    user: user.email,
+    endDateString: user.subscription_end_date,
+    endDate: endDate.toLocaleDateString('pt-BR'),
+    today: today.toLocaleDateString('pt-BR'),
+    isActive
+  });
+  
+  return isActive;
+};
+
 export default function SubscriptionGuard({ children, requireActive = false }) {
   const [hasAccess, setHasAccess] = useState(true); // ✅ Começar com true (otimista)
   const [isLoading, setIsLoading] = useState(true);
@@ -19,13 +46,6 @@ export default function SubscriptionGuard({ children, requireActive = false }) {
     try {
       const user = await User.me();
       
-      // Admin sempre tem acesso
-      if (user.role === 'admin') {
-        setHasAccess(true);
-        setIsLoading(false);
-        return;
-      }
-
       // Se não requer assinatura ativa, liberar
       if (!requireActive) {
         setHasAccess(true);
@@ -33,8 +53,8 @@ export default function SubscriptionGuard({ children, requireActive = false }) {
         return;
       }
 
-      // Verificar se tem assinatura ativa
-      const isActive = user.subscription_status === 'active';
+      // ✅ USAR NOVA FUNÇÃO para verificar se está ativo
+      const isActive = isSubscriptionActive(user);
       setHasAccess(isActive);
     } catch (error) {
       console.error("Erro ao verificar assinatura:", error);
@@ -43,9 +63,6 @@ export default function SubscriptionGuard({ children, requireActive = false }) {
       setIsLoading(false);
     }
   };
-
-  // ✅ REMOVIDO O LOADING - Mostra conteúdo imediatamente (modo otimista)
-  // Se não tiver acesso, mostra o bloqueio depois
 
   if (!hasAccess && !isLoading) {
     return (

@@ -156,6 +156,24 @@ const calculateDaysLeft = (endDateString) => {
   return diffDays;
 };
 
+// ✅ NOVA FUNÇÃO: Verificar se assinatura está ativa
+const isSubscriptionActive = (user) => {
+  if (!user) return false;
+  if (user.role === 'admin') return true; // Admins always have access
+  if (user.subscription_status !== 'active') return false;
+  if (!user.subscription_end_date) return false;
+  
+  // Parse manual without timezone to avoid issues
+  const [year, month, day] = user.subscription_end_date.split('-').map(Number);
+  const endDate = new Date(year, month - 1, day); // Local date
+  
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // Today's date, 00:00:00
+  
+  return endDate >= today; // Subscription is active if end date is today or in the future
+};
+
+
 // ✅ NOVO: Componente interno que tem acesso ao contexto da Sidebar
 function LayoutContent({ children }) {
   const location = useLocation();
@@ -236,7 +254,8 @@ function LayoutContent({ children }) {
   const loadAdditionalDataInBackground = async (userData) => {
     try {
       // Carregar plano do usuário (se necessário)
-      if (userData.subscription_plan && userData.role !== 'admin') {
+      // ✅ USAR NOVA FUNÇÃO para verificar se tem plano ativo
+      if (userData.subscription_plan && userData.role !== 'admin' && isSubscriptionActive(userData)) {
         const { SystemPlan } = await import("@/entities/SystemPlan");
         const plans = await SystemPlan.list();
         const plan = plans.find(p => p.plan_type === userData.subscription_plan);
@@ -392,7 +411,17 @@ function LayoutContent({ children }) {
       ];
     }
 
+    // ✅ USAR NOVA FUNÇÃO para verificar se está ativo
+    if (!isSubscriptionActive(user)) {
+      return navigationItems.filter(item => 
+        ["Dashboard", "Perfil", "Assinaturas"].includes(item.title)
+      );
+    }
+
     if (!userPlan) {
+      // This state means they have an active subscription according to `isSubscriptionActive`,
+      // but `userPlan` data hasn't loaded or plan type didn't match.
+      // So, restrict to base pages as a safe fallback.
       return navigationItems.filter(item => 
         ["Dashboard", "Perfil", "Assinaturas"].includes(item.title)
       );

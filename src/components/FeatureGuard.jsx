@@ -6,17 +6,43 @@ import { createPageUrl } from "@/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Crown, Lock, Sparkles } from "lucide-react";
+import { Crown, Lock, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
 
-export default function FeatureGuard({ pageName, children }) {
-  const [hasAccess, setHasAccess] = useState(true); // ✅ Começar com true (otimista)
+// ✅ NOVA FUNÇÃO: Verificar se assinatura está ativa SEM conversão de timezone
+const isSubscriptionActive = (user) => {
+  if (!user) return false;
+  if (user.role === 'admin') return true;
+  if (user.subscription_status !== 'active') return false;
+  if (!user.subscription_end_date) return false;
+  
+  const [year, month, day] = user.subscription_end_date.split('-').map(Number);
+  const endDate = new Date(year, month - 1, day);
+  
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  
+  const isActive = endDate >= today;
+  
+  console.log(`🔍 FeatureGuard - Verificação:`, {
+    user: user.email,
+    endDateString: user.subscription_end_date,
+    endDate: endDate.toLocaleDateString('pt-BR'),
+    today: today.toLocaleDateString('pt-BR'),
+    isActive
+  });
+  
+  return isActive;
+};
+
+export default function FeatureGuard({ children, pageName, featureName, featureLabel }) {
+  const [hasAccess, setHasAccess] = useState(true); // ✅ Otimista
   const [isLoading, setIsLoading] = useState(true);
   const [currentPlan, setCurrentPlan] = useState(null);
 
   useEffect(() => {
     checkAccess();
-  }, [pageName]);
+  }, []);
 
   const checkAccess = async () => {
     try {
@@ -29,45 +55,49 @@ export default function FeatureGuard({ pageName, children }) {
         return;
       }
 
-      // Páginas sempre liberadas
-      const alwaysAllowedPages = ["Dashboard", "Profile", "Plans", "Import"];
-      if (alwaysAllowedPages.includes(pageName)) {
-        setHasAccess(true);
-        setIsLoading(false);
-        return;
-      }
-
-      // ✅ Verificar se tem assinatura ativa
-      if (user.subscription_status !== 'active') {
-        setHasAccess(false);
-        setIsLoading(false);
-        return;
-      }
-
-      // Buscar plano do usuário
-      const plans = await SystemPlan.list();
-      const userPlan = plans.find(p => p.plan_type === user.subscription_plan);
+      // ✅ USAR NOVA FUNÇÃO para verificar se está ativo
+      const isActive = isSubscriptionActive(user);
       
-      if (!userPlan) {
+      if (!isActive) {
         setHasAccess(false);
         setIsLoading(false);
         return;
       }
 
-      setCurrentPlan(userPlan);
-
-      // Verificar se a página está permitida no plano
-      const allowedPages = userPlan.allowed_pages || [];
-      setHasAccess(allowedPages.includes(pageName));
+      // Se tem plano ativo, verificar permissões de página
+      if (user.subscription_plan) {
+        const plans = await SystemPlan.list();
+        const plan = plans.find(p => p.plan_type === user.subscription_plan);
+        
+        if (plan) {
+          setCurrentPlan(plan);
+          
+          // Se está verificando por página
+          if (pageName) {
+            const hasPageAccess = plan.allowed_pages?.includes(pageName) || 
+                                 ['Dashboard', 'Profile', 'Plans'].includes(pageName);
+            setHasAccess(hasPageAccess);
+          }
+          // Se está verificando por feature
+          else if (featureName) {
+            setHasAccess(plan[featureName] === true);
+          }
+          else {
+            setHasAccess(true);
+          }
+        } else {
+          setHasAccess(false);
+        }
+      } else {
+        setHasAccess(false);
+      }
     } catch (error) {
       console.error("Erro ao verificar acesso:", error);
-      setHasAccess(true); // ✅ Em caso de erro, liberar (melhor UX)
+      setHasAccess(true); // ✅ Em caso de erro, liberar
     } finally {
       setIsLoading(false);
     }
   };
-
-  // ✅ REMOVIDO O LOADING - Mostra conteúdo imediatamente (modo otimista)
 
   if (!hasAccess && !isLoading) {
     return (
@@ -79,10 +109,10 @@ export default function FeatureGuard({ pageName, children }) {
         >
           <Card className="glass-card border-0 neon-glow">
             <CardHeader className="text-center pb-4">
-              <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-red-600 to-orange-600 flex items-center justify-center mb-4 neon-glow">
+              <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center mb-4 neon-glow">
                 <Lock className="w-12 h-12 text-white" />
               </div>
-              <CardTitle className="text-3xl bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">
+              <CardTitle className="text-3xl bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
                 Acesso Restrito
               </CardTitle>
             </CardHeader>
@@ -92,28 +122,13 @@ export default function FeatureGuard({ pageName, children }) {
                 <p className="text-purple-300 text-lg">
                   Esta funcionalidade não está disponível no seu plano atual
                 </p>
-                <p className="text-purple-400">
-                  Faça upgrade para desbloquear acesso a <strong>{pageName}</strong> e muito mais!
-                </p>
-              </div>
-
-              {currentPlan && (
-                <div className="bg-purple-900/20 rounded-xl p-6 border border-purple-700/50">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <p className="text-purple-300 text-sm">Seu plano atual:</p>
-                      <p className="text-white font-bold text-xl">{currentPlan.name}</p>
-                    </div>
-                    <Badge className="bg-purple-600">
-                      {currentPlan.price === 0 ? 'GRÁTIS' : `R$ ${currentPlan.price}`}
-                    </Badge>
+                {currentPlan && (
+                  <div className="inline-block px-4 py-2 rounded-lg bg-purple-900/30 border border-purple-700/50">
+                    <p className="text-sm text-purple-400">Seu plano atual:</p>
+                    <p className="text-white font-bold">{currentPlan.name}</p>
                   </div>
-                  
-                  <p className="text-purple-400 text-sm">
-                    💡 Para acessar <strong>{pageName}</strong>, você precisa de um plano superior.
-                  </p>
-                </div>
-              )}
+                )}
+              </div>
 
               <div className="flex flex-col sm:flex-row gap-3">
                 <Link to={createPageUrl("Dashboard")} className="flex-1">
@@ -124,7 +139,7 @@ export default function FeatureGuard({ pageName, children }) {
                 <Link to={createPageUrl("Plans")} className="flex-1">
                   <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
                     <Crown className="w-4 h-4 mr-2" />
-                    Ver Planos
+                    Fazer Upgrade
                   </Button>
                 </Link>
               </div>
@@ -135,6 +150,5 @@ export default function FeatureGuard({ pageName, children }) {
     );
   }
 
-  // ✅ Mostra conteúdo imediatamente
   return children;
 }
