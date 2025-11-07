@@ -122,13 +122,14 @@ export default function Plans() {
       const pixConfig = {};
       
       settings.forEach(s => {
-        if (s.key.startsWith('pix_') || s.key.startsWith('asaas_')) {
+        if (s.key.startsWith('pix_') || s.key.startsWith('asaas_') || s.key === 'payment_mode') { // ✅ NOVO
           pixConfig[s.key] = s.value;
         }
       });
       
       setPaymentSettings(pixConfig);
       console.log("✅ Configurações carregadas:", pixConfig);
+      console.log("🔧 Modo de pagamento:", pixConfig.payment_mode || "manual"); // ✅ NOVO
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
     }
@@ -187,11 +188,15 @@ export default function Plans() {
         return;
       }
 
-      // Se Asaas configurado, usar pagamento automático
-      if (paymentSettings.asaas_api_key) {
+      // ✅ VERIFICAR MODO DE PAGAMENTO
+      const mode = paymentSettings.payment_mode || "manual";
+      console.log("🔧 Modo de pagamento detectado:", mode);
+      
+      if (mode === "automatic" && paymentSettings.asaas_api_key) {
+        console.log("⚡ Usando pagamento automático Asaas");
         handleAsaasPayment(plan);
       } else {
-        // Senão, pagamento manual
+        console.log("📝 Usando pagamento manual");
         setPaymentData({
           payment_proof_url: "",
           notes: "",
