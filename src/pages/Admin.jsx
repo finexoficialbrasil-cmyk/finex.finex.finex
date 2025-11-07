@@ -1,25 +1,24 @@
+
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card"; // Added CardContent
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button"; // Button is still needed for other purposes, though not for checklist.
 import { Shield, Users, Crown, Video, Tags, Bell, Settings, Database, DollarSign, Smartphone, Zap, FileText, Loader2 } from "lucide-react";
 
 // ✅ Lazy loading dos componentes admin
 const AdminDashboard = React.lazy(() => import("../components/admin/AdminDashboard"));
 const AdminUsers = React.lazy(() => import("../components/admin/AdminUsers"));
 const AdminPlans = React.lazy(() => import("../components/admin/AdminPlans"));
-const AdminTutorials = React.lazy(() => import("../components/admin/AdminTutorials"));
-const AdminCategories = React.lazy(() => import("../components/admin/AdminCategories"));
-const AdminNotifications = React.lazy(() => import("../components/admin/AdminNotifications"));
-const AdminSettings = React.lazy(() => import("../components/admin/AdminSettings"));
 const AdminSubscriptions = React.lazy(() => import("../components/admin/AdminSubscriptions"));
-const AdminDatabaseCleanup = React.lazy(() => import("../components/admin/AdminDatabaseCleanup"));
-const AdminAsaasSettings = React.lazy(() => import("../components/admin/AdminAsaasSettings"));
-const AdminMobileApp = React.lazy(() => import("../components/admin/AdminMobileApp"));
-const AdminWebhookLogs = React.lazy(() => import("../components/admin/AdminWebhookLogs"));
-const AdminBackup = React.lazy(() => import("../components/admin/AdminBackup"));
-const AdminUserReport = React.lazy(() => import("../components/admin/AdminUserReport"));
+const AdminSettings = React.lazy(() => import("../components/admin/AdminSettings")); // Now directly under top-level 'settings'
+const AdminDatabaseCleanup = React.lazy(() => import("../components/admin/AdminDatabaseCleanup")); // Now under top-level 'database'
+const AdminAsaasSettings = React.lazy(() => import("../components/admin/AdminAsaasSettings")); // Now under top-level 'payments'
+const AdminWebhookLogs = React.lazy(() => import("../components/admin/AdminWebhookLogs")); // Now under top-level 'webhooks'
+const AdminBackup = React.lazy(() => import("../components/admin/AdminBackup")); // Now under top-level 'database'
+
+// New component for audit
+const AgentAuditViewer = React.lazy(() => import("../components/admin/AgentAuditViewer"));
 
 // ✅ Loading fallback
 const TabLoading = () => (
@@ -31,7 +30,7 @@ const TabLoading = () => (
   </div>
 );
 
-export default function Admin() {
+export default function AdminPage() { // Changed component name
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState("dashboard");
 
@@ -54,24 +53,7 @@ export default function Admin() {
     }
   };
 
-  const handleDownloadChecklist = async () => {
-    try {
-      const response = await base44.functions.invoke('generateChecklistPDF');
-      
-      const blob = new Blob([response.data], { type: 'application/pdf' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `FINEX_Checklist_${new Date().toISOString().split('T')[0]}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      a.remove();
-    } catch (error) {
-      console.error('Erro ao baixar checklist:', error);
-      alert('Erro ao gerar PDF. Tente novamente.');
-    }
-  };
+  // handleDownloadChecklist function and its button are removed as per outline
 
   if (!user) {
     return (
@@ -83,7 +65,7 @@ export default function Admin() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0a0a0f] via-[#1a1a2e] to-[#0a0a0f] p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
+      <div className="max-w-7xl mx-auto space-y-6"> {/* Changed space-y-8 to space-y-6 */}
         <div className="text-center">
           <div className="inline-block p-4 rounded-2xl bg-gradient-to-r from-red-600/20 to-orange-600/20 border border-red-500/30 mb-4">
             <Shield className="w-12 h-12 text-red-400 mx-auto mb-2" />
@@ -97,138 +79,63 @@ export default function Admin() {
         </div>
 
         <Card className="glass-card border-0 neon-glow">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="bg-purple-900/20 w-full grid grid-cols-2 md:grid-cols-4 lg:grid-cols-9 gap-2 p-2">
-              <TabsTrigger value="dashboard" className="flex items-center gap-2">
-                <Shield className="w-4 h-4" />
-                <span className="hidden md:inline">Dashboard</span>
-              </TabsTrigger>
-              <TabsTrigger value="users" className="flex items-center gap-2">
-                <Users className="w-4 h-4" />
-                <span className="hidden md:inline">Usuários</span>
-              </TabsTrigger>
-              <TabsTrigger value="report" className="flex items-center gap-2">
-                <FileText className="w-4 h-4" />
-                <span className="hidden md:inline">Relatório</span>
-              </TabsTrigger>
-              <TabsTrigger value="plans" className="flex items-center gap-2">
-                <Crown className="w-4 h-4" />
-                <span className="hidden md:inline">Planos</span>
-              </TabsTrigger>
-              <TabsTrigger value="subscriptions" className="flex items-center gap-2">
-                <DollarSign className="w-4 h-4" />
-                <span className="hidden md:inline">Assinaturas</span>
-              </TabsTrigger>
-              <TabsTrigger value="backup" className="flex items-center gap-2">
-                <Database className="w-4 h-4" />
-                <span className="hidden md:inline">Backup</span>
-              </TabsTrigger>
-              <TabsTrigger value="tutorials" className="flex items-center gap-2">
-                <Video className="w-4 h-4" />
-                <span className="hidden md:inline">Tutoriais</span>
-              </TabsTrigger>
-              <TabsTrigger value="categories" className="flex items-center gap-2">
-                <Tags className="w-4 h-4" />
-                <span className="hidden md:inline">Categorias</span>
-              </TabsTrigger>
-              <TabsTrigger value="notifications" className="flex items-center gap-2">
-                <Bell className="w-4 h-4" />
-                <span className="hidden md:inline">Notificações</span>
-              </TabsTrigger>
-              <TabsTrigger value="settings" className="flex items-center gap-2">
-                <Settings className="w-4 h-4" />
-                <span className="hidden md:inline">Config</span>
-              </TabsTrigger>
-            </TabsList>
+          <CardContent className="p-6"> {/* Added CardContent wrapper */}
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="bg-purple-900/20 w-full grid grid-cols-2 lg:grid-cols-5 gap-2 p-2"> {/* Updated TabsList class and structure */}
+                <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+                <TabsTrigger value="users">Usuários</TabsTrigger>
+                <TabsTrigger value="subscriptions">Assinaturas</TabsTrigger>
+                <TabsTrigger value="plans">Planos</TabsTrigger>
+                <TabsTrigger value="content">Conteúdo</TabsTrigger>
+                <TabsTrigger value="settings">Configurações</TabsTrigger>
+                <TabsTrigger value="database">Banco de Dados</TabsTrigger>
+                <TabsTrigger value="payments">Pagamentos</TabsTrigger>
+                <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
+                <TabsTrigger value="audit">🆕 Auditoria IA</TabsTrigger>
+              </TabsList>
 
-            <div className="mt-4 flex justify-end">
-              <Button
-                onClick={handleDownloadChecklist}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-              >
-                <FileText className="w-4 h-4 mr-2" />
-                📥 Download Checklist PDF
-              </Button>
-            </div>
-
-            <div className="p-6">
-              <React.Suspense fallback={<TabLoading />}>
-                <TabsContent value="dashboard">
-                  <AdminDashboard />
-                </TabsContent>
-                <TabsContent value="users">
-                  <AdminUsers />
-                </TabsContent>
-                <TabsContent value="report">
-                  <AdminUserReport />
-                </TabsContent>
-                <TabsContent value="plans">
-                  <AdminPlans />
-                </TabsContent>
-                <TabsContent value="subscriptions">
-                  <AdminSubscriptions />
-                </TabsContent>
-                <TabsContent value="backup">
-                  <AdminBackup />
-                </TabsContent>
-                <TabsContent value="tutorials">
-                  <AdminTutorials />
-                </TabsContent>
-                <TabsContent value="categories">
-                  <AdminCategories />
-                </TabsContent>
-                <TabsContent value="notifications">
-                  <AdminNotifications />
-                </TabsContent>
-                <TabsContent value="settings">
-                  <Tabs defaultValue="branding">
-                    <TabsList className="bg-purple-900/20 mb-6 w-full grid grid-cols-2 md:grid-cols-5 lg:grid-cols-5 gap-2 p-2">
-                      <TabsTrigger value="branding" className="flex items-center gap-2">
-                        <Settings className="w-4 h-4" />
-                        <span className="hidden md:inline">Branding</span>
-                      </TabsTrigger>
-                      <TabsTrigger value="payments" className="flex items-center gap-2">
-                        <DollarSign className="w-4 h-4" />
-                        <span className="hidden md:inline">Pagamentos</span>
-                      </TabsTrigger>
-                      <TabsTrigger value="webhooks" className="flex items-center gap-2">
-                        <Zap className="w-4 h-4" />
-                        <span className="hidden md:inline">Webhooks</span>
-                      </TabsTrigger>
-                      <TabsTrigger value="mobile" className="flex items-center gap-2">
-                        <Smartphone className="w-4 h-4" />
-                        <span className="hidden md:inline">App Mobile</span>
-                      </TabsTrigger>
-                      <TabsTrigger value="cleanup" className="flex items-center gap-2">
-                        <Database className="w-4 h-4" />
-                        <span className="hidden md:inline">Limpeza</span>
-                      </TabsTrigger>
-                    </TabsList>
-
-                    <div className="p-6">
-                      <React.Suspense fallback={<TabLoading />}>
-                        <TabsContent value="branding">
-                          <AdminSettings />
-                        </TabsContent>
-                        <TabsContent value="payments">
-                          <AdminAsaasSettings />
-                        </TabsContent>
-                        <TabsContent value="webhooks">
-                          <AdminWebhookLogs />
-                        </TabsContent>
-                        <TabsContent value="mobile">
-                          <AdminMobileApp />
-                        </TabsContent>
-                        <TabsContent value="cleanup">
-                          <AdminDatabaseCleanup />
-                        </TabsContent>
-                      </React.Suspense>
+              <div className="p-6">
+                <React.Suspense fallback={<TabLoading />}>
+                  <TabsContent value="dashboard">
+                    <AdminDashboard />
+                  </TabsContent>
+                  <TabsContent value="users">
+                    <AdminUsers />
+                  </TabsContent>
+                  {/* Removed TabsContent for "report" */}
+                  <TabsContent value="plans">
+                    <AdminPlans />
+                  </TabsContent>
+                  <TabsContent value="subscriptions">
+                    <AdminSubscriptions />
+                  </TabsContent>
+                  {/* Tabs for content (tutorials, categories, notifications) */}
+                  <TabsContent value="content">
+                    {/* Content for 'Conteúdo' tab - This would ideally have a nested tab structure or grouped components */}
+                    <div className="text-purple-300 text-center py-8">
+                      Conteúdo em desenvolvimento...
                     </div>
-                  </Tabs>
-                </TabsContent>
-              </React.Suspense>
-            </div>
-          </Tabs>
+                  </TabsContent>
+                  <TabsContent value="settings">
+                    <AdminSettings /> {/* 'Branding' from old settings */}
+                  </TabsContent>
+                  <TabsContent value="database">
+                    <AdminDatabaseCleanup />
+                    <AdminBackup className="mt-8" /> {/* Added AdminBackup here */}
+                  </TabsContent>
+                  <TabsContent value="payments">
+                    <AdminAsaasSettings />
+                  </TabsContent>
+                  <TabsContent value="webhooks">
+                    <AdminWebhookLogs />
+                  </TabsContent>
+                  <TabsContent value="audit"> {/* New TabsContent for audit */}
+                    <AgentAuditViewer />
+                  </TabsContent>
+                </React.Suspense>
+              </div>
+            </Tabs>
+          </CardContent>
         </Card>
       </div>
     </div>
