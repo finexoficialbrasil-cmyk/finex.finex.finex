@@ -26,8 +26,18 @@ export default function TransactionList({ transactions, categories, accounts, is
     return (accountId) => accounts.find(a => a.id === accountId) || { name: "Não definida" };
   }, [accounts]);
 
+  // ✅ CORRIGIDO: Ordenar por data + hora (mais recente primeiro)
   const recentTransactions = useMemo(() => {
-    return transactions.slice(0, 5);
+    return [...transactions]
+      .sort((a, b) => {
+        // Primeiro por data
+        const dateCompare = new Date(b.date) - new Date(a.date);
+        if (dateCompare !== 0) return dateCompare;
+        
+        // Se mesma data, ordenar por created_date (timestamp completo)
+        return new Date(b.created_date) - new Date(a.created_date);
+      })
+      .slice(0, 5);
   }, [transactions]);
 
   return (
