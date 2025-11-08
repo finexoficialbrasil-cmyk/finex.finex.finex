@@ -26,18 +26,21 @@ export default function TransactionList({ transactions, categories, accounts, is
     return (accountId) => accounts.find(a => a.id === accountId) || { name: "Não definida" };
   }, [accounts]);
 
-  // ✅ CORRIGIDO: Ordenar por data + hora (mais recente primeiro)
+  // ✅ CORRIGIDO: Confiar na ordenação do backend e pegar apenas 5 primeiras
+  // O Dashboard já carrega com Transaction.list("-created_date", 30)
+  // Então as transações já vêm ordenadas do mais recente para o mais antigo
   const recentTransactions = useMemo(() => {
-    return [...transactions]
-      .sort((a, b) => {
-        // Primeiro por data
-        const dateCompare = new Date(b.date) - new Date(a.date);
-        if (dateCompare !== 0) return dateCompare;
-        
-        // Se mesma data, ordenar por created_date (timestamp completo)
-        return new Date(b.created_date) - new Date(a.created_date);
-      })
-      .slice(0, 5);
+    console.log("📊 TransactionList - Total de transações:", transactions.length);
+    
+    // Pegar as 5 primeiras (já vêm ordenadas do backend)
+    const recent = transactions.slice(0, 5);
+    
+    console.log("📋 5 Transações mais recentes:");
+    recent.forEach((tx, idx) => {
+      console.log(`  ${idx + 1}. ${tx.description} | Data: ${tx.date} | Criado: ${tx.created_date}`);
+    });
+    
+    return recent;
   }, [transactions]);
 
   return (
@@ -96,22 +99,22 @@ export default function TransactionList({ transactions, categories, accounts, is
                       className="flex items-center justify-between p-4 rounded-xl glass-card hover:bg-purple-900/20 transition-all cursor-pointer"
                       onClick={() => setSelectedTransaction(tx)}
                     >
-                      <div className="flex items-center gap-3 flex-1">
-                        <div className={`p-2 rounded-full ${isIncome ? 'bg-green-600/20' : 'bg-red-600/20'}`}>
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className={`p-2 rounded-full flex-shrink-0 ${isIncome ? 'bg-green-600/20' : 'bg-red-600/20'}`}>
                           {isIncome ? (
                             <ArrowUpRight className="w-5 h-5 text-green-400" />
                           ) : (
                             <ArrowDownRight className="w-5 h-5 text-red-400" />
                           )}
                         </div>
-                        <div className="flex-1">
-                          <p className="font-medium text-white">{tx.description}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-xs text-purple-300">{formatDateBR(tx.date)}</span>
-                            <span className="text-xs text-purple-400">•</span>
-                            <span className="text-xs text-purple-300">{account.name}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-white truncate">{tx.description}</p>
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            <span className="text-xs text-purple-300 flex-shrink-0">{formatDateBR(tx.date)}</span>
+                            <span className="text-xs text-purple-400 flex-shrink-0">•</span>
+                            <span className="text-xs text-purple-300 truncate">{account.name}</span>
                             <Badge
-                              className="text-xs"
+                              className="text-xs flex-shrink-0"
                               style={{
                                 backgroundColor: category.color + '20',
                                 color: category.color,
@@ -123,11 +126,11 @@ export default function TransactionList({ transactions, categories, accounts, is
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <p className={`font-bold text-lg ${isIncome ? 'text-green-400' : 'text-red-400'}`}>
+                      <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                        <p className={`font-bold text-base md:text-lg ${isIncome ? 'text-green-400' : 'text-red-400'} whitespace-nowrap`}>
                           {isIncome ? '+' : '-'} R$ {tx.amount.toFixed(2)}
                         </p>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
                           <Eye className="w-4 h-4 text-purple-400" />
                         </Button>
                       </div>
@@ -162,7 +165,7 @@ export default function TransactionList({ transactions, categories, accounts, is
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 rounded-lg bg-purple-900/20 border border-purple-700/30">
                   <p className="text-xs text-purple-400 mb-1">Descrição</p>
-                  <p className="text-white font-medium">{selectedTransaction.description}</p>
+                  <p className="text-white font-medium break-words">{selectedTransaction.description}</p>
                 </div>
 
                 <div className="p-4 rounded-lg bg-purple-900/20 border border-purple-700/30">
@@ -175,7 +178,7 @@ export default function TransactionList({ transactions, categories, accounts, is
 
                 <div className="p-4 rounded-lg bg-purple-900/20 border border-purple-700/30">
                   <p className="text-xs text-purple-400 mb-1">Conta</p>
-                  <p className="text-white font-medium">{getAccountInfo(selectedTransaction.account_id).name}</p>
+                  <p className="text-white font-medium break-words">{getAccountInfo(selectedTransaction.account_id).name}</p>
                 </div>
 
                 <div className="p-4 rounded-lg bg-purple-900/20 border border-purple-700/30">
@@ -206,16 +209,16 @@ export default function TransactionList({ transactions, categories, accounts, is
               {selectedTransaction.notes && (
                 <div className="p-4 rounded-lg bg-purple-900/20 border border-purple-700/30">
                   <p className="text-xs text-purple-400 mb-1">Observações</p>
-                  <p className="text-white text-sm">{selectedTransaction.notes}</p>
+                  <p className="text-white text-sm break-words">{selectedTransaction.notes}</p>
                 </div>
               )}
 
               <div className="grid grid-cols-2 gap-4 pt-4 border-t border-purple-700/30">
                 <div className="text-center">
                   <p className="text-xs text-purple-400 mb-1">Criado por</p>
-                  <p className="text-white text-sm flex items-center justify-center gap-1">
-                    <User className="w-3 h-3" />
-                    {selectedTransaction.created_by}
+                  <p className="text-white text-sm flex items-center justify-center gap-1 break-all">
+                    <User className="w-3 h-3 flex-shrink-0" />
+                    <span className="truncate">{selectedTransaction.created_by}</span>
                   </p>
                 </div>
                 <div className="text-center">
