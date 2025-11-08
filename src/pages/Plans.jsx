@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { UploadFile } from "@/integrations/Core";
-import { base44 } from "@/api/base44Client"; // ✅ IMPORTAR SDK
+import { asaasCreatePayment } from "@/functions/asaasCreatePayment"; // ✅ IMPORT DIRETO
 import {
   Dialog,
   DialogContent,
@@ -247,8 +247,9 @@ export default function Plans() {
       console.log("🔄 Payload completo:", JSON.stringify(paymentPayload, null, 2));
       console.log("🔄 Chamando asaasCreatePayment...");
 
-      // ✅ CORRIGIDO: Usar SDK em vez de import
-      const response = await base44.functions.invoke('asaasCreatePayment', paymentPayload);
+      // ✅ CORRIGIDO: Chamar função diretamente importada
+      const responseData = await asaasCreatePayment(paymentPayload);
+      const response = responseData.data; // A resposta vem em .data
 
       console.log("📦 Resposta completa:", response);
       console.log("📊 Status:", response?.status);
