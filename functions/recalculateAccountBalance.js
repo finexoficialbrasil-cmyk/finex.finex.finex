@@ -4,39 +4,34 @@ Deno.serve(async (req) => {
     try {
         const base44 = createClientFromRequest(req);
         
-        // ✅ Tentar autenticar usuário
-        let user = null;
-        let useServiceRole = false;
-        
-        try {
-            user = await base44.auth.me();
-            console.log("✅ Usuário autenticado:", user?.email);
-        } catch (authError) {
-            console.log("⚠️ Sem autenticação de usuário, usando service role");
-            useServiceRole = true;
-        }
+        console.log("🔄 Iniciando recalculateAccountBalance...");
 
         // Pegar dados da requisição
         const { account_id } = await req.json();
         
         if (!account_id) {
+            console.error("❌ account_id não fornecido!");
             return Response.json({ 
                 success: false,
                 error: 'account_id é obrigatório' 
             }, { status: 400 });
         }
 
-        console.log(`🔄 Recalculando saldo da conta: ${account_id}`);
+        console.log(`📊 Recalculando conta: ${account_id}`);
 
-        // ✅ Escolher cliente correto (service role ou user)
-        const client = useServiceRole ? base44.asServiceRole : base44;
+        // ✅ SEMPRE usar service role para garantir permissões
+        const client = base44.asServiceRole;
 
-        // ✅ Aguardar 1 segundo para garantir que a transação foi commitada
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // ✅ AGUARDAR 1.5 segundos para garantir que a transação foi commitada
+        console.log("⏰ Aguardando 1.5s para transação commitar...");
+        await new Promise(resolve => setTimeout(resolve, 1500));
 
         // Buscar a conta
+        console.log("🔍 Buscando conta...");
         const accounts = await client.entities.Account.filter({ id: account_id });
+        
         if (accounts.length === 0) {
+            console.error(`❌ Conta ${account_id} não encontrada!`);
             return Response.json({ 
                 success: false,
                 error: 'Conta não encontrada' 
@@ -44,9 +39,11 @@ Deno.serve(async (req) => {
         }
 
         const account = accounts[0];
-        console.log(`📊 Conta encontrada: ${account.name}`);
+        console.log(`✅ Conta encontrada: ${account.name}`);
+        console.log(`💰 Saldo atual: R$ ${account.balance?.toFixed(2) || '0.00'}`);
 
         // Buscar TODAS as transações COMPLETADAS desta conta
+        console.log("🔍 Buscando transações...");
         const allTransactions = await client.entities.Transaction.filter({ 
             account_id: account_id,
             status: 'completed'
@@ -57,6 +54,7 @@ Deno.serve(async (req) => {
         // Calcular novo saldo
         let newBalance = 0;
         
+        console.log("🧮 Calculando saldo:");
         for (const tx of allTransactions) {
             const amount = Number(tx.amount);
             if (isNaN(amount)) {
@@ -66,46 +64,57 @@ Deno.serve(async (req) => {
             
             if (tx.type === 'income') {
                 newBalance += amount;
-                console.log(`  + R$ ${amount.toFixed(2)} (${tx.description})`);
+                console.log(`  ✅ + R$ ${amount.toFixed(2)} (${tx.description})`);
             } else if (tx.type === 'expense') {
                 newBalance -= amount;
-                console.log(`  - R$ ${amount.toFixed(2)} (${tx.description})`);
+                console.log(`  ❌ - R$ ${amount.toFixed(2)} (${tx.description})`);
             }
         }
 
         const finalBalance = parseFloat(newBalance.toFixed(2));
-        console.log(`💰 Saldo antigo: R$ ${account.balance?.toFixed(2) || '0.00'}`);
-        console.log(`💰 Saldo calculado: R$ ${finalBalance.toFixed(2)}`);
+        console.log(`💰 Saldo ANTIGO: R$ ${account.balance?.toFixed(2) || '0.00'}`);
+        console.log(`💰 Saldo NOVO: R$ ${finalBalance.toFixed(2)}`);
+        console.log(`💰 Diferença: R$ ${(finalBalance - (account.balance || 0)).toFixed(2)}`);
 
-        // ✅ Atualizar conta
+        // ✅ Atualizar conta usando SERVICE ROLE
+        console.log("💾 Atualizando saldo no banco...");
         await client.entities.Account.update(account_id, {
             balance: finalBalance
         });
 
-        console.log(`✅ Saldo atualizado com sucesso!`);
+        console.log("✅ Update enviado! Aguardando confirmação...");
 
-        // ✅ Aguardar mais 500ms para garantir que atualizou
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // ✅ Aguardar 1 segundo para garantir que salvou
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
         // ✅ Ler novamente para confirmar
+        console.log("🔍 Confirmando atualização...");
         const updatedAccounts = await client.entities.Account.filter({ id: account_id });
-        const updatedBalance = updatedAccounts[0]?.balance || 0;
+        const confirmedBalance = updatedAccounts[0]?.balance || 0;
 
-        console.log(`✅ Saldo confirmado no banco: R$ ${updatedBalance.toFixed(2)}`);
+        console.log(`✅ Saldo CONFIRMADO no banco: R$ ${confirmedBalance.toFixed(2)}`);
+
+        if (confirmedBalance !== finalBalance) {
+            console.error(`⚠️ ATENÇÃO: Saldo esperado (${finalBalance}) != Saldo confirmado (${confirmedBalance})`);
+        } else {
+            console.log("✅ Saldo atualizado com SUCESSO!");
+        }
 
         return Response.json({
             success: true,
+            account_id: account_id,
             account_name: account.name,
-            old_balance: account.balance,
-            new_balance: finalBalance,
-            confirmed_balance: updatedBalance,
+            old_balance: account.balance || 0,
+            calculated_balance: finalBalance,
+            confirmed_balance: confirmedBalance,
+            difference: finalBalance - (account.balance || 0),
             transactions_count: allTransactions.length,
-            used_service_role: useServiceRole
+            timestamp: new Date().toISOString()
         });
 
     } catch (error) {
-        console.error('❌ Erro ao recalcular saldo:', error);
-        console.error('Stack:', error.stack);
+        console.error('❌ ERRO CRÍTICO ao recalcular saldo:', error);
+        console.error('Stack completo:', error.stack);
         return Response.json({ 
             success: false,
             error: error.message,
