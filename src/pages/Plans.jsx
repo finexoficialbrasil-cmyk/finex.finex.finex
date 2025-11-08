@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { UploadFile } from "@/integrations/Core";
+import { base44 } from "@/api/base44Client"; // ✅ IMPORTAR SDK
 import {
   Dialog,
   DialogContent,
@@ -231,12 +232,12 @@ export default function Plans() {
 
       console.log("🔄 Criando pagamento Asaas...", paymentPayload);
 
-      const { asaasCreatePayment } = await import("@/functions/asaasCreatePayment");
-      const response = await asaasCreatePayment(paymentPayload);
+      // ✅ CORRIGIDO: Usar SDK em vez de import
+      const response = await base44.functions.invoke('asaasCreatePayment', paymentPayload);
 
       console.log("✅ Resposta Asaas:", response);
 
-      if (response.data?.success) {
+      if (response?.success) {
         // Criar registro de assinatura pendente
         await Subscription.create({
           user_email: user.email,
@@ -244,23 +245,23 @@ export default function Plans() {
           status: "pending",
           amount_paid: plan.price,
           payment_method: "pix",
-          transaction_id: response.data.payment_id,
-          notes: `Pagamento Asaas ID: ${response.data.payment_id}`
+          transaction_id: response.payment_id,
+          notes: `Pagamento Asaas ID: ${response.payment_id}`
         });
 
         setPaymentData({
           payment_proof_url: "",
           notes: "",
-          pix_code: response.data.pix_code,
-          pix_qrcode_base64: response.data.pix_qrcode_base64,
-          asaas_payment_id: response.data.payment_id
+          pix_code: response.pix_code,
+          pix_qrcode_base64: response.pix_qrcode_base64,
+          asaas_payment_id: response.payment_id
         });
       } else {
-        throw new Error(response.data?.error || "Erro desconhecido");
+        throw new Error(response?.error || "Erro desconhecido");
       }
     } catch (error) {
       console.error("❌ Erro ao criar pagamento:", error);
-      alert(`❌ Erro ao criar pagamento:\n\n${error.response?.data?.error || error.message}\n\n${error.response?.data?.details || ''}`);
+      alert(`❌ Erro ao criar pagamento:\n\n${error.message}\n\n${error.details || ''}`);
       setShowPaymentModal(false);
     } finally {
       setIsSubmitting(false);
