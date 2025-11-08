@@ -44,6 +44,8 @@ import WelcomeEmailSender from "./components/WelcomeEmailSender";
 import ReceivablesNotification from "./components/ReceivablesNotification";
 import { Button } from "@/components/ui/button";
 
+import PerformanceMonitor from "./components/PerformanceMonitor";
+
 const navigationItems = [
   {
     title: "Dashboard",
@@ -935,6 +937,7 @@ export default function Layout({ children }) {
   return (
     <SidebarProvider>
       <LayoutContent>{children}</LayoutContent>
+      <PerformanceMonitor />
     </SidebarProvider>
   );
 }

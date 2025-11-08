@@ -30,13 +30,17 @@ import {
   Edit,
   Trash2,
   X,
-  Loader2 // Added import for Loader2
+  Loader2, // Added import for Loader2
+  ArrowLeftRight, // Added for empty state icon
+  ChevronLeft, // Added for pagination
+  ChevronRight // Added for pagination
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import SubscriptionGuard from "../components/SubscriptionGuard";
 import FeatureGuard from "../components/FeatureGuard"; // Added import
+import { trackPerformance } from "../components/PerformanceMonitor"; // Added import
 
 // ✅ NOVA FUNÇÃO: Obter data atual no timezone do Brasil
 const getBrazilDate = () => {
@@ -63,11 +67,17 @@ export default function TransactionsPage() {
   const [categories, setCategories] = useState([]);
   const [filterType, setFilterType] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all"); // NEW: Filter by status
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchQuery, setSearchQuery] = useState(""); // Renamed from searchTerm
+  const [filterCategory, setFilterCategory] = useState(""); // NEW: Filter by category
+  const [filterAccount, setFilterAccount] = useState("");   // NEW: Filter by account
   const [sortBy, setSortBy] = useState("-created_date"); // NEW: Default sorting by latest creation date
   const [showForm, setShowForm] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false); // ✅ NOVO: Estado de submissão
+  const [isLoading, setIsLoading] = useState(true); // ✅ NOVO: Estado de carregamento inicial
+  const [currentPage, setCurrentPage] = useState(1); // ✅ NOVO: Estado para paginação
+  const [itemsPerPage] = useState(20); // 20 itens por página
+
   const [formData, setFormData] = useState({
     description: "",
     amount: "",
@@ -113,6 +123,8 @@ export default function TransactionsPage() {
 
   // ✅ Usar useCallback para funções que são passadas como props
   const loadData = useCallback(async () => {
+    setIsLoading(true); // Start loading
+    const startTime = performance.now();
     try {
       console.log("🔄 Carregando transações com ordenação:", sortBy);
 
@@ -122,7 +134,9 @@ export default function TransactionsPage() {
         Category.list(),
         SystemCategory.list()
       ]);
-
+      const endTime = performance.now();
+      trackPerformance('api_call', 'loadTransactionsData', endTime - startTime);
+      
       console.log(`📊 Total de transações carregadas: ${txs.length}`);
       console.log("📋 Primeira transação:", txs[0]?.description, "-", txs[0]?.created_date);
       console.log("📋 Última transação:", txs[txs.length - 1]?.description, "-", txs[txs.length - 1]?.created_date);
@@ -138,6 +152,8 @@ export default function TransactionsPage() {
       setCategories(allCategories);
     } catch (error) {
       console.error("❌ Erro ao carregar dados:", error);
+    } finally {
+      setIsLoading(false); // End loading
     }
   }, [sortBy]); // Dependency array for useCallback
 
@@ -146,8 +162,9 @@ export default function TransactionsPage() {
     loadData();
   }, [loadData]); // loadData is a dependency because it's wrapped in useCallback
 
-  // Handle URL parameters for initial form state
+  // Handle URL parameters for initial form state and track page load
   useEffect(() => {
+    const startTime = performance.now();
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('action') === 'new') {
       setShowForm(true);
@@ -156,6 +173,8 @@ export default function TransactionsPage() {
     if (type === 'income' || type === 'expense') {
       setFormData(prev => ({ ...prev, type }));
     }
+    const endTime = performance.now();
+    trackPerformance('page_load', 'Transactions', endTime - startTime);
   }, []);
 
   const handleSubmit = async (e) => {
@@ -182,6 +201,7 @@ export default function TransactionsPage() {
       };
 
       let oldAccountId = null;
+      const startTime = performance.now(); // Start tracking API call for submission
 
       if (editingTransaction) {
         oldAccountId = editingTransaction.account_id;
@@ -189,6 +209,9 @@ export default function TransactionsPage() {
       } else {
         await Transaction.create(data);
       }
+      
+      const endTime = performance.now();
+      trackPerformance('api_call', editingTransaction ? 'updateTransaction' : 'createTransaction', endTime - startTime);
       
       // ✅ ATUALIZAR SALDOS APÓS SUBMISSÃO
       await updateAccountBalance(data.account_id);
@@ -243,16 +266,6 @@ export default function TransactionsPage() {
     }
   };
 
-  // ✅ Memoizar transações filtradas
-  const filteredTransactions = useMemo(() => {
-    return transactions.filter(tx => {
-      const matchesType = filterType === "all" || tx.type === filterType;
-      const matchesStatus = filterStatus === "all" || tx.status === filterStatus;
-      const matchesSearch = tx.description.toLowerCase().includes(searchTerm.toLowerCase());
-      return matchesType && matchesStatus && matchesSearch;
-    });
-  }, [transactions, filterType, filterStatus, searchTerm]);
-
   // ✅ Memoizar funções auxiliares
   const getCategoryInfo = useCallback((categoryId) => {
     return categories.find(c => c.id === categoryId) || { name: "Sem categoria", color: "#666" };
@@ -261,6 +274,68 @@ export default function TransactionsPage() {
   const getAccountInfo = useCallback((accountId) => {
     return accounts.find(a => a.id === accountId) || { name: "Conta" };
   }, [accounts]);
+
+  // ✅ NOVO: Filtrar e paginar transações
+  const { paginatedTransactions, totalPages } = useMemo(() => {
+    // Filtrar
+    let filtered = transactions.filter(tx => {
+      const matchesSearch = !searchQuery ||
+        tx.description.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesType = filterType === "all" || tx.type === filterType;
+      const matchesStatus = filterStatus === "all" || tx.status === filterStatus;
+      const matchesCategory = !filterCategory || tx.category_id === filterCategory;
+      const matchesAccount = !filterAccount || tx.account_id === filterAccount;
+      
+      return matchesSearch && matchesType && matchesStatus && matchesCategory && matchesAccount;
+    });
+
+    // Ordenar
+    filtered.sort((a, b) => {
+      let actualSortField = sortBy;
+      let direction = 'asc';
+      if (sortBy.startsWith('-')) {
+        actualSortField = sortBy.substring(1);
+        direction = 'desc';
+      }
+
+      const compare = (valA, valB) => {
+        if (valA < valB) return -1;
+        if (valA > valB) return 1;
+        return 0;
+      };
+
+      let result = 0;
+      switch (actualSortField) {
+        case 'created_date':
+        case 'date':
+          result = compare(new Date(a[actualSortField]), new Date(b[actualSortField]));
+          break;
+        case 'amount':
+          result = compare(a.amount, b.amount);
+          break;
+        case 'description':
+          result = compare(a.description.toLowerCase(), b.description.toLowerCase());
+          break;
+        default:
+          result = 0; // No specific sort applied
+      }
+      return direction === 'desc' ? -result : result;
+    });
+
+    // Paginar
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginated = filtered.slice(startIndex, endIndex);
+    const totalPages = Math.ceil(filtered.length / itemsPerPage);
+
+    return { paginatedTransactions: paginated, totalPages };
+  }, [transactions, searchQuery, filterType, filterStatus, filterCategory, filterAccount, sortBy, currentPage, itemsPerPage, getCategoryInfo]);
+
+  // ✅ NOVO: Resetar página ao mudar filtros
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterType, filterStatus, filterCategory, filterAccount, sortBy]);
 
   return (
     <FeatureGuard pageName="Transactions">
@@ -313,8 +388,8 @@ export default function TransactionsPage() {
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400 w-4 h-4" />
                     <Input
                       placeholder="Buscar transações..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
+                      value={searchQuery} // Changed to searchQuery
+                      onChange={(e) => setSearchQuery(e.target.value)} // Changed to setSearchQuery
                       className="pl-10 bg-purple-900/20 border-purple-700/50 text-white"
                     />
                   </div>
@@ -325,88 +400,203 @@ export default function TransactionsPage() {
                       <TabsTrigger value="expense" className="text-xs sm:text-sm">Saídas</TabsTrigger>
                     </TabsList>
                   </Tabs>
+
+                  {/* NEW: Category and Account Filters */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                          <Label htmlFor="filterCategory" className="text-purple-300 text-sm mb-1 block">Filtrar por Categoria</Label>
+                          <Select value={filterCategory} onValueChange={setFilterCategory}>
+                              <SelectTrigger id="filterCategory" className="bg-purple-900/20 border-purple-700/50 text-white">
+                                  <SelectValue placeholder="Todas as Categorias" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                  <SelectItem value={null}>Todas as Categorias</SelectItem>
+                                  {categories.map(cat => (
+                                      <SelectItem key={cat.id} value={cat.id}>
+                                          {cat.name} {cat.isSystem && "(Sistema)"}
+                                      </SelectItem>
+                                  ))}
+                              </SelectContent>
+                          </Select>
+                      </div>
+                      <div>
+                          <Label htmlFor="filterAccount" className="text-purple-300 text-sm mb-1 block">Filtrar por Conta</Label>
+                          <Select value={filterAccount} onValueChange={setFilterAccount}>
+                              <SelectTrigger id="filterAccount" className="bg-purple-900/20 border-purple-700/50 text-white">
+                                  <SelectValue placeholder="Todas as Contas" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                  <SelectItem value={null}>Todas as Contas</SelectItem>
+                                  {accounts.map(acc => (
+                                      <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>
+                                  ))}
+                              </SelectContent>
+                          </Select>
+                      </div>
+                  </div>
+                  {/* NEW: Status Filter */}
+                  <Tabs value={filterStatus} onValueChange={setFilterStatus} className="w-full">
+                      <TabsList className="bg-purple-900/20 w-full grid grid-cols-2">
+                          <TabsTrigger value="all" className="text-xs sm:text-sm">Todos Status</TabsTrigger>
+                          <TabsTrigger value="completed" className="text-xs sm:text-sm">Concluídas</TabsTrigger>
+                      </TabsList>
+                  </Tabs>
                 </div>
               </CardHeader>
               <CardContent className="p-4">
-                <AnimatePresence>
-                  {filteredTransactions.length === 0 ? (
-                    <div className="text-center py-12 text-purple-300">
-                      Nenhuma transação encontrada
+                {isLoading ? (
+                  <div className="space-y-3">
+                    {[1,2,3,4,5].map(i => (
+                      <div key={i} className="h-20 bg-purple-900/20 animate-pulse rounded-lg" />
+                    ))}
+                  </div>
+                ) : paginatedTransactions.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-purple-900/30 flex items-center justify-center">
+                      <ArrowLeftRight className="w-10 h-10 text-purple-400" />
                     </div>
-                  ) : (
+                    <p className="text-purple-300 text-lg mb-2">Nenhuma transação encontrada</p>
+                    <p className="text-purple-400 text-sm">
+                      {searchQuery || filterType !== "all" || filterCategory || filterAccount || filterStatus !== "all"
+                        ? "Tente ajustar os filtros"
+                        : "Crie sua primeira transação!"}
+                    </p>
+                  </div>
+                ) : (
+                  <>
                     <div className="space-y-3">
-                      {filteredTransactions.map((tx, index) => {
-                        const category = getCategoryInfo(tx.category_id);
-                        const account = getAccountInfo(tx.account_id);
-                        const isIncome = tx.type === "income";
+                      <AnimatePresence mode="popLayout">
+                        {paginatedTransactions.map((tx, index) => {
+                          const category = getCategoryInfo(tx.category_id);
+                          const account = getAccountInfo(tx.account_id);
+                          const isIncome = tx.type === "income";
 
-                        return (
-                          <motion.div
-                            key={tx.id}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            transition={{ delay: index * 0.03 }}
-                            className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-xl glass-card hover:bg-purple-900/20 transition-all gap-3"
-                          >
-                            <div className="flex items-center gap-3 flex-1 w-full">
-                              <div className={`p-2 sm:p-3 rounded-full flex-shrink-0 ${isIncome ? 'bg-green-600/20' : 'bg-red-600/20'}`}>
-                                {isIncome ? (
-                                  <ArrowUpRight className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
-                                ) : (
-                                  <ArrowDownRight className="w-4 h-4 sm:w-5 sm:h-5 text-red-400" />
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="font-medium text-white text-sm sm:text-base truncate">{tx.description}</p>
-                                <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                  <span className="text-xs text-purple-300">
-                                    {formatDateBR(tx.date)}
-                                  </span>
-                                  <span className="text-xs text-purple-400">•</span>
-                                  <span className="text-xs text-purple-300 truncate max-w-[100px]">{account.name}</span>
-                                  <Badge
-                                    className="text-xs"
-                                    style={{
-                                      backgroundColor: category.color + '20',
-                                      color: category.color,
-                                      borderColor: category.color + '40'
-                                    }}
-                                  >
-                                    {category.name}
-                                  </Badge>
+                          return (
+                            <motion.div
+                              key={tx.id}
+                              initial={{ opacity: 0, y: 20 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, x: -100 }} // Updated exit animation
+                              transition={{ delay: index * 0.03 }}
+                              className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-xl glass-card border border-purple-700/30 hover:border-purple-600/50 transition-all gap-3"
+                            >
+                              <div className="flex items-center gap-3 flex-1 w-full">
+                                <div className={`p-2 sm:p-3 rounded-full flex-shrink-0 ${isIncome ? 'bg-green-600/20' : 'bg-red-600/20'}`}>
+                                  {isIncome ? (
+                                    <ArrowUpRight className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
+                                  ) : (
+                                    <ArrowDownRight className="w-4 h-4 sm:w-5 sm:h-5 text-red-400" />
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium text-white text-sm sm:text-base truncate">{tx.description}</p>
+                                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                    <span className="text-xs text-purple-300">
+                                      {formatDateBR(tx.date)}
+                                    </span>
+                                    <span className="text-xs text-purple-400">•</span>
+                                    <span className="text-xs text-purple-300 truncate max-w-[100px]">{account.name}</span>
+                                    <Badge
+                                      className="text-xs"
+                                      style={{
+                                        backgroundColor: category.color + '20',
+                                        color: category.color,
+                                        borderColor: category.color + '40'
+                                      }}
+                                    >
+                                      {category.name}
+                                    </Badge>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                            <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
-                              <p className={`font-bold text-base sm:text-lg ${isIncome ? 'text-green-400' : 'text-red-400'}`}>
-                                {isIncome ? '+' : '-'} R$ {tx.amount.toFixed(2)}
-                              </p>
-                              <div className="flex gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleEdit(tx)}
-                                  className="h-8 w-8"
-                                >
-                                  <Edit className="w-4 h-4 text-purple-400" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleDelete(tx)} // Pass full tx object
-                                  className="h-8 w-8"
-                                >
-                                  <Trash2 className="w-4 h-4 text-red-400" />
-                                </Button>
+                              <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                                <p className={`font-bold text-base sm:text-lg ${isIncome ? 'text-green-400' : 'text-red-400'}`}>
+                                  {isIncome ? '+' : '-'} R$ {tx.amount.toFixed(2)}
+                                </p>
+                                <div className="flex gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleEdit(tx)}
+                                    className="h-8 w-8"
+                                  >
+                                    <Edit className="w-4 h-4 text-purple-400" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleDelete(tx)} // Pass full tx object
+                                    className="h-8 w-8"
+                                  >
+                                    <Trash2 className="w-4 h-4 text-red-400" />
+                                  </Button>
+                                </div>
                               </div>
-                            </div>
-                          </motion.div>
-                        );
-                      })}
+                            </motion.div>
+                          );
+                        })}
+                      </AnimatePresence>
                     </div>
-                  )}
-                </AnimatePresence>
+
+                    {/* ✅ NOVO: Paginação */}
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-center gap-2 mt-6 pt-6 border-t border-purple-900/30">
+                        <Button
+                          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                          disabled={currentPage === 1}
+                          variant="outline"
+                          size="sm"
+                          className="border-purple-700 text-purple-300"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </Button>
+
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                            let pageNum;
+                            if (totalPages <= 5) {
+                              pageNum = i + 1;
+                            } else if (currentPage <= 3) {
+                              pageNum = i + 1;
+                            } else if (currentPage >= totalPages - 2) {
+                              pageNum = totalPages - 4 + i;
+                            } else {
+                              pageNum = currentPage - 2 + i;
+                            }
+
+                            return (
+                              <Button
+                                key={pageNum}
+                                onClick={() => setCurrentPage(pageNum)}
+                                variant={currentPage === pageNum ? "default" : "outline"}
+                                size="sm"
+                                className={currentPage === pageNum
+                                  ? "bg-purple-600 hover:bg-purple-700"
+                                  : "border-purple-700 text-purple-300"}
+                              >
+                                {pageNum}
+                              </Button>
+                            );
+                          })}
+                        </div>
+
+                        <Button
+                          onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                          disabled={currentPage === totalPages}
+                          variant="outline"
+                          size="sm"
+                          className="border-purple-700 text-purple-300"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </Button>
+
+                        <span className="text-purple-300 text-sm ml-2">
+                          Página {currentPage} de {totalPages}
+                        </span>
+                      </div>
+                    )}
+                  </>
+                )}
               </CardContent>
             </Card>
           </div>
