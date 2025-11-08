@@ -36,22 +36,27 @@ Deno.serve(async (req) => {
         const amountValue = parseFloat(amount);
         console.log(`📊 Operação: ${operation} R$ ${amountValue.toFixed(2)} na conta ${account_id}`);
 
-        // ✅ SEMPRE usar service role
+        // ✅ SEMPRE usar service role para garantir permissões totais
         const client = base44.asServiceRole;
 
-        // Buscar a conta ATUAL
-        console.log("🔍 Buscando conta...");
-        const accounts = await client.entities.Account.filter({ id: account_id });
+        // ✅ CORRIGIDO: Buscar TODAS as contas e filtrar manualmente
+        console.log("🔍 Buscando todas as contas...");
+        const allAccounts = await client.entities.Account.list();
+        console.log(`📊 Total de contas no sistema: ${allAccounts.length}`);
         
-        if (accounts.length === 0) {
+        // Filtrar manualmente pela conta específica
+        const account = allAccounts.find(acc => acc.id === account_id);
+        
+        if (!account) {
             console.error(`❌ Conta ${account_id} não encontrada!`);
+            console.log(`📋 IDs disponíveis:`, allAccounts.map(a => a.id));
             return Response.json({ 
                 success: false,
-                error: 'Conta não encontrada' 
+                error: 'Conta não encontrada',
+                available_ids: allAccounts.map(a => a.id)
             }, { status: 404 });
         }
 
-        const account = accounts[0];
         const currentBalance = account.balance || 0;
         
         console.log(`✅ Conta: ${account.name}`);
@@ -80,10 +85,11 @@ Deno.serve(async (req) => {
         // ✅ Aguardar 500ms
         await new Promise(resolve => setTimeout(resolve, 500));
 
-        // ✅ Confirmar
+        // ✅ Confirmar lendo novamente
         console.log("🔍 Confirmando atualização...");
-        const updatedAccounts = await client.entities.Account.filter({ id: account_id });
-        const confirmedBalance = updatedAccounts[0]?.balance || 0;
+        const updatedAccounts = await client.entities.Account.list();
+        const updatedAccount = updatedAccounts.find(acc => acc.id === account_id);
+        const confirmedBalance = updatedAccount?.balance || 0;
 
         console.log(`✅ Saldo CONFIRMADO: R$ ${confirmedBalance.toFixed(2)}`);
 
@@ -104,8 +110,8 @@ Deno.serve(async (req) => {
         });
 
     } catch (error) {
-        console.error('❌ ERRO ao atualizar saldo:', error);
-        console.error('Stack:', error.stack);
+        console.error('❌ ERRO CRÍTICO ao atualizar saldo:', error);
+        console.error('Stack completo:', error.stack);
         return Response.json({ 
             success: false,
             error: error.message,
