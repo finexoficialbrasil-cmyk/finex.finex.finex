@@ -97,6 +97,7 @@ export default function Plans() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentSettings, setPaymentSettings] = useState({});
   const [showComparison, setShowComparison] = useState(false);
+  const [errorMessage, setErrorMessage] = useState(""); // ✅ NOVO: Estado para mensagem de erro
   const [paymentData, setPaymentData] = useState({
     payment_proof_url: "",
     notes: "",
@@ -217,8 +218,21 @@ export default function Plans() {
     setIsSubmitting(true);
     setSelectedPlan(plan);
     setShowPaymentModal(true);
+    setErrorMessage(""); // ✅ LIMPAR erro anterior
 
     try {
+      console.log("📊 Dados do usuário:", {
+        email: user.email,
+        full_name: user.full_name,
+        phone: user.phone
+      });
+
+      console.log("🔧 Configurações:", {
+        mode: paymentSettings.payment_mode,
+        has_key: !!paymentSettings.asaas_api_key,
+        key_preview: paymentSettings.asaas_api_key?.substring(0, 20) + "..."
+      });
+
       const paymentPayload = {
         asaas_api_key: paymentSettings.asaas_api_key,
         customer_name: user.full_name || "Cliente",
@@ -230,14 +244,21 @@ export default function Plans() {
         due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
       };
 
-      console.log("🔄 Criando pagamento Asaas...", paymentPayload);
+      console.log("🔄 Payload completo:", JSON.stringify(paymentPayload, null, 2));
+      console.log("🔄 Chamando asaasCreatePayment...");
 
       // ✅ CORRIGIDO: Usar SDK em vez de import
       const response = await base44.functions.invoke('asaasCreatePayment', paymentPayload);
 
-      console.log("✅ Resposta Asaas:", response);
+      console.log("📦 Resposta completa:", response);
+      console.log("📊 Status:", response?.status);
+      console.log("✅ Success:", response?.success);
+      console.log("❌ Error:", response?.error);
 
-      if (response?.success) {
+      // ✅ TRATAMENTO MAIS ROBUSTO
+      if (response?.success === true) {
+        console.log("✅ Pagamento criado com sucesso!");
+        
         // Criar registro de assinatura pendente
         await Subscription.create({
           user_email: user.email,
@@ -257,11 +278,26 @@ export default function Plans() {
           asaas_payment_id: response.payment_id
         });
       } else {
-        throw new Error(response?.error || "Erro desconhecido");
+        // ✅ ERRO MAIS DETALHADO
+        const errorMsg = response?.error || response?.message || "Erro desconhecido ao criar pagamento";
+        const errorDetails = response?.details || "";
+        
+        console.error("❌ Erro na resposta:", errorMsg);
+        console.error("📋 Detalhes:", errorDetails);
+        
+        throw new Error(`${errorMsg}\n\n${errorDetails}`);
       }
     } catch (error) {
-      console.error("❌ Erro ao criar pagamento:", error);
-      alert(`❌ Erro ao criar pagamento:\n\n${error.message}\n\n${error.details || ''}`);
+      console.error("❌ ERRO CAPTURADO:", error);
+      console.error("📋 Tipo:", error.constructor.name);
+      console.error("📋 Mensagem:", error.message);
+      console.error("📋 Stack:", error.stack);
+      
+      // ✅ MOSTRAR ERRO DETALHADO
+      const errorText = `❌ Erro ao criar pagamento:\n\n${error.message}\n\nPor favor:\n1. Verifique se a API Key do Asaas está configurada\n2. Verifique se está no ambiente correto (sandbox/produção)\n3. Entre em contato com o suporte se o problema persistir`;
+      
+      setErrorMessage(errorText);
+      alert(errorText);
       setShowPaymentModal(false);
     } finally {
       setIsSubmitting(false);
@@ -769,11 +805,25 @@ export default function Plans() {
             </DialogTitle>
           </DialogHeader>
 
+          {/* ✅ NOVO: Mostrar erro se houver */}
+          {errorMessage && (
+            <div className="bg-red-900/30 border-2 border-red-500/50 rounded-xl p-4 mb-4">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-6 h-6 text-red-400 flex-shrink-0 mt-1" />
+                <div>
+                  <p className="text-red-300 font-bold mb-2">Erro no Pagamento</p>
+                  <p className="text-red-200 text-sm whitespace-pre-line">{errorMessage}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {isSubmitting && !paymentData.pix_code ? (
             <div className="text-center py-12">
               <Loader2 className="w-16 h-16 text-purple-400 animate-spin mx-auto mb-4" />
               <p className="text-white font-bold text-lg mb-2">Gerando QR Code PIX...</p>
               <p className="text-purple-300 text-sm">Aguarde alguns segundos</p>
+              <p className="text-purple-400 text-xs mt-2">Conectando com Asaas...</p>
             </div>
           ) : paymentData.pix_code ? (
             /* Pagamento Asaas */
