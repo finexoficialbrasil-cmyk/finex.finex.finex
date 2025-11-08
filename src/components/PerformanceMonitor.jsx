@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { User } from "@/entities/User";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,7 +24,6 @@ export const trackPerformance = (type, name, duration) => {
 
   if (type === 'page_load') {
     performanceMetrics.pageLoads.push(metric);
-    // Manter apenas últimas 20
     if (performanceMetrics.pageLoads.length > 20) {
       performanceMetrics.pageLoads.shift();
     }
@@ -52,9 +52,28 @@ export default function PerformanceMonitor() {
     slowestPage: null,
     slowestApi: null
   });
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Atualizar métricas a cada 3 segundos
+    checkAdminStatus();
+  }, []);
+
+  const checkAdminStatus = async () => {
+    try {
+      const user = await User.me();
+      setIsAdmin(user.role === 'admin');
+    } catch (error) {
+      console.error("Erro ao verificar admin:", error);
+      setIsAdmin(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isAdmin) return;
+
     const interval = setInterval(() => {
       setMetrics({
         pageLoads: [...performanceMetrics.pageLoads],
@@ -66,7 +85,7 @@ export default function PerformanceMonitor() {
     }, 3000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [isAdmin]);
 
   const calculateStats = () => {
     const pageLoads = performanceMetrics.pageLoads;
@@ -117,10 +136,9 @@ export default function PerformanceMonitor() {
     });
   };
 
-  // Só mostrar em desenvolvimento ou para admins
-  if (process.env.NODE_ENV === 'production' && !window.location.search.includes('debug=true')) {
-    return null;
-  }
+  // ✅ CORRIGIDO: Só mostrar para ADMIN
+  if (isLoading) return null;
+  if (!isAdmin) return null;
 
   return (
     <>
@@ -133,7 +151,7 @@ export default function PerformanceMonitor() {
         <Button
           onClick={() => setIsVisible(!isVisible)}
           className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 shadow-lg"
-          title="Monitor de Performance"
+          title="Monitor de Performance (Admin Only)"
         >
           <Activity className="w-6 h-6" />
         </Button>
@@ -154,6 +172,7 @@ export default function PerformanceMonitor() {
                   <CardTitle className="text-white flex items-center gap-2 text-lg">
                     <Activity className="w-5 h-5 text-cyan-400" />
                     Performance Monitor
+                    <Badge className="bg-red-600 text-white text-[10px]">ADMIN</Badge>
                   </CardTitle>
                   <Button
                     variant="ghost"
@@ -279,7 +298,7 @@ export default function PerformanceMonitor() {
 
                 {/* Info */}
                 <p className="text-[10px] text-purple-400 text-center">
-                  💡 Métricas atualizadas a cada 3 segundos
+                  🔒 Visível apenas para administradores
                 </p>
               </CardContent>
             </Card>
