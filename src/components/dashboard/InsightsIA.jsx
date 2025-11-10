@@ -120,24 +120,24 @@ export default function InsightsIA({ transactions = [], accounts = [], goals = [
 
   return (
     <Card className={`glass-card border-0 ${insight.bgColor} relative overflow-hidden`}>
-      <CardHeader className="border-b border-purple-900/30 pb-4">
+      <CardHeader className="border-b border-purple-900/30 pb-3 md:pb-4 p-4 md:p-6">
         <CardTitle className="flex items-center justify-between text-white">
           <div className="flex items-center gap-2">
-            <Brain className="w-5 h-5 text-purple-400" />
-            Insights IA
+            <Brain className="w-4 h-4 md:w-5 md:h-5 text-purple-400" />
+            <span className="text-base md:text-lg">Insights IA</span>
           </div>
           <Button
             onClick={nextInsight}
             variant="ghost"
             size="sm"
-            className="text-purple-300 hover:text-white"
+            className="text-purple-300 hover:text-white h-8 w-8 md:h-auto md:w-auto p-1 md:p-2"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className="w-3 h-3 md:w-4 md:h-4" />
           </Button>
         </CardTitle>
       </CardHeader>
 
-      <CardContent className="p-6">
+      <CardContent className="p-4 md:p-6">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentInsight}
@@ -146,24 +146,24 @@ export default function InsightsIA({ transactions = [], accounts = [], goals = [
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="flex items-start gap-4">
+            <div className="flex flex-col sm:flex-row items-start gap-3 md:gap-4">
               <motion.div
                 whileHover={{ scale: 1.1, rotate: 5 }}
-                className={`p-4 rounded-2xl bg-gradient-to-br ${insight.color} shadow-lg flex-shrink-0`}
+                className={`p-3 md:p-4 rounded-xl md:rounded-2xl bg-gradient-to-br ${insight.color} shadow-lg flex-shrink-0`}
               >
-                <Icon className="w-8 h-8 text-white" />
+                <Icon className="w-6 h-6 md:w-8 md:h-8 text-white" />
               </motion.div>
 
-              <div className="flex-1">
-                <h3 className="text-xl font-bold text-white mb-2">
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg md:text-xl font-bold text-white mb-1 md:mb-2">
                   {insight.title}
                 </h3>
-                <p className="text-purple-200 mb-3">
+                <p className="text-sm md:text-base text-purple-200 mb-2 md:mb-3">
                   {insight.description}
                 </p>
-                <div className="flex items-start gap-2 p-3 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
-                  <Lightbulb className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-purple-300">
+                <div className="flex items-start gap-2 p-2 md:p-3 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
+                  <Lightbulb className="w-3 h-3 md:w-4 md:h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs md:text-sm text-purple-300">
                     {insight.suggestion}
                   </p>
                 </div>
@@ -171,14 +171,14 @@ export default function InsightsIA({ transactions = [], accounts = [], goals = [
             </div>
 
             {/* Progress Indicator */}
-            <div className="flex justify-center gap-2 mt-6">
+            <div className="flex justify-center gap-1.5 md:gap-2 mt-4 md:mt-6">
               {insights.map((_, index) => (
                 <motion.div
                   key={index}
-                  className={`h-1.5 rounded-full transition-all ${
+                  className={`h-1 md:h-1.5 rounded-full transition-all cursor-pointer ${
                     index === currentInsight
-                      ? 'w-8 bg-purple-400'
-                      : 'w-1.5 bg-purple-800'
+                      ? 'w-6 md:w-8 bg-purple-400'
+                      : 'w-1 md:w-1.5 bg-purple-800'
                   }`}
                   whileHover={{ scale: 1.2 }}
                   onClick={() => setCurrentInsight(index)}
@@ -199,7 +199,7 @@ export default function InsightsIA({ transactions = [], accounts = [], goals = [
           duration: 3,
           repeat: Infinity
         }}
-        className="absolute -bottom-10 -right-10 w-40 h-40 bg-gradient-to-br from-purple-600/20 to-pink-600/20 rounded-full blur-3xl"
+        className="absolute -bottom-10 -right-10 w-32 h-32 md:w-40 md:h-40 bg-gradient-to-br from-purple-600/20 to-pink-600/20 rounded-full blur-3xl"
       />
     </Card>
   );

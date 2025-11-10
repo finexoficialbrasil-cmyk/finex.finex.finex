@@ -47,42 +47,42 @@ export default function AccountCard3D({ account, index }) {
       animate={{ opacity: 1, scale: 1, rotateX: 0 }}
       transition={{ delay: index * 0.1 }}
       whileHover={{ 
-        scale: 1.05, 
-        rotateY: 5,
+        scale: 1.02,
         transition: { duration: 0.3 }
       }}
       style={{ perspective: 1000 }}
+      className="h-full"
     >
-      <Card className="glass-card border-0 relative overflow-hidden group">
+      <Card className="glass-card border-0 relative overflow-hidden group h-full">
         {/* Gradient Background */}
         <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-10 group-hover:opacity-20 transition-opacity`} />
         
         {/* Card Number Pattern (decorative) */}
-        <div className="absolute top-0 right-0 w-32 h-32 opacity-5">
-          <div className="grid grid-cols-4 gap-2 p-4">
+        <div className="absolute top-0 right-0 w-24 h-24 md:w-32 md:h-32 opacity-5">
+          <div className="grid grid-cols-4 gap-1 md:gap-2 p-2 md:p-4">
             {Array.from({ length: 16 }).map((_, i) => (
-              <div key={i} className="w-2 h-2 rounded-full bg-white" />
+              <div key={i} className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-white" />
             ))}
           </div>
         </div>
 
-        <CardContent className="p-6 relative z-10">
+        <CardContent className="p-4 md:p-6 relative z-10">
           {/* Header */}
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center gap-3">
+          <div className="flex items-start justify-between mb-3 md:mb-4">
+            <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
               <motion.div
                 whileHover={{ rotate: 360 }}
                 transition={{ duration: 0.5 }}
-                className={`p-3 rounded-xl bg-gradient-to-br ${gradient} shadow-lg`}
+                className={`p-2 md:p-3 rounded-lg md:rounded-xl bg-gradient-to-br ${gradient} shadow-lg flex-shrink-0`}
               >
-                <Icon className="w-6 h-6 text-white" />
+                <Icon className="w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 text-white" />
               </motion.div>
               
-              <div>
-                <h3 className="text-white font-bold text-lg">
+              <div className="min-w-0 flex-1">
+                <h3 className="text-white font-bold text-sm md:text-base lg:text-lg truncate">
                   {account.name}
                 </h3>
-                <p className="text-purple-400 text-xs">
+                <p className="text-purple-400 text-[10px] md:text-xs truncate">
                   {account.type === 'checking' && 'Conta Corrente'}
                   {account.type === 'savings' && 'Poupança'}
                   {account.type === 'credit_card' && 'Cartão de Crédito'}
@@ -95,36 +95,36 @@ export default function AccountCard3D({ account, index }) {
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              className={`p-2 rounded-full ${
+              className={`p-1.5 md:p-2 rounded-full flex-shrink-0 ${
                 isPositive ? 'bg-green-600/20' : 'bg-red-600/20'
               }`}
             >
               {isPositive ? (
-                <CheckCircle className="w-4 h-4 text-green-400" />
+                <CheckCircle className="w-3 h-3 md:w-4 md:h-4 text-green-400" />
               ) : (
-                <AlertTriangle className="w-4 h-4 text-red-400" />
+                <AlertTriangle className="w-3 h-3 md:w-4 md:h-4 text-red-400" />
               )}
             </motion.div>
           </div>
 
           {/* Balance */}
-          <div className="mb-4">
-            <p className="text-purple-300 text-xs mb-1">Saldo Disponível</p>
+          <div className="mb-3 md:mb-4">
+            <p className="text-purple-300 text-[10px] md:text-xs mb-0.5 md:mb-1">Saldo Disponível</p>
             <motion.div
-              className="flex items-baseline gap-2"
+              className="flex items-baseline gap-1 md:gap-2"
               whileHover={{ scale: 1.02 }}
             >
-              <span className="text-3xl font-bold text-white">
+              <span className="text-xl md:text-2xl lg:text-3xl font-bold text-white">
                 R$ {Math.abs(account.balance).toFixed(2)}
               </span>
               {!isPositive && (
-                <span className="text-red-400 text-sm">(negativo)</span>
+                <span className="text-red-400 text-xs md:text-sm">(negativo)</span>
               )}
             </motion.div>
           </div>
 
           {/* Mini Chart (decorative sparkline) */}
-          <div className="h-12 mb-4 opacity-30">
+          <div className="h-8 md:h-12 mb-3 md:mb-4 opacity-30">
             <svg width="100%" height="100%" preserveAspectRatio="none">
               <polyline
                 fill="none"
@@ -140,17 +140,19 @@ export default function AccountCard3D({ account, index }) {
           <div className="flex gap-2">
             <Button
               size="sm"
-              className={`flex-1 bg-gradient-to-r ${gradient} hover:opacity-90`}
+              className={`flex-1 bg-gradient-to-r ${gradient} hover:opacity-90 text-xs md:text-sm h-8 md:h-auto`}
             >
               <ArrowUpRight className="w-3 h-3 mr-1" />
-              Transação
+              <span className="hidden sm:inline">Transação</span>
+              <span className="sm:hidden">+</span>
             </Button>
             <Button
               size="sm"
               variant="outline"
-              className="border-purple-700 text-purple-300 hover:bg-purple-900/30"
+              className="border-purple-700 text-purple-300 hover:bg-purple-900/30 text-xs md:text-sm h-8 md:h-auto px-2 md:px-4"
             >
-              Detalhes
+              <span className="hidden sm:inline">Detalhes</span>
+              <span className="sm:hidden">•••</span>
             </Button>
           </div>
         </CardContent>
