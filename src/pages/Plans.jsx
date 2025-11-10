@@ -64,7 +64,7 @@ const calculateDaysLeft = (endDateString) => {
   return diffDays;
 };
 
-// ✅ NOVA FUNÇÃO: Verificar se tem TRIAL ou ASSINATURA ativa
+// ✅ FUNÇÃO CORRIGIDA: NUNCA dar trial para quem já teve plano pago
 const hasActiveAccess = (user) => {
   if (!user) return false;
   if (user.role === 'admin') return true;
@@ -72,14 +72,14 @@ const hasActiveAccess = (user) => {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-  // ✅ TRIAL ativo
+  // ✅ VERIFICAR TRIAL
   if (user.subscription_status === 'trial' && user.trial_ends_at) {
     const [year, month, day] = user.trial_ends_at.split('-').map(Number);
     const trialEnd = new Date(year, month - 1, day);
     return trialEnd >= today;
   }
   
-  // ✅ Assinatura paga ativa
+  // ✅ VERIFICAR ASSINATURA PAGA
   if (user.subscription_status === 'active' && user.subscription_end_date) {
     const [year, month, day] = user.subscription_end_date.split('-').map(Number);
     const endDate = new Date(year, month - 1, day);
@@ -164,7 +164,20 @@ export default function Plans() {
 
   const handleSelectPlan = async (plan) => {
     try {
-      // ✅ USAR NOVA FUNÇÃO para verificar assinatura ativa
+      // ✅ NOVO: Verificar se usuário JÁ TEVE plano pago que venceu
+      // This check determines if the user had a paid plan (not 'free' and not a 'trial' status)
+      // which implies they paid at some point, and thus shouldn't get a free trial again.
+      const hadPaidPlan = user?.subscription_plan && 
+                          user.subscription_plan !== 'free' && 
+                          user.subscription_status !== 'trial';
+      
+      // ✅ Se já teve plano pago e está tentando pegar FREE, BLOQUEAR
+      if (hadPaidPlan && plan.price === 0) {
+        alert(`❌ BLOQUEADO!\n\n🔒 Você já teve uma assinatura paga anteriormente.\n\n⚠️ Não é possível ativar o plano gratuito.\n\n💡 Escolha um plano pago para renovar seu acesso.`);
+        return;
+      }
+      
+      // ✅ Se tem acesso ativo
       if (hasActiveAccess(user)) {
         // ✅ Se está tentando escolher plano free
         if (plan.price === 0) {
@@ -309,7 +322,13 @@ export default function Plans() {
     try {
       console.log("🆓 Ativando plano FREE como TRIAL de 3 dias...");
       
-      // ✅ CORRIGIDO: FREE = TRIAL de 3 dias
+      // ✅ IMPORTANTE: Verificar se usuário já teve plano pago antes
+      if (user.subscription_plan && user.subscription_plan !== 'free') {
+        alert(`❌ BLOQUEADO!\n\n🔒 Você já teve uma assinatura paga anteriormente.\n\n⚠️ Não é possível ativar o trial gratuito novamente.\n\n💡 Escolha um plano pago para renovar.`);
+        return;
+      }
+      
+      // ✅ FREE = TRIAL de 3 dias (apenas para NOVOS usuários)
       const now = new Date();
       const trialStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const trialEnd = new Date(trialStart);
@@ -318,11 +337,11 @@ export default function Plans() {
       const trialStartStr = `${trialStart.getFullYear()}-${String(trialStart.getMonth() + 1).padStart(2, '0')}-${String(trialStart.getDate()).padStart(2, '0')}`;
       const trialEndStr = `${trialEnd.getFullYear()}-${String(trialEnd.getMonth() + 1).padStart(2, '0')}-${String(trialEnd.getDate()).padStart(2, '0')}`;
       
-      // ✅ ATIVAR TRIAL (não plano vitalício!)
+      // ✅ ATIVAR TRIAL
       await User.updateMyUserData({
-        subscription_plan: null, // ✅ SEM plano
+        subscription_plan: null, // ✅ SEM plano específico (o acesso é o trial)
         subscription_status: 'trial', // ✅ Status TRIAL
-        subscription_end_date: null, // ✅ SEM data de vencimento de assinatura
+        subscription_end_date: null, // ✅ SEM data de vencimento de assinatura paga
         trial_started_at: trialStartStr,
         trial_ends_at: trialEndStr
       });
@@ -336,7 +355,7 @@ export default function Plans() {
         notes: "Trial de 3 dias ativado"
       });
 
-      alert(`✅ Trial de 3 dias ativado!\n\nVocê tem acesso completo até ${trialEnd.toLocaleDateString('pt-BR')}.\n\nAtualize a página para começar!`);
+      alert(`✅ Trial de 3 dias ativado!\n\n🎉 Você tem acesso completo até ${trialEnd.toLocaleDateString('pt-BR')}.\n\n⚠️ Após o vencimento, escolha um plano pago para continuar.\n\nAtualize a página para começar!`);
       loadData();
     } catch (error) {
       console.error("Erro ao ativar trial:", error);
