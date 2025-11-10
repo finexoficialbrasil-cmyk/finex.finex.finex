@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { BillingNotification } from "@/entities/BillingNotification";
 import { User } from "@/entities/User";
@@ -16,7 +17,10 @@ import {
   Users,
   AlertTriangle,
   RefreshCw,
-  Calendar
+  Calendar,
+  Phone,
+  Copy,
+  MessageCircle
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -99,7 +103,22 @@ export default function AdminBilling() {
       
       if (data.success) {
         setLastReport(data.report);
-        alert(`✅ Processo concluído!\n\n📧 Emails enviados: ${data.report.notifications_sent}\n❌ Erros: ${data.report.errors}\n\nVeja os detalhes abaixo.`);
+        
+        // ✅ NOVO: Enriquecer relatório com dados dos usuários (telefones)
+        if (data.report.details && data.report.details.length > 0) {
+          const enrichedDetails = data.report.details.map(detail => {
+            const user = users.find(u => u.email === detail.email);
+            return {
+              ...detail,
+              phone: user?.phone || null,
+              full_name: user?.full_name || 'Usuário',
+              whatsapp_enabled: user?.whatsapp_notifications || false
+            };
+          });
+          setLastReport({ ...data.report, details: enrichedDetails });
+        }
+        
+        alert(`✅ Processo concluído!\n\n📧 Emails enviados: ${data.report.emails_sent || data.report.notifications_sent}\n📱 WhatsApp enviados: ${data.report.whatsapp_sent || 0}\n❌ Erros: ${data.report.errors}\n\nVeja os detalhes abaixo.`);
         await loadData();
       } else {
         alert(`❌ Erro: ${data.error}`);
@@ -110,6 +129,40 @@ export default function AdminBilling() {
     } finally {
       setIsSending(false);
     }
+  };
+
+  const copyToClipboard = (text, label) => {
+    navigator.clipboard.writeText(text);
+    alert(`✅ ${label} copiado para a área de transferência!\n\n${text}`);
+  };
+
+  const formatPhoneForWhatsApp = (phone) => {
+    if (!phone) return null;
+    // Remove tudo que não é número
+    const numbers = phone.replace(/\D/g, '');
+    // Se não começa com 55, adiciona (Brasil)
+    return numbers.startsWith('55') ? numbers : `55${numbers}`;
+  };
+
+  const openWhatsApp = (phone, name, type, expiryDate) => {
+    const formattedPhone = formatPhoneForWhatsApp(phone);
+    if (!formattedPhone) return;
+    
+    // Template de mensagem baseado no tipo
+    let message = '';
+    const date = new Date(expiryDate).toLocaleDateString('pt-BR');
+    
+    if (type.includes('before')) {
+      const days = type.includes('7') ? '7' : type.includes('3') ? '3' : '1';
+      message = `⚠️ *FINEX - Aviso de Vencimento*\n\nOlá, *${name}*! 👋\n\n🚨 Seu plano vence em *${days} DIAS*!\n📅 Vencimento: *${date}*\n\n💡 Renove agora:\n👉 ${window.location.origin}/Plans\n\n✨ FINEX - Inteligência Financeira`;
+    } else if (type === 'on_expiry') {
+      message = `🔴 *FINEX - VENCE HOJE!*\n\n*${name}*, seu acesso será bloqueado EM BREVE! ⏰\n\n📅 Vence HOJE: *${date}*\n\n⚡ RENOVE IMEDIATAMENTE:\n👉 ${window.location.origin}/Plans\n\n✨ FINEX - Inteligência Financeira`;
+    } else {
+      message = `🔒 *FINEX - Acesso Bloqueado*\n\nOlá, *${name}*\n\nSeu plano venceu e seu acesso está *BLOQUEADO*.\n\n😢 Seus dados estão seguros, mas você não pode acessá-los.\n\n🔓 Renove e desbloqueie:\n👉 ${window.location.origin}/Plans\n\n✨ FINEX - Inteligência Financeira`;
+    }
+    
+    const encodedMessage = encodeURIComponent(message);
+    window.open(`https://wa.me/${formattedPhone}?text=${encodedMessage}`, '_blank');
   };
 
   const getTypeLabel = (type) => {
@@ -226,7 +279,7 @@ export default function AdminBilling() {
         </Card>
       </div>
 
-      {/* Último Relatório */}
+      {/* ✅ NOVO: Último Relatório COM TELEFONES */}
       {lastReport && (
         <Card className="glass-card border-0 border-l-4 border-green-500">
           <CardHeader className="border-b border-purple-900/30">
@@ -239,15 +292,15 @@ export default function AdminBilling() {
             <div className="grid md:grid-cols-3 gap-4 mb-6">
               <div className="p-4 rounded-lg bg-green-900/20 border border-green-700/30">
                 <p className="text-green-300 text-sm">Emails Enviados</p>
-                <p className="text-3xl font-bold text-white">{lastReport.notifications_sent}</p>
+                <p className="text-3xl font-bold text-white">{lastReport.emails_sent || lastReport.notifications_sent}</p>
+              </div>
+              <div className="p-4 rounded-lg bg-cyan-900/20 border border-cyan-700/30">
+                <p className="text-cyan-300 text-sm">WhatsApp Enviados</p>
+                <p className="text-3xl font-bold text-white">{lastReport.whatsapp_sent || 0}</p>
               </div>
               <div className="p-4 rounded-lg bg-red-900/20 border border-red-700/30">
                 <p className="text-red-300 text-sm">Erros</p>
                 <p className="text-3xl font-bold text-white">{lastReport.errors}</p>
-              </div>
-              <div className="p-4 rounded-lg bg-blue-900/20 border border-blue-700/30">
-                <p className="text-blue-300 text-sm">Usuários Verificados</p>
-                <p className="text-3xl font-bold text-white">{lastReport.total_users}</p>
               </div>
             </div>
 
@@ -263,26 +316,101 @@ export default function AdminBilling() {
               </div>
             </div>
 
-            {lastReport.details.length > 0 && (
+            {/* ✅ NOVO: Detalhes COM TELEFONES E BOTÕES WHATSAPP */}
+            {lastReport.details && lastReport.details.length > 0 && (
               <div>
-                <h4 className="text-white font-semibold mb-3">Detalhes dos Envios:</h4>
-                <div className="space-y-2 max-h-60 overflow-y-auto">
+                <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
+                  <MessageCircle className="w-5 h-5 text-green-400" />
+                  Contatos para WhatsApp Manual:
+                </h4>
+                <div className="space-y-3 max-h-96 overflow-y-auto">
                   {lastReport.details.map((detail, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 rounded bg-purple-900/10 border border-purple-700/20">
-                      <div className="flex-1">
-                        <p className="text-white text-sm">{detail.email}</p>
-                        <p className="text-purple-400 text-xs">{getTypeLabel(detail.type)}</p>
+                    <motion.div
+                      key={idx}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.05 }}
+                      className="p-4 rounded-xl glass-card border-l-4 border-cyan-500"
+                    >
+                      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-full bg-purple-600/20">
+                              <Users className="w-5 h-5 text-purple-400" />
+                            </div>
+                            <div>
+                              <p className="text-white font-bold">{detail.full_name || 'Usuário'}</p>
+                              <p className="text-purple-300 text-sm">{detail.email}</p>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap gap-2 items-center ml-11">
+                            <Badge className={getTypeColor(detail.type)}>
+                              {getTypeLabel(detail.type)}
+                            </Badge>
+                            <span className="text-purple-300 text-xs">
+                              📅 Vence: {new Date(detail.expiry_date).toLocaleDateString('pt-BR')}
+                            </span>
+                            {detail.sent_via && (
+                              <Badge className="bg-cyan-600">
+                                {detail.sent_via === 'both' && '📧📱 Email + WhatsApp'}
+                                {detail.sent_via === 'email' && '📧 Email'}
+                                {detail.sent_via === 'whatsapp' && '📱 WhatsApp'}
+                              </Badge>
+                            )}
+                          </div>
+
+                          {/* ✅ TELEFONE COM BOTÕES */}
+                          {detail.phone ? (
+                            <div className="ml-11 p-3 rounded-lg bg-green-900/20 border border-green-700/30">
+                              <div className="flex items-center gap-3 mb-2">
+                                <Phone className="w-4 h-4 text-green-400" />
+                                <p className="text-green-300 font-mono text-lg">{detail.phone}</p>
+                              </div>
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  onClick={() => copyToClipboard(detail.phone, 'Telefone')}
+                                  className="bg-purple-600 hover:bg-purple-700"
+                                >
+                                  <Copy className="w-4 h-4 mr-2" />
+                                  Copiar Telefone
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() => openWhatsApp(detail.phone, detail.full_name, detail.type, detail.expiry_date)}
+                                  className="bg-green-600 hover:bg-green-700"
+                                >
+                                  <MessageCircle className="w-4 h-4 mr-2" />
+                                  Abrir WhatsApp
+                                </Button>
+                              </div>
+                              {detail.whatsapp_enabled && (
+                                <p className="text-green-400 text-xs mt-2">
+                                  ✅ Usuário aceita receber WhatsApp
+                                </p>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="ml-11 p-3 rounded-lg bg-red-900/20 border border-red-700/30">
+                              <p className="text-red-300 text-sm">
+                                ⚠️ Telefone não cadastrado
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
+                        <Badge className={
+                          detail.status === 'sent' ? 'bg-green-600' :
+                          detail.status === 'error' ? 'bg-red-600' :
+                          'bg-gray-600'
+                        }>
+                          {detail.status === 'sent' && '✅ Enviado'}
+                          {detail.status === 'error' && '❌ Erro'}
+                          {detail.status === 'skipped' && '⏭️ Pulado'}
+                        </Badge>
                       </div>
-                      <Badge className={
-                        detail.status === 'sent' ? 'bg-green-600' :
-                        detail.status === 'error' ? 'bg-red-600' :
-                        'bg-gray-600'
-                      }>
-                        {detail.status === 'sent' && '✅ Enviado'}
-                        {detail.status === 'error' && '❌ Erro'}
-                        {detail.status === 'skipped' && '⏭️ Pulado'}
-                      </Badge>
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
               </div>
@@ -340,6 +468,20 @@ export default function AdminBilling() {
               </ul>
             </div>
 
+            <div className="p-4 rounded-lg bg-green-900/20 border border-green-700/30">
+              <h4 className="text-green-300 font-semibold mb-2 flex items-center gap-2">
+                <MessageCircle className="w-4 h-4" />
+                WhatsApp Manual:
+              </h4>
+              <ul className="text-green-200 text-sm space-y-1 list-disc list-inside">
+                <li>✅ Sistema envia EMAIL automaticamente</li>
+                <li>✅ Você vê os TELEFONES no relatório</li>
+                <li>✅ Botão "Abrir WhatsApp" com mensagem pronta</li>
+                <li>✅ Botão "Copiar Telefone" para uso manual</li>
+                <li>✅ Dupla cobertura: Email + WhatsApp</li>
+              </ul>
+            </div>
+
             <div className="p-4 rounded-lg bg-purple-900/20 border border-purple-700/30">
               <h4 className="text-purple-300 font-semibold mb-2 flex items-center gap-2">
                 <Clock className="w-4 h-4" />
@@ -347,7 +489,8 @@ export default function AdminBilling() {
               </h4>
               <p className="text-purple-200 text-sm">
                 💡 <strong>Execute esta verificação 1 vez por dia</strong> (de preferência pela manhã) 
-                para garantir que todos os usuários recebam os avisos no momento certo.
+                para garantir que todos os usuários recebam os avisos no momento certo. Após o envio automático de emails,
+                use os botões de WhatsApp para enviar mensagens manualmente e aumentar a taxa de renovação em 3-4x!
               </p>
             </div>
           </div>
