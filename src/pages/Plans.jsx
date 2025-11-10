@@ -164,22 +164,35 @@ export default function Plans() {
 
   const handleSelectPlan = async (plan) => {
     try {
-      // ✅ NOVO: Verificar se usuário JÁ TEVE plano pago que venceu
-      // This check determines if the user had a paid plan (not 'free' and not a 'trial' status)
-      // which implies they paid at some point, and thus shouldn't get a free trial again.
-      const hadPaidPlan = user?.subscription_plan && 
-                          user.subscription_plan !== 'free' && 
-                          user.subscription_status !== 'trial';
+      // ✅ CRÍTICO: Verificar se JÁ USOU o plano FREE antes
+      // Um usuário já usou o trial se:
+      // 1. Ele tem um registro em trial_started_at
+      // 2. O subscription_plan dele é 'free' (mesmo que trial_started_at não esteja setado, indica que ele pegou um plano "gratuito")
+      // 3. Ele teve um plano pago antes (indicado por subscription_plan não 'free' e existente)
+      const alreadyUsedFreeTrial = user?.trial_started_at || 
+                                   user?.subscription_plan === 'free' ||
+                                   (user?.subscription_plan && user?.subscription_plan !== 'free');
       
-      // ✅ Se já teve plano pago e está tentando pegar FREE, BLOQUEAR
-      if (hadPaidPlan && plan.price === 0) {
-        alert(`❌ BLOQUEADO!\n\n🔒 Você já teve uma assinatura paga anteriormente.\n\n⚠️ Não é possível ativar o plano gratuito.\n\n💡 Escolha um plano pago para renovar seu acesso.`);
+      // ✅ BLOQUEAR TRIAL se já usou antes (trial OU plano pago)
+      if (plan.price === 0 && alreadyUsedFreeTrial) {
+        let message = '❌ ACESSO AO TRIAL BLOQUEADO!\n\n';
+        
+        if (user.trial_started_at) {
+          message += '🔒 Você já usou o período de teste gratuito anteriormente.\n\n';
+        } else if (user.subscription_plan && user.subscription_plan !== 'free') {
+          message += '🔒 Você já teve uma assinatura paga anteriormente.\n\n';
+        }
+        
+        message += '⚠️ O trial de 3 dias é ÚNICO e pode ser usado apenas UMA VEZ.\n\n';
+        message += '💡 Escolha um plano pago para continuar usando o sistema.';
+        
+        alert(message);
         return;
       }
       
       // ✅ Se tem acesso ativo
       if (hasActiveAccess(user)) {
-        // ✅ Se está tentando escolher plano free
+        // ✅ Se está tentando escolher plano free (e o bloqueio acima já não pegou)
         if (plan.price === 0) {
           alert(`❌ BLOQUEADO!\n\n🔒 Você já possui acesso ativo ao sistema.\n\n⚠️ Não é possível ativar o plano gratuito enquanto seu acesso estiver ativo.\n\n💡 Aguarde o vencimento ou entre em contato com o suporte.`);
           return;
@@ -320,13 +333,37 @@ export default function Plans() {
 
   const handleActivateFreePlan = async (plan) => {
     try {
-      console.log("🆓 Ativando plano FREE como TRIAL de 3 dias...");
+      console.log("🆓 Tentando ativar plano FREE...");
       
-      // ✅ IMPORTANTE: Verificar se usuário já teve plano pago antes
+      // ✅ DUPLA VERIFICAÇÃO: Não pode ativar se já usou trial antes (via user.trial_started_at)
+      if (user.trial_started_at) {
+        alert(`❌ BLOQUEADO!\n\n🔒 Você já usou o trial de 3 dias anteriormente.\n\n⚠️ O trial só pode ser usado UMA VEZ por usuário.\n\n💡 Escolha um plano pago para continuar.`);
+        return;
+      }
+      
+      // ✅ Não pode ativar se já teve plano pago (via user.subscription_plan)
       if (user.subscription_plan && user.subscription_plan !== 'free') {
         alert(`❌ BLOQUEADO!\n\n🔒 Você já teve uma assinatura paga anteriormente.\n\n⚠️ Não é possível ativar o trial gratuito novamente.\n\n💡 Escolha um plano pago para renovar.`);
         return;
       }
+      
+      // ✅ VERIFICAR NO BANCO: Se já existe algum registro de trial na tabela Subscriptions
+      try {
+        const allSubscriptions = await Subscription.list();
+        const userSubscriptions = allSubscriptions.filter(s => s.user_email === user.email);
+        const hadFreeTrial = userSubscriptions.some(s => s.payment_method === 'free');
+        
+        if (hadFreeTrial) {
+          console.log(`🚫 Usuário ${user.email} já tinha trial no histórico de subscriptions!`);
+          alert(`❌ BLOQUEADO!\n\n🔒 Detectamos que você já usou o trial gratuito anteriormente.\n\n⚠️ O trial é ÚNICO e não pode ser ativado novamente.\n\n💡 Escolha um plano pago para continuar.`);
+          return;
+        }
+      } catch (error) {
+        console.error("Erro ao verificar histórico de trials:", error);
+        // Não bloquear completamente, mas logar o erro
+      }
+      
+      console.log("✅ Usuário NUNCA usou trial. Ativando...");
       
       // ✅ FREE = TRIAL de 3 dias (apenas para NOVOS usuários)
       const now = new Date();
@@ -337,12 +374,12 @@ export default function Plans() {
       const trialStartStr = `${trialStart.getFullYear()}-${String(trialStart.getMonth() + 1).padStart(2, '0')}-${String(trialStart.getDate()).padStart(2, '0')}`;
       const trialEndStr = `${trialEnd.getFullYear()}-${String(trialEnd.getMonth() + 1).padStart(2, '0')}-${String(trialEnd.getDate()).padStart(2, '0')}`;
       
-      // ✅ ATIVAR TRIAL
+      // ✅ ATIVAR TRIAL - Agora SÓ SE NUNCA USOU ANTES
       await User.updateMyUserData({
         subscription_plan: null, // ✅ SEM plano específico (o acesso é o trial)
         subscription_status: 'trial', // ✅ Status TRIAL
         subscription_end_date: null, // ✅ SEM data de vencimento de assinatura paga
-        trial_started_at: trialStartStr,
+        trial_started_at: trialStartStr, // ✅ MARCA QUE JÁ USOU
         trial_ends_at: trialEndStr
       });
 
@@ -352,10 +389,10 @@ export default function Plans() {
         status: "active",
         amount_paid: 0,
         payment_method: "free",
-        notes: "Trial de 3 dias ativado"
+        notes: "Trial de 3 dias ativado - ÚNICO USO"
       });
 
-      alert(`✅ Trial de 3 dias ativado!\n\n🎉 Você tem acesso completo até ${trialEnd.toLocaleDateString('pt-BR')}.\n\n⚠️ Após o vencimento, escolha um plano pago para continuar.\n\nAtualize a página para começar!`);
+      alert(`✅ Trial de 3 dias ativado!\n\n🎉 Você tem acesso completo até ${trialEnd.toLocaleDateString('pt-BR')}.\n\n⚠️ IMPORTANTE: Este é seu ÚNICO trial. Após o vencimento, escolha um plano pago para continuar.\n\nAtualize a página para começar!`);
       loadData();
     } catch (error) {
       console.error("Erro ao ativar trial:", error);
@@ -658,7 +695,16 @@ export default function Plans() {
             const hasActivePlan = hasActiveAccess(user); // ✅ USAR NOVA FUNÇÃO
             
             const isFreePlan = plan.price === 0;
-            const isBlocked = hasActivePlan && isFreePlan;
+            
+            // ✅ NOVO: Verificar se já usou trial ANTES
+            const alreadyUsedFreeTrial = user?.trial_started_at || 
+                                         user?.subscription_plan === 'free' ||
+                                         (user?.subscription_plan && user?.subscription_plan !== 'free');
+            
+            // ✅ Bloquear FREE se:
+            // 1. Tem acesso ativo (a qualquer plano) OU
+            // 2. Já usou trial antes (marcado em user.trial_started_at ou histórico)
+            const isBlocked = isFreePlan && (hasActivePlan || alreadyUsedFreeTrial);
             
             // ✅ Calcular preço original se houver desconto
             const originalPrice = plan.discount_percent > 0 
@@ -698,7 +744,7 @@ export default function Plans() {
                     </div>
                   )}
 
-                  {plan.is_popular && (
+                  {plan.is_popular && !isBlocked && (
                     <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                       <span className="px-4 py-1 bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-xs rounded-full font-bold">
                         ⭐ POPULAR
@@ -732,10 +778,15 @@ export default function Plans() {
                         </p>
                       )}
                       
-                      {/* ✅ MOSTRAR "3 DIAS GRÁTIS" no plano free */}
-                      {isFreePlan && (
+                      {isFreePlan && !isBlocked && (
                         <p className="text-yellow-300 text-sm mt-1">
-                          🎁 3 dias de teste
+                          🎁 3 dias de teste - ÚNICO USO
+                        </p>
+                      )}
+                      
+                      {isFreePlan && isBlocked && alreadyUsedFreeTrial && (
+                        <p className="text-red-300 text-xs mt-2 font-bold">
+                          ⚠️ JÁ UTILIZADO
                         </p>
                       )}
                       
@@ -776,7 +827,9 @@ export default function Plans() {
                             Bloqueado
                           </Button>
                           <p className="text-xs text-center text-red-400">
-                            ⚠️ Você já possui acesso ativo
+                            {alreadyUsedFreeTrial && isFreePlan ? 
+                              '⚠️ Trial já foi utilizado' : 
+                              '⚠️ Você já possui acesso ativo'}
                           </p>
                         </div>
                       ) : isCurrentPlan ? (
