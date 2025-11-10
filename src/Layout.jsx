@@ -230,33 +230,44 @@ function LayoutContent({ children }) {
   const [isLoadingLayout, setIsLoadingLayout] = React.useState(true);
   const [hasLayoutError, setHasLayoutError] = React.useState(false);
 
-  // ✅ GOOGLE ADS: Injetar gtag.js CORRETAMENTE no <head>
+  // ✅ GOOGLE ADS: Injetar gtag.js no <head> - VERSÃO CORRIGIDA
   React.useEffect(() => {
-    // Verificar se já foi injetado
-    if (typeof window !== 'undefined' && window.gtag && typeof window.dataLayer !== 'undefined') {
-      console.log('✅ Google Ads já carregado');
+    // Evitar duplicação
+    if (window.gtagLoaded) {
+      console.log('📊 Google Ads: Já carregado');
       return;
     }
 
-    // Script 1: Carregar gtag.js
-    const script1 = document.createElement('script');
-    script1.async = true;
-    script1.src = 'https://www.googletagmanager.com/gtag/js?id=AW-17719011172';
-    document.head.appendChild(script1);
+    try {
+      // Script 1: Carregar gtag.js
+      const script1 = document.createElement('script');
+      script1.async = true;
+      script1.src = 'https://www.googletagmanager.com/gtag/js?id=AW-17719011172';
+      script1.onload = () => {
+        console.log('✅ Google Ads: gtag.js carregado');
+      };
+      script1.onerror = () => {
+        console.error('❌ Google Ads: Erro ao carregar gtag.js');
+      };
+      document.head.appendChild(script1);
 
-    // Script 2: Inicializar gtag
-    const script2 = document.createElement('script');
-    script2.type = 'text/javascript';
-    script2.text = `
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'AW-17719011172');
-      console.log('✅ Google Ads gtag.js configurado - ID: AW-17719011172');
-    `;
-    document.head.appendChild(script2);
+      // Script 2: Inicializar gtag
+      const script2 = document.createElement('script');
+      script2.innerHTML = `
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'AW-17719011172');
+        console.log('✅ Google Ads: Tag configurada - ID: AW-17719011172');
+      `;
+      document.head.appendChild(script2);
 
-    console.log('📊 Google Ads: Scripts injetados no <head>');
+      // Marcar como carregado
+      window.gtagLoaded = true;
+      console.log('📊 Google Ads: Scripts injetados no <head>');
+    } catch (error) {
+      console.error('❌ Erro ao injetar Google Ads:', error);
+    }
   }, []);
 
   React.useEffect(() => {
@@ -434,7 +445,6 @@ function LayoutContent({ children }) {
   const getFilteredMenuItems = () => {
     if (!user) return [];
     
-    // Admin vê tudo
     if (user.role === 'admin') {
       return [
         ...navigationItems,
@@ -448,12 +458,10 @@ function LayoutContent({ children }) {
       ];
     }
 
-    // ✅ TRIAL ou ASSINATURA ATIVA = TUDO LIBERADO
     if (hasActiveAccess(user)) {
       return navigationItems;
     }
 
-    // ✅ Sem acesso = apenas páginas básicas
     return navigationItems.filter(item => 
       ["Dashboard", "Perfil", "Assinaturas"].includes(item.title)
     );
