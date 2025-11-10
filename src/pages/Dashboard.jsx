@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Transaction, Account, Category, Goal, Bill } from "@/entities/all";
 import { User } from "@/entities/User";
@@ -386,15 +387,7 @@ export default function Dashboard() {
           />
         </React.Suspense>
 
-        {/* ✨ FINANCIAL WIDGETS */}
-        <React.Suspense fallback={<div className="h-80 bg-purple-900/20 animate-pulse rounded-lg" />}>
-          <FinancialWidgets 
-            transactions={transactions}
-            bills={bills}
-          />
-        </React.Suspense>
-
-        {/* ✨ CONTAS 3D - Atualizado com onUpdate */}
+        {/* ✨ CONTAS 3D - MOVIDO PARA ANTES DO CLIMA FINANCEIRO */}
         <Card className="glass-card border-0 neon-glow">
           <CardHeader className="border-b border-purple-900/30">
             <CardTitle className="flex items-center gap-2 text-white">
@@ -423,6 +416,14 @@ export default function Dashboard() {
             </div>
           </CardContent>
         </Card>
+
+        {/* ✨ FINANCIAL WIDGETS - AGORA DEPOIS DAS CONTAS */}
+        <React.Suspense fallback={<div className="h-80 bg-purple-900/20 animate-pulse rounded-lg" />}>
+          <FinancialWidgets 
+            transactions={transactions}
+            bills={bills}
+          />
+        </React.Suspense>
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* ✨ ACTIVITY TIMELINE */}
