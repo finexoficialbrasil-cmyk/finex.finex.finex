@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Transaction, Account, Category, Goal, Bill } from "@/entities/all";
 import { User } from "@/entities/User";
@@ -127,7 +126,7 @@ export default function Dashboard() {
       .filter(t => t.type === "expense")
       .reduce((sum, t) => sum + t.amount, 0);
 
-    const balance = accounts.reduce((sum, acc => sum + (acc.balance || 0)), 0);
+    const balance = accounts.reduce((sum, acc) => sum + (acc.balance || 0), 0);
 
     const last7Days = Array.from({ length: 7 }, (_, i) => {
       const date = new Date();
