@@ -16,8 +16,8 @@ Deno.serve(async (req) => {
     // Usar asServiceRole para operações administrativas
     const users = await base44.asServiceRole.entities.User.list();
     
-    // ✅ Obter URL do app dinamicamente
-    const appUrl = new URL(req.url).origin;
+    // ✅ CORRIGIDO: URL fixa do site real
+    const appUrl = 'https://finex.base44.app';
     
     // ✅ NOVO: Verificar se Evolution API está configurada
     const hasEvolutionAPI = Deno.env.get('EVOLUTION_API_URL') && 

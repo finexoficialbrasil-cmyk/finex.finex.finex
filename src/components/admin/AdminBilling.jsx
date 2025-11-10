@@ -104,7 +104,7 @@ export default function AdminBilling() {
       if (data.success) {
         setLastReport(data.report);
         
-        // ✅ NOVO: Enriquecer relatório com dados dos usuários (telefones)
+        // ✅ Enriquecer relatório com dados dos usuários (telefones)
         if (data.report.details && data.report.details.length > 0) {
           const enrichedDetails = data.report.details.map(detail => {
             const user = users.find(u => u.email === detail.email);
@@ -148,17 +148,20 @@ export default function AdminBilling() {
     const formattedPhone = formatPhoneForWhatsApp(phone);
     if (!formattedPhone) return;
     
+    // ✅ CORRIGIDO: URL fixa do site real
+    const appUrl = 'https://finex.base44.app';
+    
     // Template de mensagem baseado no tipo
     let message = '';
     const date = new Date(expiryDate).toLocaleDateString('pt-BR');
     
     if (type.includes('before')) {
       const days = type.includes('7') ? '7' : type.includes('3') ? '3' : '1';
-      message = `⚠️ *FINEX - Aviso de Vencimento*\n\nOlá, *${name}*! 👋\n\n🚨 Seu plano vence em *${days} DIAS*!\n📅 Vencimento: *${date}*\n\n💡 Renove agora:\n👉 ${window.location.origin}/Plans\n\n✨ FINEX - Inteligência Financeira`;
+      message = `⚠️ *FINEX - Aviso de Vencimento*\n\nOlá, *${name}*! 👋\n\n🚨 Seu plano vence em *${days} DIAS*!\n📅 Vencimento: *${date}*\n\n💡 Renove agora:\n👉 ${appUrl}/Plans\n\n✨ FINEX - Inteligência Financeira`;
     } else if (type === 'on_expiry') {
-      message = `🔴 *FINEX - VENCE HOJE!*\n\n*${name}*, seu acesso será bloqueado EM BREVE! ⏰\n\n📅 Vence HOJE: *${date}*\n\n⚡ RENOVE IMEDIATAMENTE:\n👉 ${window.location.origin}/Plans\n\n✨ FINEX - Inteligência Financeira`;
+      message = `🔴 *FINEX - VENCE HOJE!*\n\n*${name}*, seu acesso será bloqueado EM BREVE! ⏰\n\n📅 Vence HOJE: *${date}*\n\n⚡ RENOVE IMEDIATAMENTE:\n👉 ${appUrl}/Plans\n\n✨ FINEX - Inteligência Financeira`;
     } else {
-      message = `🔒 *FINEX - Acesso Bloqueado*\n\nOlá, *${name}*\n\nSeu plano venceu e seu acesso está *BLOQUEADO*.\n\n😢 Seus dados estão seguros, mas você não pode acessá-los.\n\n🔓 Renove e desbloqueie:\n👉 ${window.location.origin}/Plans\n\n✨ FINEX - Inteligência Financeira`;
+      message = `🔒 *FINEX - Acesso Bloqueado*\n\nOlá, *${name}*\n\nSeu plano venceu e seu acesso está *BLOQUEADO*.\n\n😢 Seus dados estão seguros, mas você não pode acessá-los.\n\n🔓 Renove e desbloqueie:\n👉 ${appUrl}/Plans\n\n✨ FINEX - Inteligência Financeira`;
     }
     
     const encodedMessage = encodeURIComponent(message);
@@ -279,7 +282,7 @@ export default function AdminBilling() {
         </Card>
       </div>
 
-      {/* ✅ NOVO: Último Relatório COM TELEFONES */}
+      {/* ✅ Último Relatório COM TELEFONES */}
       {lastReport && (
         <Card className="glass-card border-0 border-l-4 border-green-500">
           <CardHeader className="border-b border-purple-900/30">
@@ -316,7 +319,7 @@ export default function AdminBilling() {
               </div>
             </div>
 
-            {/* ✅ NOVO: Detalhes COM TELEFONES E BOTÕES WHATSAPP */}
+            {/* ✅ Detalhes COM TELEFONES E BOTÕES WHATSAPP */}
             {lastReport.details && lastReport.details.length > 0 && (
               <div>
                 <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
