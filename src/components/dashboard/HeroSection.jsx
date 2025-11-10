@@ -18,7 +18,8 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Wallet,
-  ChevronRight
+  ChevronRight,
+  Calendar
 } from "lucide-react";
 
 export default function HeroSection({ user, streak = 0, totalBalance = 0, monthIncome = 0, monthExpense = 0 }) {
@@ -42,9 +43,30 @@ export default function HeroSection({ user, streak = 0, totalBalance = 0, monthI
   }, []);
 
   const achievements = [
-    { icon: Flame, label: `${streak} dias`, color: "text-orange-400", bg: "bg-orange-600/20", border: "border-orange-500/30" },
-    { icon: Trophy, label: "Top 10%", color: "text-yellow-400", bg: "bg-yellow-600/20", border: "border-yellow-500/30" },
-    { icon: Target, label: "5 Metas", color: "text-cyan-400", bg: "bg-cyan-600/20", border: "border-cyan-500/30" }
+    { 
+      icon: Calendar, 
+      label: `Sequência: ${streak}d`, 
+      tooltip: "Dias consecutivos usando o app",
+      color: "text-orange-400", 
+      bg: "bg-orange-600/20", 
+      border: "border-orange-500/30" 
+    },
+    { 
+      icon: Trophy, 
+      label: "Top 10% Usuários", 
+      tooltip: "Entre os melhores da plataforma",
+      color: "text-yellow-400", 
+      bg: "bg-yellow-600/20", 
+      border: "border-yellow-500/30" 
+    },
+    { 
+      icon: Target, 
+      label: "5 Metas Ativas", 
+      tooltip: "Objetivos financeiros cadastrados",
+      color: "text-cyan-400", 
+      bg: "bg-cyan-600/20", 
+      border: "border-cyan-500/30" 
+    }
   ];
 
   const balanceChange = monthIncome - monthExpense;
@@ -259,7 +281,7 @@ export default function HeroSection({ user, streak = 0, totalBalance = 0, monthI
           </motion.div>
         </div>
 
-        {/* Achievements Row - COMPACTO */}
+        {/* Achievements Row - MAIS CLARO E OBJETIVO */}
         <div className="flex gap-2 flex-wrap mb-3">
           {achievements.map((achievement, index) => (
             <motion.div
@@ -268,12 +290,19 @@ export default function HeroSection({ user, streak = 0, totalBalance = 0, monthI
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.5 + index * 0.1 }}
               whileHover={{ scale: 1.05, y: -2 }}
-              className={`${achievement.bg} backdrop-blur-xl rounded-lg px-2.5 py-1.5 flex items-center gap-1.5 border ${achievement.border} cursor-pointer`}
+              className={`${achievement.bg} backdrop-blur-xl rounded-lg px-3 py-2 flex items-center gap-2 border ${achievement.border} cursor-pointer group relative`}
+              title={achievement.tooltip}
             >
-              <achievement.icon className={`w-3.5 h-3.5 ${achievement.color}`} />
-              <span className="text-white font-semibold text-[10px] md:text-xs whitespace-nowrap">
+              <achievement.icon className={`w-4 h-4 ${achievement.color}`} />
+              <span className="text-white font-semibold text-xs whitespace-nowrap">
                 {achievement.label}
               </span>
+              
+              {/* Tooltip on hover */}
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900 text-white text-[10px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-xl">
+                {achievement.tooltip}
+                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
+              </div>
             </motion.div>
           ))}
         </div>
