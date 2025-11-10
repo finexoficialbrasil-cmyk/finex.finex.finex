@@ -1,6 +1,8 @@
+
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import { Helmet } from "react-helmet";
 import {
   LayoutDashboard,
   ArrowLeftRight,
@@ -247,32 +249,6 @@ function LayoutContent({ children }) {
   const [isLoadingLayout, setIsLoadingLayout] = React.useState(true);
   const [hasLayoutError, setHasLayoutError] = React.useState(false);
 
-  // ✅ NOVO: Google Ads Global Site Tag (gtag.js)
-  React.useEffect(() => {
-    // Injetar script do Google Ads gtag.js
-    const script1 = document.createElement('script');
-    script1.async = true;
-    script1.src = 'https://www.googletagmanager.com/gtag/js?id=AW-17719011172';
-    document.head.appendChild(script1);
-
-    // Inicializar gtag
-    const script2 = document.createElement('script');
-    script2.innerHTML = `
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'AW-17719011172');
-      console.log('✅ Google Ads gtag.js carregado - ID: AW-17719011172');
-    `;
-    document.head.appendChild(script2);
-
-    // Cleanup
-    return () => {
-      document.head.removeChild(script1);
-      document.head.removeChild(script2);
-    };
-  }, []);
-
   React.useEffect(() => {
     loadUserAndSettings();
   }, []);
@@ -481,6 +457,19 @@ function LayoutContent({ children }) {
 
   return (
     <>
+      <Helmet>
+        <script async src="https://www.googletagmanager.com/gtag/js?id=AW-17719011172"></script>
+        <script>
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'AW-17719011172');
+            console.log('✅ Google Ads gtag.js carregado via Helmet - ID: AW-17719011172');
+          `}
+        </script>
+      </Helmet>
+      
       <style>{`
         body {
           background: ${theme === 'light' ? '#f9fafb' : '#0a0a0f'} !important;
