@@ -45,10 +45,7 @@ export default function HeroSection({ user, streak = 0, totalBalance = 0, monthI
         <div>
           <h1 className="text-3xl md:text-4xl font-bold mb-2">
             <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
-              {greeting}
-            </span>
-            <span className="text-white">
-              , {fullName}
+              {greeting}, {fullName}
             </span>{" "}
             <span className="inline-block">👋</span>
           </h1>
