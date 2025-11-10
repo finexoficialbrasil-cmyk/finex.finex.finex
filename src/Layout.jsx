@@ -2,7 +2,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { Helmet } from "react-helmet";
 import {
   LayoutDashboard,
   ArrowLeftRight,
@@ -48,8 +47,7 @@ import { Button } from "@/components/ui/button";
 import PerformanceMonitor from "./components/PerformanceMonitor";
 import CompleteProfile from "./components/CompleteProfile";
 
-// ✅ NOVO: Google Ads Conversion Tracking Helper
-// Use esta função em páginas de sucesso para disparar eventos de conversão
+// ✅ GOOGLE ADS: Função para disparar conversões
 export const trackGoogleAdsConversion = (conversionLabel = 'DEFAULT_CONVERSION') => {
   if (typeof window !== 'undefined' && window.gtag) {
     console.log('📊 Google Ads: Disparando conversão -', conversionLabel);
@@ -164,16 +162,8 @@ const hasActiveAccess = (user) => {
     
     const trialActive = trialEnd >= today;
     
-    console.log(`🎁 Layout - Verificação TRIAL:`, {
-      email: user.email,
-      trialEnd: user.trial_ends_at,
-      trialActive,
-      daysLeft: Math.ceil((trialEnd - today) / (1000 * 60 * 60 * 24))
-    });
-    
     // ✅ Se trial acabou, BLOQUEAR
     if (!trialActive) {
-      console.log(`❌ Layout - TRIAL EXPIRADO! Bloqueando menu.`);
       return false;
     }
     
@@ -187,16 +177,8 @@ const hasActiveAccess = (user) => {
     
     const isActive = endDate >= today;
     
-    console.log(`💳 Layout - Verificação ASSINATURA:`, {
-      email: user.email,
-      endDate: user.subscription_end_date,
-      isActive,
-      daysLeft: Math.ceil((endDate - today) / (1000 * 60 * 60 * 24))
-    });
-    
     // ✅ Se assinatura venceu, BLOQUEAR (NÃO dar trial novamente)
     if (!isActive) {
-      console.log(`❌ Layout - ASSINATURA VENCIDA! Bloqueando menu.`);
       return false;
     }
     
@@ -204,7 +186,6 @@ const hasActiveAccess = (user) => {
   }
   
   // ✅ Sem trial e sem assinatura = BLOQUEADO
-  console.log(`❌ Layout - SEM ACESSO ATIVO. Bloqueando menu.`);
   return false;
 };
 
@@ -248,6 +229,35 @@ function LayoutContent({ children }) {
 
   const [isLoadingLayout, setIsLoadingLayout] = React.useState(true);
   const [hasLayoutError, setHasLayoutError] = React.useState(false);
+
+  // ✅ GOOGLE ADS: Injetar gtag.js CORRETAMENTE no <head>
+  React.useEffect(() => {
+    // Verificar se já foi injetado
+    if (typeof window !== 'undefined' && window.gtag && typeof window.dataLayer !== 'undefined') {
+      console.log('✅ Google Ads já carregado');
+      return;
+    }
+
+    // Script 1: Carregar gtag.js
+    const script1 = document.createElement('script');
+    script1.async = true;
+    script1.src = 'https://www.googletagmanager.com/gtag/js?id=AW-17719011172';
+    document.head.appendChild(script1);
+
+    // Script 2: Inicializar gtag
+    const script2 = document.createElement('script');
+    script2.type = 'text/javascript';
+    script2.text = `
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'AW-17719011172');
+      console.log('✅ Google Ads gtag.js configurado - ID: AW-17719011172');
+    `;
+    document.head.appendChild(script2);
+
+    console.log('📊 Google Ads: Scripts injetados no <head>');
+  }, []);
 
   React.useEffect(() => {
     loadUserAndSettings();
@@ -457,19 +467,6 @@ function LayoutContent({ children }) {
 
   return (
     <>
-      <Helmet>
-        <script async src="https://www.googletagmanager.com/gtag/js?id=AW-17719011172"></script>
-        <script>
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', 'AW-17719011172');
-            console.log('✅ Google Ads gtag.js carregado via Helmet - ID: AW-17719011172');
-          `}
-        </script>
-      </Helmet>
-      
       <style>{`
         body {
           background: ${theme === 'light' ? '#f9fafb' : '#0a0a0f'} !important;
