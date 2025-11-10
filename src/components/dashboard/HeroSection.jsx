@@ -15,11 +15,11 @@ export default function HeroSection({ user, streak = 0, totalBalance = 0, monthI
     const hour = new Date().getHours();
     
     if (hour >= 5 && hour < 12) {
-      setGreeting("Bom dia");
+      setGreeting("Seja bem-vindo");
     } else if (hour >= 12 && hour < 18) {
-      setGreeting("Boa tarde");
+      setGreeting("Seja bem-vindo");
     } else {
-      setGreeting("Boa noite");
+      setGreeting("Seja bem-vindo");
     }
 
     // Formatar data em português
@@ -28,32 +28,38 @@ export default function HeroSection({ user, streak = 0, totalBalance = 0, monthI
     setCurrentDate(formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1));
   }, []);
 
-  // Usar nome completo
-  const fullName = user?.full_name || "Usuário";
+  // Usar nome completo (lowercase como na imagem)
+  const fullName = user?.full_name?.toLowerCase() || "usuário";
 
   return (
     <motion.div
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex items-center justify-between px-6 py-4 mb-6 rounded-lg w-full"
+      className="flex items-center justify-between px-8 py-6 mb-6 rounded-xl w-full"
       style={{
-        background: "linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, rgba(236, 72, 153, 0.08) 100%)"
+        background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)"
       }}
     >
       {/* Left: Greeting */}
       <div>
-        <h1 className="text-xl md:text-2xl font-bold text-white mb-1">
-          {greeting}, <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">{fullName}</span> 👋
+        <h1 className="text-3xl md:text-4xl font-bold mb-2">
+          <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
+            {greeting}
+          </span>
+          <span className="text-white">
+            , {fullName}
+          </span>{" "}
+          <span className="inline-block">👋</span>
         </h1>
-        <p className="text-sm text-purple-300">
+        <p className="text-base text-purple-200">
           {currentDate}
         </p>
       </div>
 
       {/* Right: Action Button */}
       <Link to={createPageUrl("Transactions") + "?action=new"}>
-        <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg shadow-purple-500/30 text-sm h-10 px-6">
-          <Plus className="w-4 h-4 mr-2" />
+        <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg shadow-purple-500/30 h-12 px-8 text-base font-semibold">
+          <Plus className="w-5 h-5 mr-2" />
           Nova Transação
         </Button>
       </Link>
