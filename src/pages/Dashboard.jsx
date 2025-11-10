@@ -51,7 +51,7 @@ export default function Dashboard() {
   const [bills, setBills] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
-  const [streak, setStreak] = useState(7); // Dias consecutivos usando o app
+  const [streak, setStreak] = useState(7);
 
   useEffect(() => {
     loadData();
@@ -64,7 +64,6 @@ export default function Dashboard() {
   }, []);
 
   const calculateStreak = () => {
-    // Simular cálculo de streak (em produção, viria do backend)
     const lastAccess = localStorage.getItem('lastAccess');
     const today = new Date().toDateString();
     
@@ -129,7 +128,6 @@ export default function Dashboard() {
 
     const balance = accounts.reduce((sum, acc) => sum + (acc.balance || 0), 0);
 
-    // Gerar dados para sparkline (últimos 7 dias)
     const last7Days = Array.from({ length: 7 }, (_, i) => {
       const date = new Date();
       date.setDate(date.getDate() - (6 - i));
@@ -240,9 +238,15 @@ export default function Dashboard() {
       </div>
 
       <div className="max-w-7xl mx-auto space-y-8 relative z-10">
-        {/* ✨ HERO SECTION PRO */}
+        {/* ✨ HERO SECTION PRO - Agora com saldo e mais info */}
         <React.Suspense fallback={<div className="h-48 bg-purple-900/20 animate-pulse rounded-3xl" />}>
-          <HeroSection user={user} streak={streak} />
+          <HeroSection 
+            user={user} 
+            streak={streak}
+            totalBalance={stats.balance}
+            monthIncome={stats.totalIncome}
+            monthExpense={stats.totalExpense}
+          />
         </React.Suspense>
 
         {/* Call to Action - Escolher Plano */}
