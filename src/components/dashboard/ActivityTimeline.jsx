@@ -56,7 +56,25 @@ export default function ActivityTimeline({ transactions = [], goals = [] }) {
   ].sort((a, b) => new Date(b.time) - new Date(a.time)).slice(0, 5);
 
   if (activities.length === 0) {
-    return null;
+    return (
+      <Card className="glass-card border-0">
+        <CardHeader className="border-b border-purple-900/30 p-4 md:p-6">
+          <CardTitle className="flex items-center gap-2 text-white text-base md:text-lg">
+            <Clock className="w-4 h-4 md:w-5 md:h-5 text-purple-400" />
+            Atividades Recentes
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-6 md:p-8">
+          <div className="text-center py-8">
+            <Clock className="w-12 h-12 md:w-16 md:h-16 text-purple-400/30 mx-auto mb-4" />
+            <p className="text-purple-400 text-sm md:text-base">Nenhuma atividade recente</p>
+            <p className="text-purple-500 text-xs md:text-sm mt-2">
+              Suas transações e metas aparecerão aqui
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
@@ -79,37 +97,38 @@ export default function ActivityTimeline({ transactions = [], goals = [] }) {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="flex items-start gap-2 md:gap-4 group"
+                className="flex items-start gap-3 group"
               >
-                {/* Timeline Line */}
+                {/* Timeline Icon */}
                 <div className="flex flex-col items-center flex-shrink-0">
                   <motion.div
-                    whileHover={{ scale: 1.2 }}
-                    className={`${colors.bg} ${colors.border} border-2 p-1.5 md:p-2 rounded-lg md:rounded-xl backdrop-blur-sm`}
+                    whileHover={{ scale: 1.1 }}
+                    className={`${colors.bg} ${colors.border} border-2 p-2 md:p-2.5 rounded-xl backdrop-blur-sm`}
                   >
-                    <Icon className={`w-3 h-3 md:w-4 md:h-4 ${colors.icon}`} />
+                    <Icon className={`w-4 h-4 md:w-5 md:h-5 ${colors.icon}`} />
                   </motion.div>
                   {index < activities.length - 1 && (
-                    <div className="w-0.5 h-8 md:h-12 bg-gradient-to-b from-purple-600/50 to-transparent mt-2" />
+                    <div className="w-0.5 h-10 md:h-12 bg-gradient-to-b from-purple-600/50 to-transparent mt-2" />
                   )}
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 pb-2 md:pb-4 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 pb-3 md:pb-4 min-w-0">
+                  <div className="flex items-start justify-between gap-2 mb-2">
                     <div className="min-w-0 flex-1">
-                      <p className="text-white text-sm md:text-base font-semibold group-hover:text-purple-300 transition-colors truncate">
+                      <p className="text-white text-sm md:text-base font-semibold group-hover:text-purple-300 transition-colors line-clamp-2">
                         {activity.title}
                       </p>
-                      <p className="text-purple-400 text-xs md:text-sm mt-0.5 truncate">
+                      <p className="text-purple-400 text-xs md:text-sm mt-1">
                         {activity.subtitle}
                       </p>
                     </div>
-                    <Badge className={`${colors.bg} ${colors.icon} border-0 text-[10px] md:text-xs whitespace-nowrap flex-shrink-0`}>
+                    <Badge className={`${colors.bg} ${colors.icon} border-0 text-[10px] md:text-xs whitespace-nowrap flex-shrink-0 ml-2`}>
                       {activity.badge}
                     </Badge>
                   </div>
-                  <p className="text-[10px] md:text-xs text-purple-500 mt-1 md:mt-2">
+                  <p className="text-[10px] md:text-xs text-purple-500 flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
                     {format(new Date(activity.time), "d 'de' MMM 'às' HH:mm", { locale: ptBR })}
                   </p>
                 </div>
