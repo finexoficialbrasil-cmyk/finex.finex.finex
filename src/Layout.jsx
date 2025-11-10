@@ -45,6 +45,7 @@ import ReceivablesNotification from "./components/ReceivablesNotification";
 import { Button } from "@/components/ui/button";
 
 import PerformanceMonitor from "./components/PerformanceMonitor";
+import CompleteProfile from "./components/CompleteProfile"; // ✅ NOVO
 
 const navigationItems = [
   {
@@ -763,6 +764,7 @@ function LayoutContent({ children }) {
       `}</style>
       
       <WelcomeEmailSender />
+      <CompleteProfile /> {/* ✅ NOVO: Modal de telefone */}
       
       <div className={`min-h-screen flex w-full bg-gradient-to-br ${themeColors.bg}`}>
         <Sidebar>
