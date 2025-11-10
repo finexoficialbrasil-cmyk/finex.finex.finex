@@ -16,13 +16,22 @@ Deno.serve(async (req) => {
     // Usar asServiceRole para operações administrativas
     const users = await base44.asServiceRole.entities.User.list();
     
-    // ✅ CORRIGIDO: Obter URL do app dinamicamente
+    // ✅ Obter URL do app dinamicamente
     const appUrl = new URL(req.url).origin;
+    
+    // ✅ NOVO: Verificar se Evolution API está configurada
+    const hasEvolutionAPI = Deno.env.get('EVOLUTION_API_URL') && 
+                           Deno.env.get('EVOLUTION_API_KEY') && 
+                           Deno.env.get('EVOLUTION_INSTANCE_NAME');
+    
+    console.log(`📱 Evolution API configurada: ${hasEvolutionAPI ? 'SIM' : 'NÃO'}`);
     
     const notifications = [];
     const report = {
       total_users: users.length,
       notifications_sent: 0,
+      emails_sent: 0,
+      whatsapp_sent: 0,
       errors: 0,
       by_type: {
         '7_days_before': 0,
@@ -52,13 +61,15 @@ Deno.serve(async (req) => {
 
       let notificationType = null;
       let subject = '';
-      let message = '';
+      let emailMessage = '';
+      let whatsappMessage = '';
 
       // Determinar tipo de notificação baseado em dias
       if (diffDays === 7) {
         notificationType = '7_days_before';
         subject = '🔔 Seu plano FINEX vence em 7 dias!';
-        message = `
+        whatsappMessage = `🔔 *FINEX - Aviso de Vencimento*\n\nOlá, *${user.full_name}*! 👋\n\n⚠️ Seu plano *${user.subscription_plan === 'monthly' ? 'Mensal' : user.subscription_plan === 'semester' ? 'Semestral' : 'Anual'}* vence em *7 DIAS*!\n📅 Vencimento: *${expiryDate.toLocaleDateString('pt-BR')}*\n\n💡 Renove agora:\n👉 ${appUrl}/Plans\n\n✨ FINEX - Inteligência Financeira`;
+        emailMessage = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px;">
             <div style="background: white; padding: 30px; border-radius: 8px;">
               <h1 style="color: #667eea; margin-bottom: 20px;">🔔 Aviso de Vencimento</h1>
@@ -107,7 +118,8 @@ Deno.serve(async (req) => {
       } else if (diffDays === 3) {
         notificationType = '3_days_before';
         subject = '⚠️ Seu plano FINEX vence em 3 dias!';
-        message = `
+        whatsappMessage = `⚠️ *FINEX - Atenção!*\n\nOlá, *${user.full_name}*! 👋\n\n🚨 Seu plano vence em apenas *3 DIAS*!\n📅 Vencimento: *${expiryDate.toLocaleDateString('pt-BR')}*\n\n🔒 Não perca o acesso!\nRenove agora:\n👉 ${appUrl}/Plans\n\n✨ FINEX - Inteligência Financeira`;
+        emailMessage = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); border-radius: 10px;">
             <div style="background: white; padding: 30px; border-radius: 8px;">
               <h1 style="color: #ef4444; margin-bottom: 20px;">⚠️ Atenção: Vencimento Próximo!</h1>
@@ -154,7 +166,8 @@ Deno.serve(async (req) => {
       } else if (diffDays === 1) {
         notificationType = '1_day_before';
         subject = '🚨 URGENTE: Seu plano FINEX vence AMANHÃ!';
-        message = `
+        whatsappMessage = `🚨 *FINEX - URGENTE!*\n\n*${user.full_name}*, SEU PLANO VENCE *AMANHÃ*! ⏰\n\n📅 Vencimento: *${expiryDate.toLocaleDateString('pt-BR')}*\n\n⚡ ÚLTIMA CHANCE!\nRenove agora para evitar bloqueio:\n👉 ${appUrl}/Plans\n\n✨ FINEX - Inteligência Financeira`;
+        emailMessage = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); border-radius: 10px;">
             <div style="background: white; padding: 30px; border-radius: 8px;">
               <h1 style="color: #dc2626; margin-bottom: 20px;">🚨 URGENTE: Vence AMANHÃ!</h1>
@@ -202,7 +215,8 @@ Deno.serve(async (req) => {
       } else if (diffDays === 0) {
         notificationType = 'on_expiry';
         subject = '🔴 URGENTE: Seu plano FINEX vence HOJE!';
-        message = `
+        whatsappMessage = `🔴 *FINEX - VENCE HOJE!*\n\n*${user.full_name}*, seu acesso será bloqueado EM BREVE! ⏰\n\n📅 Vence HOJE: *${expiryDate.toLocaleDateString('pt-BR')}*\n\n⚡ RENOVE IMEDIATAMENTE:\n👉 ${appUrl}/Plans\n\n✨ FINEX - Inteligência Financeira`;
+        emailMessage = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #dc2626; border-radius: 10px;">
             <div style="background: white; padding: 30px; border-radius: 8px;">
               <h1 style="color: #dc2626; margin-bottom: 20px; text-align: center;">🔴 VENCE HOJE!</h1>
@@ -238,7 +252,8 @@ Deno.serve(async (req) => {
       } else if (diffDays === -1) {
         notificationType = '1_day_after';
         subject = '🔒 Seu plano FINEX venceu ontem - Renove agora!';
-        message = `
+        whatsappMessage = `🔒 *FINEX - Acesso Bloqueado*\n\nOlá, *${user.full_name}*\n\nSeu plano venceu ontem e seu acesso está *BLOQUEADO*.\n\n😢 Seus dados estão seguros, mas você não pode acessá-los.\n\n🔓 Renove e desbloqueie:\n👉 ${appUrl}/Plans\n\n✨ FINEX - Inteligência Financeira`;
+        emailMessage = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #374151; border-radius: 10px;">
             <div style="background: white; padding: 30px; border-radius: 8px;">
               <h1 style="color: #374151; margin-bottom: 20px;">🔒 Acesso Bloqueado</h1>
@@ -276,7 +291,8 @@ Deno.serve(async (req) => {
       } else if (diffDays === -3) {
         notificationType = '3_days_after';
         subject = '🔒 Já faz 3 dias - Renove seu FINEX!';
-        message = `
+        whatsappMessage = `💜 *FINEX - Sentimos sua falta!*\n\nOlá, *${user.full_name}*\n\nJá faz *3 dias* que seu acesso está bloqueado.\n\n💜 Volte a ter controle total das suas finanças!\n\nRenove agora:\n👉 ${appUrl}/Plans\n\n✨ FINEX - Inteligência Financeira`;
+        emailMessage = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #1f2937; border-radius: 10px;">
             <div style="background: white; padding: 30px; border-radius: 8px;">
               <h1 style="color: #1f2937; margin-bottom: 20px;">🔒 Já faz 3 dias bloqueado</h1>
@@ -311,7 +327,8 @@ Deno.serve(async (req) => {
       } else if (diffDays === -7) {
         notificationType = '7_days_after';
         subject = '🔒 Última chamada - Seu FINEX espera por você!';
-        message = `
+        whatsappMessage = `💔 *FINEX - Última Chamada*\n\nOlá, *${user.full_name}*\n\nJá faz *1 semana* que você está sem acesso ao FINEX.\n\n💡 Seus dados estão seguros e esperando por você!\n\nRenove e volte:\n👉 ${appUrl}/Plans\n\n✨ FINEX - Inteligência Financeira`;
+        emailMessage = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #111827; border-radius: 10px;">
             <div style="background: white; padding: 30px; border-radius: 8px;">
               <h1 style="color: #111827; margin-bottom: 20px;">💔 Última Chamada</h1>
@@ -373,21 +390,62 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // Enviar email
+        let emailSuccess = false;
+        let whatsappSuccess = false;
+        let sentVia = 'none';
+
+        // ✅ ENVIAR EMAIL (sempre)
         try {
           await base44.asServiceRole.integrations.Core.SendEmail({
             to: user.email,
             subject: subject,
-            body: message
+            body: emailMessage
           });
 
-          // Registrar envio
+          emailSuccess = true;
+          report.emails_sent++;
+          console.log(`✅ Email enviado para ${user.email}`);
+        } catch (error) {
+          console.error(`❌ Erro ao enviar email para ${user.email}:`, error);
+        }
+
+        // ✅ ENVIAR WHATSAPP (se configurado e usuário aceita)
+        if (hasEvolutionAPI && user.phone && user.whatsapp_notifications) {
+          try {
+            const whatsappResponse = await base44.asServiceRole.functions.invoke('sendWhatsAppMessage', {
+              to: user.phone,
+              message: whatsappMessage
+            });
+
+            if (whatsappResponse.data && whatsappResponse.data.success) {
+              whatsappSuccess = true;
+              report.whatsapp_sent++;
+              console.log(`✅ WhatsApp enviado para ${user.phone}`);
+            } else {
+              console.error(`❌ Erro ao enviar WhatsApp para ${user.phone}:`, whatsappResponse.data?.error);
+            }
+          } catch (error) {
+            console.error(`❌ Erro ao enviar WhatsApp para ${user.phone}:`, error);
+          }
+        }
+
+        // Determinar canal usado
+        if (emailSuccess && whatsappSuccess) {
+          sentVia = 'both';
+        } else if (emailSuccess) {
+          sentVia = 'email';
+        } else if (whatsappSuccess) {
+          sentVia = 'whatsapp';
+        }
+
+        // Registrar envio
+        if (emailSuccess || whatsappSuccess) {
           await base44.asServiceRole.entities.BillingNotification.create({
             user_email: user.email,
             notification_type: notificationType,
             subscription_plan: user.subscription_plan,
             expiry_date: user.subscription_end_date,
-            sent_via: 'email',
+            sent_via: sentVia,
             status: 'sent'
           });
 
@@ -395,24 +453,22 @@ Deno.serve(async (req) => {
           report.by_type[notificationType]++;
           report.details.push({
             email: user.email,
+            phone: user.phone,
             type: notificationType,
             status: 'sent',
+            sent_via: sentVia,
             expiry_date: user.subscription_end_date
           });
-
-          console.log(`✅ Email enviado para ${user.email} - Tipo: ${notificationType}`);
-        } catch (error) {
-          console.error(`❌ Erro ao enviar email para ${user.email}:`, error);
-          
-          // Registrar erro
+        } else {
+          // Ambos falharam
           await base44.asServiceRole.entities.BillingNotification.create({
             user_email: user.email,
             notification_type: notificationType,
             subscription_plan: user.subscription_plan,
             expiry_date: user.subscription_end_date,
-            sent_via: 'email',
+            sent_via: 'none',
             status: 'failed',
-            error_message: error.message
+            error_message: 'Falha ao enviar email e WhatsApp'
           });
 
           report.errors++;
@@ -420,7 +476,7 @@ Deno.serve(async (req) => {
             email: user.email,
             type: notificationType,
             status: 'error',
-            error: error.message
+            error: 'Falha ao enviar'
           });
         }
       }
