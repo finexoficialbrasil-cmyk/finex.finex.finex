@@ -35,34 +35,36 @@ export default function HeroSection({ user, streak = 0, totalBalance = 0, monthI
     <motion.div
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex items-center justify-between px-8 py-6 mb-6 rounded-xl w-full"
+      className="px-8 py-6 mb-6 rounded-xl w-full"
       style={{
-        background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)"
+        background: "#1a1a2e"
       }}
     >
-      {/* Left: Greeting */}
-      <div>
-        <h1 className="text-3xl md:text-4xl font-bold mb-2">
-          <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
-            {greeting}
-          </span>
-          <span className="text-white">
-            , {fullName}
-          </span>{" "}
-          <span className="inline-block">👋</span>
-        </h1>
-        <p className="text-base text-purple-200">
-          {currentDate}
-        </p>
-      </div>
+      <div className="flex items-center justify-between">
+        {/* Left: Greeting */}
+        <div>
+          <h1 className="text-3xl md:text-4xl font-bold mb-2">
+            <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
+              {greeting}
+            </span>
+            <span className="text-white">
+              , {fullName}
+            </span>{" "}
+            <span className="inline-block">👋</span>
+          </h1>
+          <p className="text-base text-purple-200 capitalize">
+            {currentDate}
+          </p>
+        </div>
 
-      {/* Right: Action Button */}
-      <Link to={createPageUrl("Transactions") + "?action=new"}>
-        <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg shadow-purple-500/30 h-12 px-8 text-base font-semibold">
-          <Plus className="w-5 h-5 mr-2" />
-          Nova Transação
-        </Button>
-      </Link>
+        {/* Right: Action Button */}
+        <Link to={createPageUrl("Transactions") + "?action=new"}>
+          <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg shadow-purple-500/30 h-12 px-8 text-base font-semibold">
+            <Plus className="w-5 h-5 mr-2" />
+            Nova Transação
+          </Button>
+        </Link>
+      </div>
     </motion.div>
   );
 }
