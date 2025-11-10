@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -45,7 +44,21 @@ import ReceivablesNotification from "./components/ReceivablesNotification";
 import { Button } from "@/components/ui/button";
 
 import PerformanceMonitor from "./components/PerformanceMonitor";
-import CompleteProfile from "./components/CompleteProfile"; // ✅ NOVO
+import CompleteProfile from "./components/CompleteProfile";
+
+// ✅ NOVO: Google Ads Conversion Tracking Helper
+// Use esta função em páginas de sucesso para disparar eventos de conversão
+export const trackGoogleAdsConversion = (conversionLabel = 'DEFAULT_CONVERSION') => {
+  if (typeof window !== 'undefined' && window.gtag) {
+    console.log('📊 Google Ads: Disparando conversão -', conversionLabel);
+    window.gtag('event', 'conversion', {
+      'send_to': `AW-17719011172/${conversionLabel}`,
+      'transaction_id': Date.now().toString()
+    });
+  } else {
+    console.warn('⚠️ Google Ads: gtag não disponível');
+  }
+};
 
 const navigationItems = [
   {
@@ -215,7 +228,6 @@ function LayoutContent({ children }) {
   const { setOpenMobile, setOpen } = useSidebar();
   const [user, setUser] = React.useState(null);
   const [userPlan, setUserPlan] = React.useState(null);
-  // Removed: const [hoveredItem, setHoveredItem] = React.useState(null);
   const [theme, setTheme] = React.useState("dark");
   const [appName, setAppName] = React.useState("FINEX");
   const [appLogo, setAppLogo] = React.useState("");
@@ -235,13 +247,38 @@ function LayoutContent({ children }) {
   const [isLoadingLayout, setIsLoadingLayout] = React.useState(true);
   const [hasLayoutError, setHasLayoutError] = React.useState(false);
 
+  // ✅ NOVO: Google Ads Global Site Tag (gtag.js)
+  React.useEffect(() => {
+    // Injetar script do Google Ads gtag.js
+    const script1 = document.createElement('script');
+    script1.async = true;
+    script1.src = 'https://www.googletagmanager.com/gtag/js?id=AW-17719011172';
+    document.head.appendChild(script1);
+
+    // Inicializar gtag
+    const script2 = document.createElement('script');
+    script2.innerHTML = `
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'AW-17719011172');
+      console.log('✅ Google Ads gtag.js carregado - ID: AW-17719011172');
+    `;
+    document.head.appendChild(script2);
+
+    // Cleanup
+    return () => {
+      document.head.removeChild(script1);
+      document.head.removeChild(script2);
+    };
+  }, []);
+
   React.useEffect(() => {
     loadUserAndSettings();
   }, []);
 
   React.useEffect(() => {
     if (previousPath !== location.pathname && window.innerWidth < 768) {
-      // Removed: console.log("📱 Rota mudou no mobile, fechando sidebar");
       setOpenMobile(false);
       setOpen(false);
     }
@@ -273,9 +310,6 @@ function LayoutContent({ children }) {
     } catch (error) {
       console.error("❌ Erro ao carregar dados:", error);
       setHasLayoutError(true);
-      // Removed: setAppName("FINEX");
-      // Removed: setAppLogo("");
-      // Removed: document.title = "FINEX - Inteligência Financeira";
       setIsLoadingLayout(false);
     }
   };
@@ -324,8 +358,6 @@ function LayoutContent({ children }) {
       console.warn("⚠️ Erro ao carregar dados secundários (não crítico):", error);
     }
   };
-
-  // Removed: const updateFavicon = (faviconUrl) => { ... }
 
   if (isLoadingLayout) {
     return (
@@ -468,9 +500,8 @@ function LayoutContent({ children }) {
           background: transparent !important;
         }
 
-        /* ✅ FORÇAR estilos nos botões do menu */
         .sidebar-menu-item {
-          background: transparent !important; /* Ensure base is transparent */
+          background: transparent !important;
           transition: all 0.3s ease !important;
         }
 
@@ -487,7 +518,6 @@ function LayoutContent({ children }) {
           box-shadow: 0 0 20px rgba(168, 85, 247, 0.3) !important;
         }
 
-        /* Remover todos os backgrounds padrão dos componentes da UI lib */
         [data-sidebar-menu-button],
         [data-sidebar-menu-button] * {
           background: transparent !important;
@@ -566,7 +596,6 @@ function LayoutContent({ children }) {
           border: 1px solid ${themeColors.border};
         }
 
-        /* ✨ ANIMAÇÕES PERSONALIZÁVEIS */
         ${themeSettings.textGradient ? `
         @keyframes gradient-shift {
           0% { background-position: 0% 50%; }
@@ -764,7 +793,7 @@ function LayoutContent({ children }) {
       `}</style>
       
       <WelcomeEmailSender />
-      <CompleteProfile /> {/* ✅ NOVO: Modal de telefone */}
+      <CompleteProfile />
       
       <div className={`min-h-screen flex w-full bg-gradient-to-br ${themeColors.bg}`}>
         <Sidebar>
