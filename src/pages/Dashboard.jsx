@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Transaction, Account, Category, Goal, Bill } from "@/entities/all";
 import { User } from "@/entities/User";
@@ -60,25 +59,14 @@ export default function Dashboard() {
     try {
       console.log("🔄 Carregando dados do Dashboard...");
       
-      const loadWithRetry = async (fn, retries = 2) => {
-        for (let i = 0; i < retries; i++) {
-          try {
-            return await fn();
-          } catch (error) {
-            if (i === retries - 1) throw error;
-            console.warn(`⚠️ Tentativa ${i + 1} falhou, tentando novamente...`, error);
-            await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
-          }
-        }
-      };
-
+      // ✅ OTIMIZADO: Carregar com LIMITES menores
       const [userData, txs, accs, cats, gls, billsData] = await Promise.all([
-        loadWithRetry(() => User.me()),
-        loadWithRetry(() => Transaction.list("-created_date", 30)),
-        loadWithRetry(() => Account.list("-created_date", 20)),
-        loadWithRetry(() => Category.list("-created_date", 50)),
-        loadWithRetry(() => Goal.list("-created_date", 10)),
-        loadWithRetry(() => Bill.list("-due_date", 15))
+        User.me(),
+        Transaction.list("-created_date", 10), // ✅ REDUZIDO: 30 → 10
+        Account.list("-created_date", 10), // ✅ REDUZIDO: 20 → 10
+        Category.list("-created_date", 20), // ✅ REDUZIDO: 50 → 20
+        Goal.list("-created_date", 5), // ✅ REDUZIDO: 10 → 5
+        Bill.list("-due_date", 10) // ✅ REDUZIDO: 15 → 10
       ]);
       
       console.log(`✅ Dashboard carregou: ${txs.length} transações, ${accs.length} contas`);
@@ -97,58 +85,29 @@ export default function Dashboard() {
     }
   }, []);
 
+  // ✅ OTIMIZADO: Remover logs excessivos
   const stats = useMemo(() => {
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
 
-    console.log("🔍 DEBUG Dashboard - Análise de Transações");
-    console.log(`📅 Mês/Ano atual: ${currentMonth + 1}/${currentYear}`);
-    console.log(`📊 Total de transações carregadas: ${transactions.length}`);
-
     const monthTransactions = transactions.filter(t => {
-      if (!t.date) {
-        console.warn("⚠️ Transação sem data:", t);
-        return false;
-      }
+      if (!t.date) return false;
       
       const txDate = new Date(t.date);
       const txMonth = txDate.getMonth();
       const txYear = txDate.getFullYear();
       
-      const isCurrentMonth = txMonth === currentMonth;
-      const isCurrentYear = txYear === currentYear;
-      const isCompleted = t.status === "completed";
-      
-      const shouldInclude = isCurrentMonth && isCurrentYear && isCompleted;
-      
-      if (t.type === "income") {
-        console.log(`${shouldInclude ? "✅" : "❌"} ${t.description} | R$ ${t.amount} | ${t.date} | Status: ${t.status} | Mês: ${txMonth + 1}/${txYear}`);
-      }
-      
-      return shouldInclude;
+      return txMonth === currentMonth && txYear === currentYear && t.status === "completed";
     });
 
-    console.log(`📊 Transações filtradas do mês: ${monthTransactions.length}`);
+    const totalIncome = monthTransactions
+      .filter(t => t.type === "income")
+      .reduce((sum, t) => sum + t.amount, 0);
 
-    const incomeTransactions = monthTransactions.filter(t => t.type === "income");
-    console.log(`💰 Transações de ENTRADA (${incomeTransactions.length}):`);
-    incomeTransactions.forEach(t => {
-      console.log(`  → ${t.description}: R$ ${t.amount.toFixed(2)} (${t.date})`);
-    });
-
-    const totalIncome = incomeTransactions.reduce((sum, t) => sum + t.amount, 0);
-
-    const expenseTransactions = monthTransactions.filter(t => t.type === "expense");
-    console.log(`💸 Transações de SAÍDA (${expenseTransactions.length}):`);
-    expenseTransactions.forEach(t => {
-      console.log(`  → ${t.description}: R$ ${t.amount.toFixed(2)} (${t.date})`);
-    });
-
-    const totalExpense = expenseTransactions.reduce((sum, t) => sum + t.amount, 0);
-
-    console.log(`💰 TOTAL ENTRADAS: R$ ${totalIncome.toFixed(2)}`);
-    console.log(`💸 TOTAL SAÍDAS: R$ ${totalExpense.toFixed(2)}`);
+    const totalExpense = monthTransactions
+      .filter(t => t.type === "expense")
+      .reduce((sum, t) => sum + t.amount, 0);
 
     const balance = accounts.reduce((sum, acc) => sum + (acc.balance || 0), 0);
 

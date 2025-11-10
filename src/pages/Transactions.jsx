@@ -129,10 +129,10 @@ export default function TransactionsPage() {
       console.log("🔄 Carregando transações com ordenação:", sortBy);
 
       const [txs, accs, userCats, sysCats] = await Promise.all([
-        Transaction.list(sortBy, 100), // ✅ Limitar a 100 transações inicialmente
-        Account.list(),
-        Category.list(),
-        SystemCategory.list()
+        Transaction.list(sortBy, 50), // ✅ REDUZIDO: 100 → 50
+        Account.list("-created_date", 20), // ✅ LIMITE: 20 contas
+        Category.list("-created_date", 30), // ✅ REDUZIDO: 50 → 30
+        SystemCategory.list() // Sem limite (poucas categorias)
       ]);
       const endTime = performance.now();
       trackPerformance('api_call', 'loadTransactionsData', endTime - startTime);
