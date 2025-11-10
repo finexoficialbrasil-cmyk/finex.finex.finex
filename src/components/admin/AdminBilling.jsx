@@ -104,7 +104,7 @@ export default function AdminBilling() {
       if (data.success) {
         setLastReport(data.report);
         
-        // ✅ Enriquecer relatório com dados dos usuários (telefones)
+        // Enriquecer relatório com dados dos usuários (telefones)
         if (data.report.details && data.report.details.length > 0) {
           const enrichedDetails = data.report.details.map(detail => {
             const user = users.find(u => u.email === detail.email);
@@ -144,16 +144,44 @@ export default function AdminBilling() {
     return numbers.startsWith('55') ? numbers : `55${numbers}`;
   };
 
+  // NOVA FUNÇÃO: Formatar data corretamente SEM timezone
+  const formatDateBR = (dateString) => {
+    if (!dateString) return 'Data não definida';
+    
+    try {
+      // Parse manual da data YYYY-MM-DD
+      const [year, month, day] = dateString.split('-').map(Number);
+      
+      // Validar se os valores são válidos
+      if (!year || !month || !day || month < 1 || month > 12 || day < 1 || day > 31) {
+        return 'Data inválida';
+      }
+      
+      // Criar data no timezone local
+      // const date = new Date(year, month - 1, day); // This might still have timezone issues depending on local timezone
+      
+      // Formatar manualmente para evitar timezone issues
+      const dayStr = String(day).padStart(2, '0');
+      const monthStr = String(month).padStart(2, '0');
+      
+      return `${dayStr}/${monthStr}/${year}`;
+    } catch (error) {
+      console.error('Erro ao formatar data:', error);
+      return 'Data inválida';
+    }
+  };
+
   const openWhatsApp = (phone, name, type, expiryDate) => {
     const formattedPhone = formatPhoneForWhatsApp(phone);
     if (!formattedPhone) return;
     
-    // ✅ CORRIGIDO: URL fixa do site real
     const appUrl = 'https://finex.base44.app';
+    
+    // CORRIGIDO: Usar função de formatação correta
+    const date = formatDateBR(expiryDate);
     
     // Template de mensagem baseado no tipo
     let message = '';
-    const date = new Date(expiryDate).toLocaleDateString('pt-BR');
     
     if (type.includes('before')) {
       const days = type.includes('7') ? '7' : type.includes('3') ? '3' : '1';
@@ -161,7 +189,7 @@ export default function AdminBilling() {
     } else if (type === 'on_expiry') {
       message = `🔴 *FINEX - VENCE HOJE!*\n\n*${name}*, seu acesso será bloqueado EM BREVE! ⏰\n\n📅 Vence HOJE: *${date}*\n\n⚡ RENOVE IMEDIATAMENTE:\n👉 ${appUrl}/Plans\n\n✨ FINEX - Inteligência Financeira`;
     } else {
-      message = `🔒 *FINEX - Acesso Bloqueado*\n\nOlá, *${name}*\n\nSeu plano venceu e seu acesso está *BLOQUEADO*.\n\n😢 Seus dados estão seguros, mas você não pode acessá-los.\n\n🔓 Renove e desbloqueie:\n👉 ${appUrl}/Plans\n\n✨ FINEX - Inteligência Financeira`;
+      message = `🔒 *FINEX - Acesso Bloqueado*\n\nOlá, *${name}*\n\nSeu plano venceu e seu acesso está *BLOQUEADO*.\n\n📅 Venceu em: *${date}*\n\n😢 Seus dados estão seguros, mas você não pode acessá-los.\n\n🔓 Renove e desbloqueie:\n👉 ${appUrl}/Plans\n\n✨ FINEX - Inteligência Financeira`;
     }
     
     const encodedMessage = encodeURIComponent(message);
@@ -282,7 +310,7 @@ export default function AdminBilling() {
         </Card>
       </div>
 
-      {/* ✅ Último Relatório COM TELEFONES */}
+      {/* Último Relatório COM TELEFONES */}
       {lastReport && (
         <Card className="glass-card border-0 border-l-4 border-green-500">
           <CardHeader className="border-b border-purple-900/30">
@@ -319,7 +347,7 @@ export default function AdminBilling() {
               </div>
             </div>
 
-            {/* ✅ Detalhes COM TELEFONES E BOTÕES WHATSAPP */}
+            {/* Detalhes COM TELEFONES E BOTÕES WHATSAPP */}
             {lastReport.details && lastReport.details.length > 0 && (
               <div>
                 <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
@@ -352,7 +380,7 @@ export default function AdminBilling() {
                               {getTypeLabel(detail.type)}
                             </Badge>
                             <span className="text-purple-300 text-xs">
-                              📅 Vence: {new Date(detail.expiry_date).toLocaleDateString('pt-BR')}
+                              📅 Vence: {formatDateBR(detail.expiry_date)}
                             </span>
                             {detail.sent_via && (
                               <Badge className="bg-cyan-600">
@@ -363,7 +391,7 @@ export default function AdminBilling() {
                             )}
                           </div>
 
-                          {/* ✅ TELEFONE COM BOTÕES */}
+                          {/* TELEFONE COM BOTÕES */}
                           {detail.phone ? (
                             <div className="ml-11 p-3 rounded-lg bg-green-900/20 border border-green-700/30">
                               <div className="flex items-center gap-3 mb-2">
@@ -534,7 +562,7 @@ export default function AdminBilling() {
                         {getTypeLabel(notif.notification_type)}
                       </Badge>
                       <span className="text-purple-300 text-xs">
-                        📅 Vencimento: {new Date(notif.expiry_date).toLocaleDateString('pt-BR')}
+                        📅 Vencimento: {formatDateBR(notif.expiry_date)}
                       </span>
                       <span className="text-purple-400 text-xs">
                         • Enviado: {new Date(notif.created_date).toLocaleDateString('pt-BR')} às {new Date(notif.created_date).toLocaleTimeString('pt-BR')}
