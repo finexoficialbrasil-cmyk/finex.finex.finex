@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Transaction, Account, Category, Goal, Bill } from "@/entities/all";
 import { User } from "@/entities/User";
@@ -126,7 +127,7 @@ export default function Dashboard() {
       .filter(t => t.type === "expense")
       .reduce((sum, t) => sum + t.amount, 0);
 
-    const balance = accounts.reduce((sum, acc) => sum + (acc.balance || 0), 0);
+    const balance = accounts.reduce((sum, acc => sum + (acc.balance || 0)), 0);
 
     const last7Days = Array.from({ length: 7 }, (_, i) => {
       const date = new Date();
@@ -394,7 +395,7 @@ export default function Dashboard() {
           />
         </React.Suspense>
 
-        {/* ✨ CONTAS 3D */}
+        {/* ✨ CONTAS 3D - Atualizado com onUpdate */}
         <Card className="glass-card border-0 neon-glow">
           <CardHeader className="border-b border-purple-900/30">
             <CardTitle className="flex items-center gap-2 text-white">
@@ -412,7 +413,12 @@ export default function Dashboard() {
                 </>
               }>
                 {accounts.map((acc, index) => (
-                  <AccountCard3D key={acc.id} account={acc} index={index} />
+                  <AccountCard3D 
+                    key={acc.id} 
+                    account={acc} 
+                    index={index}
+                    onUpdate={loadData}
+                  />
                 ))}
               </React.Suspense>
             </div>
