@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Subscription } from "@/entities/Subscription";
 import { User } from "@/entities/User";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,7 +18,21 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Search, CheckCircle, XCircle, Clock, Eye, Download, DollarSign, RefreshCw } from "lucide-react";
+import { 
+  Search, 
+  CheckCircle, 
+  XCircle, 
+  Clock, 
+  Eye, 
+  Download, 
+  DollarSign, 
+  RefreshCw,
+  Calendar,
+  TrendingUp,
+  Users,
+  ChevronLeft,
+  ChevronRight
+} from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function AdminSubscriptions() {
@@ -31,6 +44,10 @@ export default function AdminSubscriptions() {
   const [selectedSubscription, setSelectedSubscription] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [isBlocking, setIsBlocking] = useState(false);
+  
+  // ✅ NOVO: Controle de mês/ano
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   useEffect(() => {
     loadData();
@@ -50,6 +67,78 @@ export default function AdminSubscriptions() {
       setIsLoading(false);
     }
   };
+
+  // ✅ NOVO: Filtrar assinaturas por mês selecionado
+  const subscriptionsOfMonth = useMemo(() => {
+    return subscriptions.filter(sub => {
+      const subDate = new Date(sub.created_date);
+      return subDate.getMonth() === selectedMonth && 
+             subDate.getFullYear() === selectedYear;
+    });
+  }, [subscriptions, selectedMonth, selectedYear]);
+
+  // ✅ NOVO: Estatísticas do mês selecionado
+  const monthStats = useMemo(() => {
+    const total = subscriptionsOfMonth.length;
+    const pending = subscriptionsOfMonth.filter(s => s.status === "pending").length;
+    const active = subscriptionsOfMonth.filter(s => s.status === "active").length;
+    const revenue = subscriptionsOfMonth
+      .filter(s => s.status === "active" || s.status === "pending")
+      .reduce((sum, s) => sum + s.amount_paid, 0);
+    
+    // Receita por tipo de plano
+    const byPlan = {
+      monthly: 0,
+      semester: 0,
+      annual: 0,
+      lifetime: 0
+    };
+    
+    subscriptionsOfMonth
+      .filter(s => s.status === "active" || s.status === "pending")
+      .forEach(s => {
+        if (byPlan[s.plan_type] !== undefined) {
+          byPlan[s.plan_type] += s.amount_paid;
+        }
+      });
+
+    return { total, pending, active, revenue, byPlan };
+  }, [subscriptionsOfMonth]);
+
+  // ✅ NOVO: Estatísticas gerais (todos os tempos)
+  const generalStats = useMemo(() => {
+    const total = subscriptions.length;
+    const pending = subscriptions.filter(s => s.status === "pending").length;
+    const active = subscriptions.filter(s => s.status === "active").length;
+    const totalRevenue = subscriptions
+      .filter(s => s.status === "active")
+      .reduce((sum, s) => sum + s.amount_paid, 0);
+    
+    return { total, pending, active, totalRevenue };
+  }, [subscriptions]);
+
+  // ✅ NOVO: Navegar entre meses
+  const navigateMonth = (direction) => {
+    let newMonth = selectedMonth + direction;
+    let newYear = selectedYear;
+    
+    if (newMonth < 0) {
+      newMonth = 11;
+      newYear -= 1;
+    } else if (newMonth > 11) {
+      newMonth = 0;
+      newYear += 1;
+    }
+    
+    setSelectedMonth(newMonth);
+    setSelectedYear(newYear);
+  };
+
+  // ✅ NOVO: Nome do mês em português
+  const monthNames = [
+    "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+  ];
 
   // ✅ NOVA FUNÇÃO: Bloquear todos os usuários sem plano ativo
   const handleBlockAllWithoutPlan = async () => {
@@ -108,7 +197,7 @@ export default function AdminSubscriptions() {
       } else if (subscription.plan_type === 'annual') {
         endDate.setFullYear(endDate.getFullYear() + 1);
       } else if (subscription.plan_type === 'lifetime') {
-        endDate.setFullYear(endDate.getFullYear() + 100); // Lifetime, effectively
+        endDate.setFullYear(endDate.getFullYear() + 100);
       }
 
       // Atualizar assinatura para ativa
@@ -159,20 +248,11 @@ export default function AdminSubscriptions() {
     setShowDetailsModal(true);
   };
 
-  const filteredSubscriptions = subscriptions.filter(sub => {
+  const filteredSubscriptions = subscriptionsOfMonth.filter(sub => {
     const matchesSearch = sub.user_email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === "all" || sub.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
-
-  const stats = {
-    total: subscriptions.length,
-    pending: subscriptions.filter(s => s.status === "pending").length,
-    active: subscriptions.filter(s => s.status === "active").length,
-    revenue: subscriptions
-      .filter(s => s.status === "active")
-      .reduce((sum, s) => sum + s.amount_paid, 0)
-  };
 
   if (isLoading) {
     return <div className="text-purple-300 text-center py-12">Carregando assinaturas...</div>;
@@ -211,16 +291,88 @@ export default function AdminSubscriptions() {
         </CardContent>
       </Card>
 
-      {/* Stats */}
+      {/* ✅ NOVO: Estatísticas GERAIS (Todos os Tempos) */}
+      <Card className="glass-card border-0 border-l-4 border-cyan-500">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-white flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-cyan-400" />
+            Estatísticas Gerais (Todos os Tempos)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid md:grid-cols-4 gap-4">
+            <div className="p-4 rounded-lg bg-purple-900/20 border border-purple-700/30">
+              <p className="text-purple-300 text-sm">Total Assinaturas</p>
+              <p className="text-3xl font-bold text-white">{generalStats.total}</p>
+            </div>
+
+            <div className="p-4 rounded-lg bg-yellow-900/20 border border-yellow-700/30">
+              <p className="text-yellow-300 text-sm">Pendentes</p>
+              <p className="text-3xl font-bold text-white">{generalStats.pending}</p>
+            </div>
+
+            <div className="p-4 rounded-lg bg-green-900/20 border border-green-700/30">
+              <p className="text-green-300 text-sm">Ativas</p>
+              <p className="text-3xl font-bold text-white">{generalStats.active}</p>
+            </div>
+
+            <div className="p-4 rounded-lg bg-cyan-900/20 border border-cyan-700/30">
+              <p className="text-cyan-300 text-sm">Receita Total</p>
+              <p className="text-2xl font-bold text-white">R$ {generalStats.totalRevenue.toFixed(2)}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ✅ NOVO: Navegação de Mês */}
+      <Card className="glass-card border-0">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => navigateMonth(-1)}
+              className="border-purple-700 text-purple-300"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </Button>
+
+            <div className="text-center">
+              <div className="flex items-center gap-2 justify-center">
+                <Calendar className="w-5 h-5 text-purple-400" />
+                <h2 className="text-2xl font-bold text-white">
+                  {monthNames[selectedMonth]} / {selectedYear}
+                </h2>
+              </div>
+              <p className="text-purple-300 text-sm mt-1">
+                {monthStats.total} assinatura(s) neste mês
+              </p>
+            </div>
+
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => navigateMonth(1)}
+              className="border-purple-700 text-purple-300"
+              disabled={selectedMonth === new Date().getMonth() && selectedYear === new Date().getFullYear()}
+            >
+              <ChevronRight className="w-5 h-5" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ✅ NOVO: Stats do Mês Selecionado */}
       <div className="grid md:grid-cols-4 gap-4">
         <Card className="glass-card border-0">
           <CardContent className="p-4">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-purple-300 text-sm">Total</p>
-                <p className="text-3xl font-bold text-white">{stats.total}</p>
+                <p className="text-purple-300 text-sm">Assinaturas</p>
+                <p className="text-3xl font-bold text-white">{monthStats.total}</p>
+                <p className="text-purple-400 text-xs mt-1">neste mês</p>
               </div>
-              <DollarSign className="w-8 h-8 text-purple-400" />
+              <Users className="w-8 h-8 text-purple-400" />
             </div>
           </CardContent>
         </Card>
@@ -230,7 +382,8 @@ export default function AdminSubscriptions() {
             <div className="flex justify-between items-start">
               <div>
                 <p className="text-yellow-300 text-sm">Pendentes</p>
-                <p className="text-3xl font-bold text-white">{stats.pending}</p>
+                <p className="text-3xl font-bold text-white">{monthStats.pending}</p>
+                <p className="text-yellow-400 text-xs mt-1">aguardando aprovação</p>
               </div>
               <Clock className="w-8 h-8 text-yellow-400" />
             </div>
@@ -241,8 +394,9 @@ export default function AdminSubscriptions() {
           <CardContent className="p-4">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-green-300 text-sm">Ativas</p>
-                <p className="text-3xl font-bold text-white">{stats.active}</p>
+                <p className="text-green-300 text-sm">Aprovadas</p>
+                <p className="text-3xl font-bold text-white">{monthStats.active}</p>
+                <p className="text-green-400 text-xs mt-1">já ativas</p>
               </div>
               <CheckCircle className="w-8 h-8 text-green-400" />
             </div>
@@ -254,13 +408,55 @@ export default function AdminSubscriptions() {
             <div className="flex justify-between items-start">
               <div>
                 <p className="text-cyan-300 text-sm">Receita</p>
-                <p className="text-2xl font-bold text-white">R$ {stats.revenue.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-white">R$ {monthStats.revenue.toFixed(2)}</p>
+                <p className="text-cyan-400 text-xs mt-1">do mês</p>
               </div>
               <DollarSign className="w-8 h-8 text-cyan-400" />
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* ✅ NOVO: Receita por Tipo de Plano */}
+      <Card className="glass-card border-0">
+        <CardHeader className="border-b border-purple-900/30">
+          <CardTitle className="text-white flex items-center gap-2">
+            <DollarSign className="w-5 h-5 text-green-400" />
+            Receita por Tipo de Plano ({monthNames[selectedMonth]}/{selectedYear})
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="grid md:grid-cols-4 gap-4">
+            <div className="p-4 rounded-lg bg-blue-900/20 border border-blue-700/30">
+              <p className="text-blue-300 text-sm font-semibold">💳 Mensal</p>
+              <p className="text-2xl font-bold text-white mt-2">
+                R$ {monthStats.byPlan.monthly.toFixed(2)}
+              </p>
+            </div>
+
+            <div className="p-4 rounded-lg bg-purple-900/20 border border-purple-700/30">
+              <p className="text-purple-300 text-sm font-semibold">📅 Semestral</p>
+              <p className="text-2xl font-bold text-white mt-2">
+                R$ {monthStats.byPlan.semester.toFixed(2)}
+              </p>
+            </div>
+
+            <div className="p-4 rounded-lg bg-green-900/20 border border-green-700/30">
+              <p className="text-green-300 text-sm font-semibold">📆 Anual</p>
+              <p className="text-2xl font-bold text-white mt-2">
+                R$ {monthStats.byPlan.annual.toFixed(2)}
+              </p>
+            </div>
+
+            <div className="p-4 rounded-lg bg-yellow-900/20 border border-yellow-700/30">
+              <p className="text-yellow-300 text-sm font-semibold">⭐ Vitalício</p>
+              <p className="text-2xl font-bold text-white mt-2">
+                R$ {monthStats.byPlan.lifetime.toFixed(2)}
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Filters */}
       <Card className="glass-card border-0">
@@ -294,86 +490,98 @@ export default function AdminSubscriptions() {
       {/* Subscriptions List */}
       <Card className="glass-card border-0 neon-glow">
         <CardHeader className="border-b border-purple-900/30">
-          <CardTitle className="text-white">Assinaturas ({filteredSubscriptions.length})</CardTitle>
+          <CardTitle className="text-white">
+            Assinaturas de {monthNames[selectedMonth]}/{selectedYear} ({filteredSubscriptions.length})
+          </CardTitle>
         </CardHeader>
         <CardContent className="p-6">
-          <div className="space-y-3">
-            {filteredSubscriptions.map((sub, index) => (
-              <motion.div
-                key={sub.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.03 }}
-                className="flex flex-col gap-3 p-4 rounded-xl glass-card"
-              >
-                <div className="flex items-start justify-between gap-4 flex-wrap">
-                  <div className="flex-1">
-                    <p className="text-white font-semibold">{sub.user_email}</p>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      <Badge className="bg-purple-600/20 text-purple-400">
-                        {sub.plan_type === "monthly" && "Mensal"}
-                        {sub.plan_type === "semester" && "Semestral"}
-                        {sub.plan_type === "annual" && "Anual"}
-                        {sub.plan_type === "lifetime" && "Vitalício"}
-                      </Badge>
-                      <Badge className={
-                        sub.status === "active" ? "bg-green-600" :
-                        sub.status === "pending" ? "bg-yellow-600" :
-                        sub.status === "expired" ? "bg-red-600" :
-                        "bg-gray-600"
-                      }>
-                        {sub.status === "active" && "✅ Ativo"}
-                        {sub.status === "pending" && "⏳ Pendente"}
-                        {sub.status === "expired" && "⏰ Expirado"}
-                        {sub.status === "cancelled" && "❌ Cancelado"}
-                      </Badge>
-                      <Badge className="bg-cyan-600/20 text-cyan-400">
-                        R$ {sub.amount_paid.toFixed(2)}
-                      </Badge>
+          {filteredSubscriptions.length === 0 ? (
+            <div className="text-center py-12">
+              <Calendar className="w-16 h-16 mx-auto mb-4 text-purple-400" />
+              <p className="text-purple-300 text-lg">Nenhuma assinatura neste mês</p>
+              <p className="text-purple-400 text-sm mt-2">
+                Tente navegar para outro mês ou ajustar os filtros
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredSubscriptions.map((sub, index) => (
+                <motion.div
+                  key={sub.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.03 }}
+                  className="flex flex-col gap-3 p-4 rounded-xl glass-card"
+                >
+                  <div className="flex items-start justify-between gap-4 flex-wrap">
+                    <div className="flex-1">
+                      <p className="text-white font-semibold">{sub.user_email}</p>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        <Badge className="bg-purple-600/20 text-purple-400">
+                          {sub.plan_type === "monthly" && "Mensal"}
+                          {sub.plan_type === "semester" && "Semestral"}
+                          {sub.plan_type === "annual" && "Anual"}
+                          {sub.plan_type === "lifetime" && "Vitalício"}
+                        </Badge>
+                        <Badge className={
+                          sub.status === "active" ? "bg-green-600" :
+                          sub.status === "pending" ? "bg-yellow-600" :
+                          sub.status === "expired" ? "bg-red-600" :
+                          "bg-gray-600"
+                        }>
+                          {sub.status === "active" && "✅ Ativo"}
+                          {sub.status === "pending" && "⏳ Pendente"}
+                          {sub.status === "expired" && "⏰ Expirado"}
+                          {sub.status === "cancelled" && "❌ Cancelado"}
+                        </Badge>
+                        <Badge className="bg-cyan-600/20 text-cyan-400">
+                          R$ {sub.amount_paid.toFixed(2)}
+                        </Badge>
+                      </div>
+                      <p className="text-purple-300 text-sm mt-2">
+                        Criado em: {new Date(sub.created_date).toLocaleDateString('pt-BR')}
+                      </p>
                     </div>
-                    <p className="text-purple-300 text-sm mt-2">
-                      Criado em: {new Date(sub.created_date).toLocaleDateString('pt-BR')}
-                    </p>
                   </div>
-                </div>
 
-                <div className="flex flex-wrap gap-2 pt-2 border-t border-purple-900/30">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleViewDetails(sub)}
-                    className="border-purple-700 text-purple-300"
-                  >
-                    <Eye className="w-3 h-3 mr-1" />
-                    Ver Detalhes
-                  </Button>
+                  <div className="flex flex-wrap gap-2 pt-2 border-t border-purple-900/30">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleViewDetails(sub)}
+                      className="border-purple-700 text-purple-300"
+                    >
+                      <Eye className="w-3 h-3 mr-1" />
+                      Ver Detalhes
+                    </Button>
 
-                  {sub.status === "pending" && (
-                    <>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleApprove(sub)}
-                        className="border-green-700 text-green-300"
-                      >
-                        <CheckCircle className="w-3 h-3 mr-1" />
-                        Aprovar Manualmente
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleReject(sub)}
-                        className="border-red-700 text-red-300"
-                      >
-                        <XCircle className="w-3 h-3 mr-1" />
-                        Rejeitar
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </motion.div>
-            ))}
-          </div>
+                    {sub.status === "pending" && (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleApprove(sub)}
+                          className="border-green-700 text-green-300"
+                        >
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          Aprovar Manualmente
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleReject(sub)}
+                          className="border-red-700 text-red-300"
+                        >
+                          <XCircle className="w-3 h-3 mr-1" />
+                          Rejeitar
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -412,6 +620,7 @@ export default function AdminSubscriptions() {
                     {selectedSubscription.payment_method === "credit_card" && "Cartão"}
                     {selectedSubscription.payment_method === "boleto" && "Boleto"}
                     {selectedSubscription.payment_method === "transfer" && "Transferência"}
+                    {selectedSubscription.payment_method === "free" && "Gratuito (Trial)"}
                   </p>
                 </div>
                 <div>
