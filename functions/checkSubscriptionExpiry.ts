@@ -16,6 +16,9 @@ Deno.serve(async (req) => {
     // Usar asServiceRole para operações administrativas
     const users = await base44.asServiceRole.entities.User.list();
     
+    // ✅ CORRIGIDO: Obter URL do app dinamicamente
+    const appUrl = new URL(req.url).origin;
+    
     const notifications = [];
     const report = {
       total_users: users.length,
@@ -75,8 +78,8 @@ Deno.serve(async (req) => {
                 💡 Renove agora e continue aproveitando todas as funcionalidades do FINEX sem interrupções!
               </p>
 
-              <div style="margin: 30px 0;">
-                <a href="${Deno.env.get('BASE44FINEX') || 'https://app.base44.com'}/Plans" 
+              <div style="margin: 30px 0; text-align: center;">
+                <a href="${appUrl}/Plans" 
                    style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
                   🔄 RENOVAR AGORA
                 </a>
@@ -125,7 +128,7 @@ Deno.serve(async (req) => {
               </p>
 
               <div style="margin: 30px 0; text-align: center;">
-                <a href="${Deno.env.get('BASE44FINEX') || 'https://app.base44.com'}/Plans" 
+                <a href="${appUrl}/Plans" 
                    style="display: inline-block; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; padding: 18px 50px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px; box-shadow: 0 4px 6px rgba(239, 68, 68, 0.3);">
                   🔄 RENOVAR AGORA
                 </a>
@@ -172,8 +175,8 @@ Deno.serve(async (req) => {
               </p>
 
               <div style="margin: 30px 0; text-align: center;">
-                <a href="${Deno.env.get('BASE44FINEX') || 'https://app.base44.com'}/Plans" 
-                   style="display: inline-block; background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; padding: 20px 60px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 20px; box-shadow: 0 6px 12px rgba(220, 38, 38, 0.4); animation: pulse 2s infinite;">
+                <a href="${appUrl}/Plans" 
+                   style="display: inline-block; background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; padding: 20px 60px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 20px; box-shadow: 0 6px 12px rgba(220, 38, 38, 0.4);">
                   ⚡ RENOVAR AGORA
                 </a>
               </div>
@@ -218,7 +221,7 @@ Deno.serve(async (req) => {
               </p>
 
               <div style="margin: 30px 0; text-align: center;">
-                <a href="${Deno.env.get('BASE44FINEX') || 'https://app.base44.com'}/Plans" 
+                <a href="${appUrl}/Plans" 
                    style="display: inline-block; background: #dc2626; color: white; padding: 22px 70px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 22px; box-shadow: 0 8px 16px rgba(220, 38, 38, 0.5);">
                   ⚡ RENOVAR IMEDIATAMENTE
                 </a>
@@ -256,7 +259,7 @@ Deno.serve(async (req) => {
               </p>
 
               <div style="margin: 30px 0; text-align: center;">
-                <a href="${Deno.env.get('BASE44FINEX') || 'https://app.base44.com'}/Plans" 
+                <a href="${appUrl}/Plans" 
                    style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 18px 50px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px;">
                   🔓 RENOVAR E DESBLOQUEAR
                 </a>
@@ -291,7 +294,7 @@ Deno.serve(async (req) => {
               </div>
 
               <div style="margin: 30px 0; text-align: center;">
-                <a href="${Deno.env.get('BASE44FINEX') || 'https://app.base44.com'}/Plans" 
+                <a href="${appUrl}/Plans" 
                    style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 18px 50px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px;">
                   💜 RENOVAR AGORA
                 </a>
@@ -327,7 +330,7 @@ Deno.serve(async (req) => {
               </div>
 
               <div style="margin: 30px 0; text-align: center;">
-                <a href="${Deno.env.get('BASE44FINEX') || 'https://app.base44.com'}/Plans" 
+                <a href="${appUrl}/Plans" 
                    style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 18px 50px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px;">
                   💜 VOLTAR PARA O FINEX
                 </a>
