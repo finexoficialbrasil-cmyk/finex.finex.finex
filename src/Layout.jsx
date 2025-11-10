@@ -133,28 +133,35 @@ const navigationItems = [
   },
 ];
 
-// ✅ FUNÇÃO ATUALIZADA: Verificar trial OU assinatura ativa
+// ✅ FUNÇÃO CORRIGIDA: NUNCA dar trial para quem já teve plano pago
 const hasActiveAccess = (user) => {
   if (!user) return false;
   if (user.role === 'admin') return true;
   
-  // ✅ VERIFICAR TRIAL
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  
+  // ✅ VERIFICAR TRIAL (apenas para quem NUNCA teve plano pago)
   if (user.subscription_status === 'trial' && user.trial_ends_at) {
     const [year, month, day] = user.trial_ends_at.split('-').map(Number);
     const trialEnd = new Date(year, month - 1, day);
     
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
     const trialActive = trialEnd >= today;
     
-    console.log(`🎁 Verificação de TRIAL:`, {
+    console.log(`🎁 Layout - Verificação TRIAL:`, {
       email: user.email,
       trialEnd: user.trial_ends_at,
-      trialActive
+      trialActive,
+      daysLeft: Math.ceil((trialEnd - today) / (1000 * 60 * 60 * 24))
     });
     
-    return trialActive;
+    // ✅ Se trial acabou, BLOQUEAR
+    if (!trialActive) {
+      console.log(`❌ Layout - TRIAL EXPIRADO! Bloqueando menu.`);
+      return false;
+    }
+    
+    return true;
   }
   
   // ✅ VERIFICAR ASSINATURA PAGA
@@ -162,12 +169,26 @@ const hasActiveAccess = (user) => {
     const [year, month, day] = user.subscription_end_date.split('-').map(Number);
     const endDate = new Date(year, month - 1, day);
     
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const isActive = endDate >= today;
     
-    return endDate >= today;
+    console.log(`💳 Layout - Verificação ASSINATURA:`, {
+      email: user.email,
+      endDate: user.subscription_end_date,
+      isActive,
+      daysLeft: Math.ceil((endDate - today) / (1000 * 60 * 60 * 24))
+    });
+    
+    // ✅ Se assinatura venceu, BLOQUEAR (NÃO dar trial novamente)
+    if (!isActive) {
+      console.log(`❌ Layout - ASSINATURA VENCIDA! Bloqueando menu.`);
+      return false;
+    }
+    
+    return true;
   }
   
+  // ✅ Sem trial e sem assinatura = BLOQUEADO
+  console.log(`❌ Layout - SEM ACESSO ATIVO. Bloqueando menu.`);
   return false;
 };
 
