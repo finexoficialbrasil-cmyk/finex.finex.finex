@@ -1,10 +1,9 @@
-
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Shield, Users, Crown, Video, Tags, Bell, Settings, Database, DollarSign, Smartphone, Zap, FileText, Loader2 } from "lucide-react";
+import { Shield, Users, Crown, Video, Tags, Bell, Settings, Database, DollarSign, Smartphone, Zap, FileText, Loader2, Mail } from "lucide-react";
 
 // ✅ Lazy loading dos componentes admin
 const AdminDashboard = React.lazy(() => import("../components/admin/AdminDashboard"));
@@ -21,6 +20,7 @@ const AdminMobileApp = React.lazy(() => import("../components/admin/AdminMobileA
 const AdminWebhookLogs = React.lazy(() => import("../components/admin/AdminWebhookLogs"));
 const AdminBackup = React.lazy(() => import("../components/admin/AdminBackup"));
 const AdminUserReport = React.lazy(() => import("../components/admin/AdminUserReport"));
+const AdminBilling = React.lazy(() => import("../components/admin/AdminBilling")); // ✅ NOVO
 
 // ✅ Loading fallback
 const TabLoading = () => (
@@ -75,7 +75,6 @@ export default function Admin() {
     }
   };
 
-  // ✅ CORRIGIDO: Usar base44.functions.invoke ao invés de import dinâmico
   const handleFixSubscriptions = async () => {
     if (!confirm("🔧 CORRIGIR STATUS DE ASSINATURAS\n\nEsta ação irá:\n\n1. Verificar TODOS os usuários do sistema\n2. Recalcular se a assinatura está ativa baseado na data de vencimento\n3. Atualizar o status automaticamente\n\n⚠️ Esta operação é segura e reversível.\n\nDeseja continuar?")) {
       return;
@@ -169,7 +168,7 @@ export default function Admin() {
 
         <Card className="glass-card border-0 neon-glow">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="bg-purple-900/20 w-full grid grid-cols-2 md:grid-cols-4 lg:grid-cols-9 gap-2 p-2">
+            <TabsList className="bg-purple-900/20 w-full grid grid-cols-2 md:grid-cols-4 lg:grid-cols-10 gap-2 p-2">
               <TabsTrigger value="dashboard" className="flex items-center gap-2">
                 <Shield className="w-4 h-4" />
                 <span className="hidden md:inline">Dashboard</span>
@@ -189,6 +188,10 @@ export default function Admin() {
               <TabsTrigger value="subscriptions" className="flex items-center gap-2">
                 <DollarSign className="w-4 h-4" />
                 <span className="hidden md:inline">Assinaturas</span>
+              </TabsTrigger>
+              <TabsTrigger value="billing" className="flex items-center gap-2">
+                <Mail className="w-4 h-4" />
+                <span className="hidden md:inline">Cobranças</span>
               </TabsTrigger>
               <TabsTrigger value="backup" className="flex items-center gap-2">
                 <Database className="w-4 h-4" />
@@ -228,6 +231,9 @@ export default function Admin() {
                 </TabsContent>
                 <TabsContent value="subscriptions">
                   <AdminSubscriptions />
+                </TabsContent>
+                <TabsContent value="billing">
+                  <AdminBilling />
                 </TabsContent>
                 <TabsContent value="backup">
                   <AdminBackup />
