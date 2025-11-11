@@ -46,7 +46,7 @@ export default function AdminSubscriptions() {
   const [selectedSubscription, setSelectedSubscription] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [isBlocking, setIsBlocking] = useState(false);
-  const [processingSubscriptions, setProcessingSubscriptions] = useState(new Set()); // ✅ NOVO: Rastrear IDs em processamento
+  const [processingSubscriptions, setProcessingSubscriptions] = useState(new Set());
   
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -60,7 +60,6 @@ export default function AdminSubscriptions() {
       console.log("🔄 AdminSubscriptions: Carregando dados via BACKEND...");
       setIsLoading(true);
       
-      // ✅ CHAMAR FUNÇÃO BACKEND que usa asServiceRole
       const response = await base44.functions.invoke('adminGetAllSubscriptions', {});
       
       if (response.data.success) {
@@ -129,6 +128,25 @@ export default function AdminSubscriptions() {
     return { total, pending, active, totalRevenue };
   }, [subscriptions]);
 
+  const filteredSubscriptions = useMemo(() => {
+    return subscriptionsOfMonth.filter(sub => {
+      const matchesSearch = sub.user_email.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = filterStatus === "all" || sub.status === filterStatus;
+      return matchesSearch && matchesStatus;
+    });
+  }, [subscriptionsOfMonth, searchTerm, filterStatus]);
+
+  // CORRIGIDO: Mover useMemo ANTES do early return
+  const duplicateUsers = useMemo(() => {
+    const emailCounts = {};
+    filteredSubscriptions.forEach(sub => {
+      if (sub.status === 'pending') {
+        emailCounts[sub.user_email] = (emailCounts[sub.user_email] || 0) + 1;
+      }
+    });
+    return Object.entries(emailCounts).filter(([_, count]) => count > 1);
+  }, [filteredSubscriptions]);
+
   const navigateMonth = (direction) => {
     let newMonth = selectedMonth + direction;
     let newYear = selectedYear;
@@ -169,7 +187,6 @@ export default function AdminSubscriptions() {
         const hasLifetime = user.subscription_plan === 'lifetime';
         
         if (!hasActivePlan && !hasLifetime) {
-          // ✅ Usar entities normalmente (admin pode editar users)
           await base44.entities.User.update(user.id, {
             subscription_status: "pending",
             subscription_plan: null,
@@ -190,7 +207,6 @@ export default function AdminSubscriptions() {
   };
 
   const handleApprove = async (subscription) => {
-    // ✅ PROTEÇÃO: Verificar se já está processando esta assinatura
     if (processingSubscriptions.has(subscription.id)) {
       console.log("⚠️ Assinatura já está sendo processada, ignorando clique");
       return;
@@ -200,7 +216,6 @@ export default function AdminSubscriptions() {
       return;
     }
 
-    // ✅ MARCAR COMO PROCESSANDO
     setProcessingSubscriptions(prev => new Set(prev).add(subscription.id));
 
     try {
@@ -211,7 +226,6 @@ export default function AdminSubscriptions() {
         plan: subscription.plan_type
       });
       
-      // ✅ CHAMAR FUNÇÃO BACKEND QUE USA asServiceRole
       const response = await base44.functions.invoke('adminApproveSubscription', {
         subscription_id: subscription.id,
         user_email: subscription.user_email,
@@ -242,7 +256,6 @@ export default function AdminSubscriptions() {
       
       alert(`❌ ${errorMessage}\n\nVerifique o console (F12) para mais detalhes.`);
     } finally {
-      // ✅ REMOVER DA LISTA DE PROCESSAMENTO
       setProcessingSubscriptions(prev => {
         const newSet = new Set(prev);
         newSet.delete(subscription.id);
@@ -252,7 +265,6 @@ export default function AdminSubscriptions() {
   };
 
   const handleReject = async (subscription) => {
-    // ✅ PROTEÇÃO: Verificar se já está processando
     if (processingSubscriptions.has(subscription.id)) {
       console.log("⚠️ Assinatura já está sendo processada, ignorando clique");
       return;
@@ -262,13 +274,11 @@ export default function AdminSubscriptions() {
       return;
     }
 
-    // ✅ MARCAR COMO PROCESSANDO
     setProcessingSubscriptions(prev => new Set(prev).add(subscription.id));
 
     try {
       console.log("🔄 Rejeitando assinatura:", subscription.id);
       
-      // ✅ Usar entities normalmente
       await base44.entities.Subscription.update(subscription.id, {
         status: "cancelled"
       });
@@ -279,7 +289,6 @@ export default function AdminSubscriptions() {
       console.error("❌ Erro ao rejeitar:", error);
       alert("❌ Erro ao rejeitar assinatura.\n\nVerifique o console (F12) para mais detalhes.");
     } finally {
-      // ✅ REMOVER DA LISTA DE PROCESSAMENTO
       setProcessingSubscriptions(prev => {
         const newSet = new Set(prev);
         newSet.delete(subscription.id);
@@ -293,12 +302,7 @@ export default function AdminSubscriptions() {
     setShowDetailsModal(true);
   };
 
-  const filteredSubscriptions = subscriptionsOfMonth.filter(sub => {
-    const matchesSearch = sub.user_email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === "all" || sub.status === filterStatus;
-    return matchesSearch && matchesStatus;
-  });
-
+  // CORRIGIDO: Early return APÓS todos os hooks
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
@@ -309,20 +313,8 @@ export default function AdminSubscriptions() {
     );
   }
 
-  // ✅ NOVO: Alerta se há múltiplas assinaturas do mesmo usuário
-  const duplicateUsers = useMemo(() => {
-    const emailCounts = {};
-    filteredSubscriptions.forEach(sub => {
-      if (sub.status === 'pending') {
-        emailCounts[sub.user_email] = (emailCounts[sub.user_email] || 0) + 1;
-      }
-    });
-    return Object.entries(emailCounts).filter(([_, count]) => count > 1);
-  }, [filteredSubscriptions]);
-
   return (
     <div className="space-y-6">
-      {/* ✅ NOVO: Alerta de duplicatas */}
       {duplicateUsers.length > 0 && (
         <Card className="glass-card border-0 border-l-4 border-yellow-500">
           <CardContent className="p-4">
@@ -588,7 +580,7 @@ export default function AdminSubscriptions() {
           ) : (
             <div className="space-y-3">
               {filteredSubscriptions.map((sub, index) => {
-                const isProcessing = processingSubscriptions.has(sub.id); // ✅ NOVO
+                const isProcessing = processingSubscriptions.has(sub.id);
 
                 return (
                   <motion.div
