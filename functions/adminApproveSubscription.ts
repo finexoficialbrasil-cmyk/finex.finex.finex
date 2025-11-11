@@ -15,12 +15,22 @@ Deno.serve(async (req) => {
         }
 
         // ✅ RECEBER DADOS
-        const { subscription_id, user_email, plan_type } = await req.json();
+        const body = await req.json();
+        const { subscription_id, user_email, plan_type } = body;
 
         console.log(`🔍 Admin ${user.email} aprovando assinatura:`);
         console.log(`   • Subscription ID: ${subscription_id}`);
         console.log(`   • User Email: ${user_email}`);
         console.log(`   • Plan Type: ${plan_type}`);
+
+        // ✅ VALIDAR DADOS
+        if (!subscription_id || !user_email || !plan_type) {
+            console.error("❌ Dados incompletos:", { subscription_id, user_email, plan_type });
+            return Response.json({ 
+                success: false,
+                error: 'Missing required fields: subscription_id, user_email, or plan_type' 
+            }, { status: 400 });
+        }
 
         // ✅ CALCULAR DATAS
         const startDate = new Date();
@@ -34,6 +44,12 @@ Deno.serve(async (req) => {
             endDate.setFullYear(endDate.getFullYear() + 1);
         } else if (plan_type === 'lifetime') {
             endDate.setFullYear(endDate.getFullYear() + 100);
+        } else {
+            console.error(`❌ Tipo de plano inválido: ${plan_type}`);
+            return Response.json({ 
+                success: false,
+                error: `Invalid plan type: ${plan_type}` 
+            }, { status: 400 });
         }
 
         const startDateStr = startDate.toISOString().split('T')[0];
@@ -43,37 +59,65 @@ Deno.serve(async (req) => {
         console.log(`   • Início: ${startDateStr}`);
         console.log(`   • Fim: ${endDateStr}`);
 
-        // ✅ ATUALIZAR SUBSCRIPTION
-        await base44.asServiceRole.entities.Subscription.update(subscription_id, {
-            status: "active",
-            start_date: startDateStr,
-            end_date: endDateStr
-        });
-
-        console.log(`✅ Subscription atualizada com sucesso`);
-
-        // ✅ BUSCAR USUÁRIO
-        const users = await base44.asServiceRole.entities.User.list();
-        const targetUser = users.find(u => u.email === user_email);
-
-        if (!targetUser) {
-            console.error(`❌ Usuário não encontrado: ${user_email}`);
+        // ✅ ATUALIZAR SUBSCRIPTION COM TRY/CATCH
+        try {
+            console.log(`🔄 Tentando atualizar Subscription ${subscription_id}...`);
+            await base44.asServiceRole.entities.Subscription.update(subscription_id, {
+                status: "active",
+                start_date: startDateStr,
+                end_date: endDateStr
+            });
+            console.log(`✅ Subscription atualizada com sucesso`);
+        } catch (subError) {
+            console.error("❌ Erro ao atualizar Subscription:", subError);
             return Response.json({ 
                 success: false,
-                error: 'User not found' 
-            }, { status: 404 });
+                error: 'Failed to update subscription',
+                details: subError.message
+            }, { status: 500 });
         }
 
-        console.log(`👤 Usuário encontrado: ${targetUser.id}`);
+        // ✅ BUSCAR USUÁRIO COM TRY/CATCH
+        let targetUser;
+        try {
+            console.log(`🔍 Buscando usuário: ${user_email}...`);
+            const users = await base44.asServiceRole.entities.User.list();
+            targetUser = users.find(u => u.email === user_email);
 
-        // ✅ ATUALIZAR USUÁRIO
-        await base44.asServiceRole.entities.User.update(targetUser.id, {
-            subscription_status: "active",
-            subscription_plan: plan_type,
-            subscription_end_date: endDateStr
-        });
+            if (!targetUser) {
+                console.error(`❌ Usuário não encontrado: ${user_email}`);
+                return Response.json({ 
+                    success: false,
+                    error: 'User not found' 
+                }, { status: 404 });
+            }
+            console.log(`✅ Usuário encontrado: ${targetUser.id}`);
+        } catch (userListError) {
+            console.error("❌ Erro ao buscar usuário:", userListError);
+            return Response.json({ 
+                success: false,
+                error: 'Failed to find user',
+                details: userListError.message
+            }, { status: 500 });
+        }
 
-        console.log(`✅ Usuário atualizado com sucesso`);
+        // ✅ ATUALIZAR USUÁRIO COM TRY/CATCH
+        try {
+            console.log(`🔄 Tentando atualizar User ${targetUser.id}...`);
+            await base44.asServiceRole.entities.User.update(targetUser.id, {
+                subscription_status: "active",
+                subscription_plan: plan_type,
+                subscription_end_date: endDateStr
+            });
+            console.log(`✅ Usuário atualizado com sucesso`);
+        } catch (userUpdateError) {
+            console.error("❌ Erro ao atualizar User:", userUpdateError);
+            return Response.json({ 
+                success: false,
+                error: 'Failed to update user',
+                details: userUpdateError.message
+            }, { status: 500 });
+        }
 
         return Response.json({
             success: true,
@@ -87,13 +131,16 @@ Deno.serve(async (req) => {
         });
 
     } catch (error) {
-        console.error("❌ Erro ao aprovar assinatura:", error);
+        console.error("❌ Erro geral ao aprovar assinatura:", error);
         console.error("📋 Stack:", error.stack);
+        console.error("📋 Name:", error.name);
+        console.error("📋 Message:", error.message);
         
         return Response.json({ 
             success: false, 
-            error: error.message,
-            details: error.stack
+            error: error.message || 'Internal server error',
+            details: error.stack,
+            name: error.name
         }, { status: 500 });
     }
 });
