@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { Subscription } from "@/entities/Subscription";
+import { base44 } from "@/api/base44Client"; // ✅ USAR SDK
 import { User } from "@/entities/User";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -38,14 +38,26 @@ export default function AdminSubscriptions() {
 
   const loadData = async () => {
     try {
-      const [subsData, usersData] = await Promise.all([
-        Subscription.list("-created_date"),
-        User.list()
-      ]);
-      setSubscriptions(subsData);
-      setUsers(usersData);
+      console.log("🔄 Carregando dados do admin...");
+      
+      // ✅ USAR BACKEND FUNCTION para buscar TODAS as subscriptions (ignorando RLS)
+      const { data: response } = await base44.functions.invoke('adminGetAllSubscriptions');
+      
+      console.log("📦 Resposta da função:", response);
+      
+      if (response?.subscriptions && response?.users) {
+        console.log(`✅ ${response.subscriptions.length} subscriptions carregadas`);
+        console.log(`✅ ${response.users.length} usuários carregados`);
+        
+        setSubscriptions(response.subscriptions);
+        setUsers(response.users);
+      } else {
+        console.error("❌ Resposta inválida:", response);
+        alert("❌ Erro ao carregar dados. Verifique o console.");
+      }
     } catch (error) {
-      console.error("Erro ao carregar dados:", error);
+      console.error("❌ Erro ao carregar dados:", error);
+      alert(`❌ Erro: ${error.message}\n\nVerifique se você é admin.`);
     } finally {
       setIsLoading(false);
     }
@@ -112,12 +124,11 @@ export default function AdminSubscriptions() {
       }
 
       // Atualizar assinatura para ativa
-      await Subscription.update(subscription.id, {
-        ...subscription,
+      await base44.from('subscriptions').update({
         status: "active",
         start_date: startDate.toISOString().split('T')[0],
         end_date: endDate.toISOString().split('T')[0]
-      });
+      }).eq('id', subscription.id);
 
       // Atualizar dados do usuário
       const user = users.find(u => u.email === subscription.user_email);
@@ -141,10 +152,9 @@ export default function AdminSubscriptions() {
     if (!confirm(`Rejeitar pagamento de ${subscription.user_email}?`)) return;
 
     try {
-      await Subscription.update(subscription.id, {
-        ...subscription,
+      await base44.from('subscriptions').update({
         status: "cancelled"
-      });
+      }).eq('id', subscription.id);
 
       alert("❌ Assinatura rejeitada.");
       loadData();
@@ -180,6 +190,23 @@ export default function AdminSubscriptions() {
 
   return (
     <div className="space-y-6">
+      {/* ✅ NOVO: Aviso se não houver subscriptions */}
+      {subscriptions.length === 0 && (
+        <Card className="glass-card border-0 border-l-4 border-yellow-500">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <Clock className="w-6 h-6 text-yellow-400" />
+              <div>
+                <p className="text-white font-semibold">Nenhuma assinatura encontrada</p>
+                <p className="text-purple-300 text-sm">
+                  Aguarde os usuários fazerem pagamentos ou verifique se você é admin.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Botão de Varredura */}
       <Card className="glass-card border-0 border-l-4 border-red-500">
         <CardContent className="p-4">
