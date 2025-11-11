@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { EmailLog } from "@/entities/EmailLog";
@@ -32,7 +31,7 @@ import {
   User as UserIcon,
   Filter,
   RefreshCw,
-  MessageCircle // ✅ NOVO
+  MessageCircle
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -44,11 +43,15 @@ export default function AdminEmailLogs() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [isLoading, setIsLoading] = useState(true);
   const [showManualModal, setShowManualModal] = useState(false);
-  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false); // ✅ NOVO
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [selectedEmailType, setSelectedEmailType] = useState("3_days_before");
-  const [whatsappMessage, setWhatsappMessage] = useState(""); // ✅ NOVO
+  const [whatsappMessage, setWhatsappMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
+  
+  // ✅ NOVO: Estado para busca de usuário nos modais
+  const [userSearchEmail, setUserSearchEmail] = useState("");
+  const [userSearchWhatsApp, setUserSearchWhatsApp] = useState("");
 
   useEffect(() => {
     loadData();
@@ -82,7 +85,6 @@ export default function AdminEmailLogs() {
     try {
       console.log("📧 Enviando email manual...");
       
-      // Chamar a função backend com parâmetros específicos
       const response = await base44.functions.invoke('sendManualReminderEmail', {
         user_email: selectedUser.email,
         email_type: selectedEmailType
@@ -92,7 +94,8 @@ export default function AdminEmailLogs() {
         alert(`✅ Email enviado com sucesso para ${selectedUser.email}!`);
         setShowManualModal(false);
         setSelectedUser(null);
-        loadData(); // Recarregar logs
+        setUserSearchEmail(""); // Limpar busca
+        loadData();
       } else {
         throw new Error(response.data.error || "Erro ao enviar email");
       }
@@ -104,7 +107,6 @@ export default function AdminEmailLogs() {
     }
   };
 
-  // ✅ NOVA FUNÇÃO: Enviar WhatsApp
   const handleSendWhatsApp = async () => {
     if (!selectedUser) {
       alert("Selecione um usuário!");
@@ -123,17 +125,17 @@ export default function AdminEmailLogs() {
 
     setIsSending(true);
     try {
-      // Abrir WhatsApp Web com mensagem pré-preenchida
       const phone = selectedUser.phone.replace(/\D/g, '');
       const encodedMessage = encodeURIComponent(whatsappMessage);
-      const whatsappUrl = `https://wa.me/55${phone}?text=${encodedMessage}`; // Assuming Brazilian numbers need 55 prefix
+      const whatsappUrl = `https://wa.me/${phone}?text=${encodedMessage}`;
       
       window.open(whatsappUrl, '_blank');
       
-      alert(`✅ WhatsApp aberto para ${selectedUser.full_name || selectedUser.email}!`);
+      alert(`✅ WhatsApp aberto para ${selectedUser.full_name}!`);
       setShowWhatsAppModal(false);
       setWhatsappMessage("");
       setSelectedUser(null);
+      setUserSearchWhatsApp(""); // Limpar busca
       
     } catch (error) {
       console.error("Erro ao abrir WhatsApp:", error);
@@ -143,7 +145,6 @@ export default function AdminEmailLogs() {
     }
   };
 
-  // ✅ TEMPLATES DE MENSAGENS WHATSAPP
   const whatsappTemplates = {
     reminder: `Olá, {{USER_NAME}}! 👋
 
@@ -197,6 +198,26 @@ Vamos juntos rumo ao sucesso financeiro! 💰✨`
       setWhatsappMessage(message);
     }
   };
+
+  // ✅ NOVO: Filtrar usuários para modal de Email
+  const filteredUsersEmail = users.filter(u => {
+    if (!userSearchEmail) return true;
+    const search = userSearchEmail.toLowerCase();
+    return (
+      u.email.toLowerCase().includes(search) ||
+      u.full_name?.toLowerCase().includes(search)
+    );
+  });
+
+  // ✅ NOVO: Filtrar usuários para modal de WhatsApp
+  const filteredUsersWhatsApp = users.filter(u => {
+    if (!userSearchWhatsApp) return true;
+    const search = userSearchWhatsApp.toLowerCase();
+    return (
+      u.email.toLowerCase().includes(search) ||
+      u.full_name?.toLowerCase().includes(search)
+    );
+  });
 
   const filteredLogs = logs.filter(log => {
     const matchesSearch = 
@@ -366,7 +387,6 @@ Vamos juntos rumo ao sucesso financeiro! 💰✨`
                 📧 Email
               </Button>
 
-              {/* ✅ NOVO: Botão WhatsApp */}
               <Button
                 onClick={() => setShowWhatsAppModal(true)}
                 className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 whitespace-nowrap"
@@ -472,14 +492,37 @@ Vamos juntos rumo ao sucesso financeiro! 💰✨`
       <Dialog open={showManualModal} onOpenChange={setShowManualModal}>
         <DialogContent className="glass-card border-purple-700/50 text-white max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="text-2xl bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
+            <DialogTitle className="text-2xl bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
               📧 Enviar Email Manual de Cobrança
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-6">
+            {/* ✅ NOVO: Campo de Busca */}
             <div>
-              <Label className="text-purple-200 mb-2 block">Usuário</Label>
+              <Label className="text-purple-200 mb-2 block">
+                <Search className="w-4 h-4 inline mr-2" />
+                Buscar Usuário
+              </Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400 w-4 h-4" />
+                <Input
+                  placeholder="Digite nome ou email para buscar..."
+                  value={userSearchEmail}
+                  onChange={(e) => setUserSearchEmail(e.target.value)}
+                  className="pl-10 bg-purple-900/20 border-purple-700/50 text-white"
+                />
+              </div>
+              {userSearchEmail && (
+                <p className="text-purple-400 text-xs mt-2">
+                  📊 {filteredUsersEmail.length} usuário(s) encontrado(s)
+                </p>
+              )}
+            </div>
+
+            {/* Usuário */}
+            <div>
+              <Label className="text-purple-200 mb-2 block">Selecione o Usuário</Label>
               <Select 
                 value={selectedUser?.id} 
                 onValueChange={(value) => {
@@ -490,24 +533,31 @@ Vamos juntos rumo ao sucesso financeiro! 💰✨`
                 <SelectTrigger className="bg-purple-900/20 border-purple-700/50 text-white">
                   <SelectValue placeholder="Selecione um usuário" />
                 </SelectTrigger>
-                <SelectContent>
-                  {users.map(user => {
-                    const [year, month, day] = user.subscription_end_date.split('-').map(Number);
-                    const expiryDate = new Date(year, month - 1, day);
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    const diffDays = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
-                    
-                    return (
-                      <SelectItem key={user.id} value={user.id}>
-                        {user.full_name || user.email} - Vence em {diffDays} dias
-                      </SelectItem>
-                    );
-                  })}
+                <SelectContent className="max-h-[300px]">
+                  {filteredUsersEmail.length > 0 ? (
+                    filteredUsersEmail.map(user => {
+                      const [year, month, day] = user.subscription_end_date.split('-').map(Number);
+                      const expiryDate = new Date(year, month - 1, day);
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      const diffDays = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+                      
+                      return (
+                        <SelectItem key={user.id} value={user.id}>
+                          {user.full_name || user.email} - Vence em {diffDays} dias
+                        </SelectItem>
+                      );
+                    })
+                  ) : (
+                    <div className="p-4 text-center text-purple-300 text-sm">
+                      Nenhum usuário encontrado
+                    </div>
+                  )}
                 </SelectContent>
               </Select>
             </div>
 
+            {/* Tipo de Email */}
             <div>
               <Label className="text-purple-200 mb-2 block">Tipo de Email</Label>
               <Select value={selectedEmailType} onValueChange={setSelectedEmailType}>
@@ -555,7 +605,11 @@ Vamos juntos rumo ao sucesso financeiro! 💰✨`
             <div className="flex gap-3">
               <Button
                 variant="outline"
-                onClick={() => setShowManualModal(false)}
+                onClick={() => {
+                  setShowManualModal(false);
+                  setUserSearchEmail("");
+                  setSelectedUser(null);
+                }}
                 disabled={isSending}
                 className="flex-1 border-purple-700 text-purple-300"
               >
@@ -564,7 +618,7 @@ Vamos juntos rumo ao sucesso financeiro! 💰✨`
               <Button
                 onClick={handleSendManualEmail}
                 disabled={isSending || !selectedUser}
-                className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600"
+                className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600"
               >
                 {isSending ? (
                   <>
@@ -583,9 +637,9 @@ Vamos juntos rumo ao sucesso financeiro! 💰✨`
         </DialogContent>
       </Dialog>
 
-      {/* ✅ NOVO: WhatsApp Modal */}
+      {/* WhatsApp Modal */}
       <Dialog open={showWhatsAppModal} onOpenChange={setShowWhatsAppModal}>
-        <DialogContent className="glass-card border-green-700/50 text-white max-w-2xl">
+        <DialogContent className="glass-card border-green-700/50 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-2xl bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
               💬 Enviar Mensagem WhatsApp
@@ -593,26 +647,54 @@ Vamos juntos rumo ao sucesso financeiro! 💰✨`
           </DialogHeader>
 
           <div className="space-y-6">
+            {/* ✅ NOVO: Campo de Busca */}
+            <div>
+              <Label className="text-purple-200 mb-2 block">
+                <Search className="w-4 h-4 inline mr-2" />
+                Buscar Usuário
+              </Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400 w-4 h-4" />
+                <Input
+                  placeholder="Digite nome ou email para buscar..."
+                  value={userSearchWhatsApp}
+                  onChange={(e) => setUserSearchWhatsApp(e.target.value)}
+                  className="pl-10 bg-purple-900/20 border-purple-700/50 text-white"
+                />
+              </div>
+              {userSearchWhatsApp && (
+                <p className="text-purple-400 text-xs mt-2">
+                  📊 {filteredUsersWhatsApp.length} usuário(s) encontrado(s)
+                </p>
+              )}
+            </div>
+
             {/* Usuário */}
             <div>
-              <Label className="text-purple-200 mb-2 block">Usuário</Label>
+              <Label className="text-purple-200 mb-2 block">Selecione o Usuário</Label>
               <Select 
                 value={selectedUser?.id} 
                 onValueChange={(value) => {
                   const user = users.find(u => u.id === value);
                   setSelectedUser(user);
-                  setWhatsappMessage(""); // Limpar mensagem ao trocar usuário
+                  setWhatsappMessage("");
                 }}
               >
                 <SelectTrigger className="bg-purple-900/20 border-purple-700/50 text-white">
                   <SelectValue placeholder="Selecione um usuário" />
                 </SelectTrigger>
-                <SelectContent>
-                  {users.map(user => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.full_name || user.email} {!user.phone && '(⚠️ SEM TELEFONE)'}
-                    </SelectItem>
-                  ))}
+                <SelectContent className="max-h-[300px]">
+                  {filteredUsersWhatsApp.length > 0 ? (
+                    filteredUsersWhatsApp.map(user => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.full_name || user.email} {!user.phone && '(⚠️ SEM TELEFONE)'}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <div className="p-4 text-center text-purple-300 text-sm">
+                      Nenhum usuário encontrado
+                    </div>
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -647,7 +729,7 @@ Vamos juntos rumo ao sucesso financeiro! 💰✨`
                   size="sm"
                   onClick={() => loadTemplate('welcome')}
                   disabled={!selectedUser}
-                  className="border-green-700 text-green-300"
+                  className="border-green-700 text-green-300 hover:bg-green-900/20"
                 >
                   🎉 Boas-vindas
                 </Button>
@@ -657,7 +739,7 @@ Vamos juntos rumo ao sucesso financeiro! 💰✨`
                   size="sm"
                   onClick={() => loadTemplate('reminder')}
                   disabled={!selectedUser}
-                  className="border-yellow-700 text-yellow-300"
+                  className="border-yellow-700 text-yellow-300 hover:bg-yellow-900/20"
                 >
                   ⏰ Lembrete
                 </Button>
@@ -667,7 +749,7 @@ Vamos juntos rumo ao sucesso financeiro! 💰✨`
                   size="sm"
                   onClick={() => loadTemplate('expired')}
                   disabled={!selectedUser}
-                  className="border-red-700 text-red-300"
+                  className="border-red-700 text-red-300 hover:bg-red-900/20"
                 >
                   ❌ Expirado
                 </Button>
@@ -706,6 +788,7 @@ Vamos juntos rumo ao sucesso financeiro! 💰✨`
                   setShowWhatsAppModal(false);
                   setWhatsappMessage("");
                   setSelectedUser(null);
+                  setUserSearchWhatsApp("");
                 }}
                 disabled={isSending}
                 className="flex-1 border-purple-700 text-purple-300"
