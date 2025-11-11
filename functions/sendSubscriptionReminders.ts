@@ -553,12 +553,12 @@ Deno.serve(async (req) => {
           
           const template = EMAIL_TEMPLATES[templateKey];
           
-          // ✅ Substituir variáveis
+          // ✅ Substituir variáveis (LINK ATUALIZADO)
           let emailBody = template.body
             .replace(/{{USER_NAME}}/g, user.full_name || user.email.split('@')[0])
             .replace(/{{PLAN_NAME}}/g, formatPlanName(user.subscription_plan))
             .replace(/{{EXPIRY_DATE}}/g, formatDate(user.subscription_end_date))
-            .replace(/{{RENEWAL_LINK}}/g, 'https://finex.base44.app/pages/Plans')
+            .replace(/{{RENEWAL_LINK}}/g, 'https://finex.base44.app')
             .replace(/{{DAYS_EXPIRED}}/g, Math.abs(diffDays));
           
           try {

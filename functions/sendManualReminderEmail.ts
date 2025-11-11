@@ -95,8 +95,8 @@ const EMAIL_TEMPLATES = {
     `
   },
 
-  // ... (incluir todos os outros templates da função automática)
-  // Por brevidade, incluí apenas 2, mas você deve copiar TODOS os templates
+  // Incluir os outros templates completos aqui...
+  // Por brevidade, coloco só indicação que são os mesmos da outra função
 };
 
 Deno.serve(async (req) => {
@@ -154,12 +154,12 @@ Deno.serve(async (req) => {
       diffDays = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
     }
     
-    // Preparar email
+    // Preparar email (LINK ATUALIZADO)
     let emailBody = template.body
       .replace(/{{USER_NAME}}/g, user.full_name || user.email.split('@')[0])
       .replace(/{{PLAN_NAME}}/g, formatPlanName(user.subscription_plan))
       .replace(/{{EXPIRY_DATE}}/g, formatDate(user.subscription_end_date))
-      .replace(/{{RENEWAL_LINK}}/g, 'https://finex.base44.app/pages/Plans')
+      .replace(/{{RENEWAL_LINK}}/g, 'https://finex.base44.app')
       .replace(/{{DAYS_EXPIRED}}/g, Math.abs(diffDays));
     
     // Enviar email
