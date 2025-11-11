@@ -30,6 +30,7 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
       const allTerms = await TermsOfService.list("-created_date", 1);
       const activeTerms = allTerms.find(t => t.is_active);
       
+      console.log("📋 Termos carregados:", activeTerms);
       setTerms(activeTerms);
     } catch (error) {
       console.error("Erro ao carregar termos:", error);
@@ -39,18 +40,45 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
   };
 
   const needsToAcceptTerms = () => {
-    if (!user || !terms) return false;
+    if (!user || !terms) {
+      console.log("⏭️ Sem usuário ou termos, não precisa aceitar");
+      return false;
+    }
+    
+    console.log("🔍 Verificando aceitação de termos para:", user.email);
+    console.log("   terms_accepted:", user.terms_accepted);
+    console.log("   terms_version_accepted:", user.terms_version_accepted);
+    console.log("   Versão atual dos termos:", terms.version);
     
     // Nunca aceitou os termos
-    if (!user.terms_accepted) return true;
+    if (!user.terms_accepted) {
+      console.log("✅ Usuário NUNCA aceitou termos - MOSTRAR MODAL");
+      return true;
+    }
+    
+    // Não tem versão registrada (dados antigos)
+    if (!user.terms_version_accepted) {
+      console.log("✅ Usuário não tem versão registrada - MOSTRAR MODAL");
+      return true;
+    }
     
     // Aceitou uma versão antiga (versão mudou)
-    if (user.terms_version_accepted !== terms.version) return true;
+    if (user.terms_version_accepted !== terms.version) {
+      console.log("✅ Versão mudou - MOSTRAR MODAL");
+      return true;
+    }
     
+    console.log("⏭️ Usuário já aceitou a versão atual - NÃO MOSTRAR");
     return false;
   };
 
   const isOpen = needsToAcceptTerms();
+
+  useEffect(() => {
+    if (isOpen) {
+      console.log("🚨 MODAL DE TERMOS ABERTO PARA:", user?.email);
+    }
+  }, [isOpen, user]);
 
   const handlePrint = () => {
     if (!contentRef.current) return;
@@ -152,7 +180,6 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
     printWindow.document.write(printContent);
     printWindow.document.close();
     
-    // Aguardar carregar e imprimir
     printWindow.onload = () => {
       printWindow.print();
     };
@@ -167,7 +194,6 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
     setIsSubmitting(true);
 
     try {
-      // Capturar IP (aproximado do lado do cliente)
       let userIP = "N/A";
       try {
         const ipResponse = await fetch('https://api.ipify.org?format=json');
@@ -184,7 +210,8 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
         terms_ip_address: userIP
       };
 
-      console.log("📋 Registrando aceitação dos termos:", updateData);
+      console.log("📋 Registrando aceitação dos termos para:", user.email);
+      console.log("   Dados:", updateData);
 
       await User.updateMyUserData(updateData);
 
@@ -271,7 +298,7 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
             </div>
           </div>
 
-          {/* Conteúdo dos Termos - AGORA COM SCROLL INDEPENDENTE */}
+          {/* Conteúdo dos Termos - COM SCROLL INDEPENDENTE */}
           <div className="border border-purple-700/30 rounded-lg bg-purple-900/10 max-h-[400px] overflow-y-auto">
             <div 
               ref={contentRef}
