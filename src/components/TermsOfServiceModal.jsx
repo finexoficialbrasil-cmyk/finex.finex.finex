@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { FileText, AlertTriangle, Shield, CheckCircle, Loader2, Printer } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -206,27 +205,27 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
   };
 
   if (isLoading) {
-    return null; // Não mostra nada enquanto carrega
+    return null;
   }
 
   if (!isOpen || !terms) {
-    return null; // Não mostra modal se não precisa aceitar
+    return null;
   }
 
   return (
     <Dialog open={isOpen} onOpenChange={() => {}}>
       <DialogContent 
-        className="glass-card border-purple-700/50 text-white w-[95vw] max-w-4xl max-h-[95vh] flex flex-col p-4 sm:p-6"
+        className="glass-card border-purple-700/50 text-white w-[95vw] max-w-5xl h-[95vh] flex flex-col p-0"
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
-        <DialogHeader>
-          <div className="flex items-center justify-between">
+        <DialogHeader className="p-4 sm:p-6 border-b border-purple-700/30 flex-shrink-0">
+          <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
-              <DialogTitle className="text-xl sm:text-2xl bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent text-center">
+              <DialogTitle className="text-xl sm:text-2xl bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
                 📋 Termos de Uso e Política de Privacidade
               </DialogTitle>
-              <p className="text-purple-300 text-sm text-center mt-2">
+              <p className="text-purple-300 text-sm mt-2">
                 Versão {terms.version} • Vigência: {new Date(terms.effective_date).toLocaleDateString('pt-BR')}
               </p>
             </div>
@@ -234,7 +233,7 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
               onClick={handlePrint}
               variant="outline"
               size="sm"
-              className="border-cyan-700 text-cyan-300 hover:bg-cyan-900/20 flex-shrink-0 ml-2"
+              className="border-cyan-700 text-cyan-300 hover:bg-cyan-900/20 flex-shrink-0"
               title="Imprimir termos"
             >
               <Printer className="w-4 h-4" />
@@ -242,7 +241,7 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
           </div>
         </DialogHeader>
 
-        <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
           {/* Ilustração */}
           <motion.div
             initial={{ scale: 0 }}
@@ -251,8 +250,8 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
           >
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-full blur-2xl"></div>
-              <div className="relative p-4 rounded-full bg-gradient-to-br from-blue-600 to-cyan-600">
-                <FileText className="w-10 h-10 sm:w-12 sm:h-12 text-white" />
+              <div className="relative p-3 sm:p-4 rounded-full bg-gradient-to-br from-blue-600 to-cyan-600">
+                <FileText className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
               </div>
             </div>
           </motion.div>
@@ -272,11 +271,11 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
             </div>
           </div>
 
-          {/* Conteúdo dos Termos */}
-          <ScrollArea className="flex-1 border border-purple-700/30 rounded-lg p-4 bg-purple-900/10">
+          {/* Conteúdo dos Termos - AGORA COM SCROLL INDEPENDENTE */}
+          <div className="border border-purple-700/30 rounded-lg bg-purple-900/10 max-h-[400px] overflow-y-auto">
             <div 
               ref={contentRef}
-              className="prose prose-sm prose-invert max-w-none text-purple-100
+              className="p-4 prose prose-sm prose-invert max-w-none text-purple-100
                          prose-headings:text-white prose-headings:font-bold
                          prose-h2:text-xl prose-h2:mt-6 prose-h2:mb-3
                          prose-h3:text-lg prose-h3:mt-4 prose-h3:mb-2
@@ -286,7 +285,7 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
                          prose-a:text-cyan-400"
               dangerouslySetInnerHTML={{ __html: terms.content }}
             />
-          </ScrollArea>
+          </div>
 
           {/* Dica de Impressão */}
           <div className="bg-cyan-900/20 border border-cyan-700/30 p-3 rounded-lg">
@@ -327,7 +326,7 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
           </div>
         </div>
 
-        <DialogFooter className="flex-col sm:flex-row gap-3">
+        <DialogFooter className="p-4 sm:p-6 border-t border-purple-700/30 flex-shrink-0">
           <Button
             onClick={handleAccept}
             disabled={!accepted || isSubmitting}
