@@ -444,15 +444,16 @@ export default function Plans() {
     setIsSubmitting(true);
 
     try {
-      console.log("📝 Criando registro de assinatura...");
-      console.log("📋 Dados:", {
-        user_email: user.email,
-        plan_type: selectedPlan.plan_type,
-        amount_paid: selectedPlan.price,
-        status: "pending"
-      });
+      console.log("════════════════════════════════════════");
+      console.log("📝 USUÁRIO CRIANDO SUBSCRIPTION");
+      console.log("════════════════════════════════════════");
+      console.log("📧 User email:", user.email);
+      console.log("📊 Plan type:", selectedPlan.plan_type);
+      console.log("💰 Amount:", selectedPlan.price);
+      console.log("📋 Status: pending");
+      console.log("════════════════════════════════════════");
       
-      const newSubscription = await Subscription.create({
+      const subscriptionData = {
         user_email: user.email,
         plan_type: selectedPlan.plan_type,
         status: "pending",
@@ -461,20 +462,50 @@ export default function Plans() {
         payment_proof_url: paymentData.payment_proof_url,
         transaction_id: paymentData.asaas_payment_id || null,
         notes: paymentData.notes || `Pagamento manual via PIX - ${selectedPlan.name}`
-      });
+      };
+      
+      console.log("📤 Enviando para banco:", JSON.stringify(subscriptionData, null, 2));
+      
+      const newSubscription = await Subscription.create(subscriptionData);
 
-      console.log("✅ Subscription criada com sucesso!");
+      console.log("════════════════════════════════════════");
+      console.log("✅ SUBSCRIPTION CRIADA COM SUCESSO!");
+      console.log("════════════════════════════════════════");
       console.log("📦 ID:", newSubscription.id);
       console.log("📧 User:", newSubscription.user_email);
       console.log("📊 Status:", newSubscription.status);
+      console.log("💰 Amount:", newSubscription.amount_paid);
+      console.log("📅 Created:", newSubscription.created_date);
+      console.log("════════════════════════════════════════");
+      console.log("💡 AGORA O ADMIN DEVE VER ESTA SUBSCRIPTION NO PAINEL!");
+      console.log("════════════════════════════════════════");
 
-      alert("✅ Pagamento registrado!\n\n📝 Sua assinatura foi enviada para análise.\n\n⏱️ Aguarde a confirmação do administrador (até 24h).\n\n🔔 Você receberá uma notificação quando for aprovada!");
+      // ✅ VERIFICAR SE FOI SALVA MESMO
+      try {
+        console.log("🔍 Verificando se foi salva no banco...");
+        const allSubs = await Subscription.list();
+        const justCreated = allSubs.find(s => s.id === newSubscription.id);
+        
+        if (justCreated) {
+          console.log("✅ CONFIRMADO: Subscription está no banco!");
+          console.log("📦 Dados salvos:", JSON.stringify(justCreated, null, 2));
+        } else {
+          console.error("❌ ERRO: Subscription NÃO FOI ENCONTRADA no banco após criação!");
+        }
+      } catch (verifyError) {
+        console.error("❌ Erro ao verificar:", verifyError);
+      }
+
+      alert(`✅ Pagamento registrado!\n\n📝 ID da Assinatura: ${newSubscription.id}\n\n📋 Sua assinatura foi enviada para análise.\n\n⏱️ Aguarde a confirmação do administrador (até 24h).\n\n🔔 Você receberá uma notificação quando for aprovada!`);
       setShowPaymentModal(false);
       loadData();
     } catch (error) {
-      console.error("❌ Erro ao enviar pagamento:", error);
-      console.error("📋 Detalhes:", error.message);
-      console.error("📋 Stack:", error.stack);
+      console.error("════════════════════════════════════════");
+      console.error("❌ ERRO AO CRIAR SUBSCRIPTION:");
+      console.error("   Name:", error.name);
+      console.error("   Message:", error.message);
+      console.error("   Stack:", error.stack);
+      console.error("════════════════════════════════════════");
       alert(`❌ Erro ao enviar comprovante.\n\nDetalhes: ${error.message}\n\nTente novamente ou entre em contato com o suporte.`);
     } finally {
       setIsSubmitting(false);

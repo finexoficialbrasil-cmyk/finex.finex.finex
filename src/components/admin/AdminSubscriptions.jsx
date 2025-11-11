@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client"; // ✅ USAR SDK
-import { Subscription } from "@/entities/Subscription"; // ✅ IMPORT ADICIONAL para debug
+import { base44 } from "@/api/base44Client";
+import { Subscription } from "@/entities/Subscription";
 import { User } from "@/entities/User";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,13 +31,14 @@ export default function AdminSubscriptions() {
   const [selectedSubscription, setSelectedSubscription] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [isBlocking, setIsBlocking] = useState(false);
-  const [debugInfo, setDebugInfo] = useState(null); // ✅ NOVO ESTADO para informações de debug
+  const [debugInfo, setDebugInfo] = useState(null);
 
   useEffect(() => {
     loadData();
   }, []);
 
   const loadData = async () => {
+    setIsLoading(true);
     try {
       console.log("════════════════════════════════════════");
       console.log("🔄 AdminSubscriptions - Carregando dados...");
@@ -49,37 +49,43 @@ export default function AdminSubscriptions() {
         console.log("📊 Teste 1: Usando backend function...");
         const { data: response } = await base44.functions.invoke('adminGetAllSubscriptions');
         
-        console.log("📦 Resposta da função:", response);
+        console.log("📦 Resposta completa:", JSON.stringify(response, null, 2));
         
         if (response?.success && response?.subscriptions && response?.users) {
-          console.log(`✅ Backend function OK: ${response.subscriptions.length} subs`);
+          console.log(`✅ Backend function OK: ${response.subscriptions.length} subs, ${response.users.length} users`);
+          
+          if (response.subscriptions.length === 0) {
+            console.log("⚠️ ATENÇÃO: 0 subscriptions encontradas no banco!");
+            console.log("💡 Isto significa que as subscriptions NÃO estão sendo criadas/salvas.");
+          }
+          
           setSubscriptions(response.subscriptions);
           setUsers(response.users);
-          setDebugInfo(response.debug); // ✅ Definir debugInfo do backend
-          setIsLoading(false);
-          return; // Sai da função se o backend for bem-sucedido
+          setDebugInfo(response.debug);
+          return;
         } else {
-          console.warn("⚠️ Backend function retornou dados vazios ou inválidos, tentando fallback.");
+          console.warn("⚠️ Backend function retornou dados inválidos:", response);
         }
       } catch (funcError) {
-        console.error("❌ Erro na backend function, tentando fallback:", funcError);
+        console.error("❌ Erro na backend function:", funcError);
+        console.error("   Message:", funcError.message);
+        console.error("   Stack:", funcError.stack);
       }
       
-      // ✅ TESTE 2: Tentar direto com SDK (fallback) - executa apenas se a função backend falhar ou retornar dados inválidos
-      console.log("📊 Teste 2: Fallback - buscando direto com SDK...");
+      // ✅ TESTE 2: Tentar direto com SDK (fallback)
+      console.log("📊 Teste 2: Fallback - buscando direto...");
       const subsData = await Subscription.list("-created_date", 500);
       const usersData = await User.list("-created_date", 500);
       
       console.log(`✅ Fallback OK: ${subsData.length} subs, ${usersData.length} users`);
       
+      if (subsData.length === 0) {
+        console.log("⚠️ FALLBACK TAMBÉM RETORNOU 0 subscriptions!");
+        console.log("💡 Problema confirmado: Subscriptions não estão no banco.");
+      }
+      
       setSubscriptions(subsData);
       setUsers(usersData);
-      setDebugInfo({ // ✅ Definir um debugInfo básico para o fallback
-        subscriptions_count: subsData.length,
-        users_count: usersData.length,
-        timestamp: new Date().toISOString(),
-        method: "SDK Fallback"
-      });
       
     } catch (error) {
       console.error("════════════════════════════════════════");
@@ -93,7 +99,6 @@ export default function AdminSubscriptions() {
     }
   };
 
-  // ✅ NOVA FUNÇÃO: Bloquear todos os usuários sem plano ativo
   const handleBlockAllWithoutPlan = async () => {
     if (!confirm("⚠️ ATENÇÃO!\n\nEsta ação irá BLOQUEAR todos os usuários que não têm plano ativo (exceto admins).\n\nOs usuários bloqueados terão que escolher um plano para continuar usando o sistema.\n\nDeseja continuar?")) {
       return;
@@ -104,17 +109,14 @@ export default function AdminSubscriptions() {
       let blocked = 0;
       
       for (const user of users) {
-        // Pular admins
         if (user.role === 'admin') continue;
         
-        // Verificar se tem plano ativo
         const hasActivePlan = user.subscription_status === 'active' && 
                              user.subscription_end_date && 
                              new Date(user.subscription_end_date) > new Date();
         
         const hasLifetime = user.subscription_plan === 'lifetime';
         
-        // Se não tem plano ativo, bloquear
         if (!hasActivePlan && !hasLifetime) {
           await User.update(user.id, {
             subscription_status: "pending",
@@ -139,7 +141,6 @@ export default function AdminSubscriptions() {
     if (!confirm(`Aprovar pagamento de ${subscription.user_email}?`)) return;
 
     try {
-      // Calcular data de término
       const startDate = new Date();
       const endDate = new Date(startDate);
       
@@ -150,17 +151,16 @@ export default function AdminSubscriptions() {
       } else if (subscription.plan_type === 'annual') {
         endDate.setFullYear(endDate.getFullYear() + 1);
       } else if (subscription.plan_type === 'lifetime') {
-        endDate.setFullYear(endDate.getFullYear() + 100); // Lifetime, effectively
+        endDate.setFullYear(endDate.getFullYear() + 100);
       }
 
-      // Atualizar assinatura para ativa
-      await base44.from('subscriptions').update({
+      await Subscription.update(subscription.id, {
+        ...subscription,
         status: "active",
         start_date: startDate.toISOString().split('T')[0],
         end_date: endDate.toISOString().split('T')[0]
-      }).eq('id', subscription.id);
+      });
 
-      // Atualizar dados do usuário
       const user = users.find(u => u.email === subscription.user_email);
       if (user) {
         await User.update(user.id, {
@@ -182,9 +182,10 @@ export default function AdminSubscriptions() {
     if (!confirm(`Rejeitar pagamento de ${subscription.user_email}?`)) return;
 
     try {
-      await base44.from('subscriptions').update({
+      await Subscription.update(subscription.id, {
+        ...subscription,
         status: "cancelled"
-      }).eq('id', subscription.id);
+      });
 
       alert("❌ Assinatura rejeitada.");
       loadData();
@@ -225,7 +226,7 @@ export default function AdminSubscriptions() {
 
   return (
     <div className="space-y-6">
-      {/* ✅ Debug Info */}
+      {/* Debug Info */}
       {debugInfo && (
         <Card className="glass-card border-0 border-l-4 border-cyan-500">
           <CardContent className="p-4">
@@ -233,42 +234,54 @@ export default function AdminSubscriptions() {
               <AlertTriangle className="w-5 h-5 text-cyan-400" />
               <div className="text-xs text-cyan-200">
                 <p>Debug: {debugInfo.subscriptions_count} subs carregadas | {debugInfo.users_count} users | {debugInfo.timestamp}</p>
-                {debugInfo.method && <p>Método: {debugInfo.method}</p>}
               </div>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* ✅ Aviso se não houver subscriptions */}
+      {/* Aviso se não houver subscriptions */}
       {subscriptions.length === 0 && (
         <Card className="glass-card border-0 border-l-4 border-yellow-500">
           <CardContent className="p-6">
             <div className="flex items-start gap-4">
               <AlertTriangle className="w-8 h-8 text-yellow-400 flex-shrink-0" />
-              <div>
+              <div className="flex-1">
                 <p className="text-white font-bold text-lg mb-2">⚠️ Nenhuma Assinatura Encontrada</p>
                 <p className="text-yellow-300 mb-3">
                   Não há registros de assinaturas no sistema.
                 </p>
-                <div className="bg-yellow-900/20 p-3 rounded-lg text-sm space-y-1 text-yellow-200">
+                <div className="bg-yellow-900/20 p-3 rounded-lg text-sm space-y-1 text-yellow-200 mb-4">
                   <p><strong>Possíveis causas:</strong></p>
                   <ul className="list-disc list-inside ml-2 space-y-1">
                     <li>Nenhum usuário fez pagamento ainda</li>
                     <li>As subscriptions não estão sendo criadas corretamente</li>
-                    <li>Problema de permissão no banco de dados</li>
+                    <li>Problema de permissão no banco de dados (RLS)</li>
                   </ul>
-                  <p className="mt-3"><strong>💡 Solução:</strong></p>
-                  <p>1. Peça para um usuário fazer um pagamento de teste</p>
-                  <p>2. Verifique o console do navegador (F12) para erros</p>
-                  <p>3. Verifique se você é admin</p>
+                  <p className="mt-3"><strong>💡 Para testar:</strong></p>
+                  <p>1. Abra uma aba anônima (Ctrl+Shift+N)</p>
+                  <p>2. Faça login como usuário normal</p>
+                  <p>3. Vá em Assinaturas → Escolha um plano</p>
+                  <p>4. Envie um comprovante fake</p>
+                  <p>5. Abra o console (F12) e veja se mostra "Subscription criada"</p>
+                  <p>6. Volte aqui e clique em Recarregar</p>
                 </div>
                 <Button
                   onClick={loadData}
-                  className="mt-4 bg-yellow-600 hover:bg-yellow-700"
+                  disabled={isLoading}
+                  className="bg-yellow-600 hover:bg-yellow-700"
                 >
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Recarregar Dados
+                  {isLoading ? (
+                    <>
+                      <Clock className="w-4 h-4 mr-2 animate-spin" />
+                      Recarregando...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Recarregar Dados
+                    </>
+                  )}
                 </Button>
               </div>
             </div>
@@ -388,90 +401,92 @@ export default function AdminSubscriptions() {
       </Card>
 
       {/* Subscriptions List */}
-      <Card className="glass-card border-0 neon-glow">
-        <CardHeader className="border-b border-purple-900/30">
-          <CardTitle className="text-white">Assinaturas ({filteredSubscriptions.length})</CardTitle>
-        </CardHeader>
-        <CardContent className="p-6">
-          <div className="space-y-3">
-            {filteredSubscriptions.map((sub, index) => (
-              <motion.div
-                key={sub.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.03 }}
-                className="flex flex-col gap-3 p-4 rounded-xl glass-card"
-              >
-                <div className="flex items-start justify-between gap-4 flex-wrap">
-                  <div className="flex-1">
-                    <p className="text-white font-semibold">{sub.user_email}</p>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      <Badge className="bg-purple-600/20 text-purple-400">
-                        {sub.plan_type === "monthly" && "Mensal"}
-                        {sub.plan_type === "semester" && "Semestral"}
-                        {sub.plan_type === "annual" && "Anual"}
-                        {sub.plan_type === "lifetime" && "Vitalício"}
-                      </Badge>
-                      <Badge className={
-                        sub.status === "active" ? "bg-green-600" :
-                        sub.status === "pending" ? "bg-yellow-600" :
-                        sub.status === "expired" ? "bg-red-600" :
-                        "bg-gray-600"
-                      }>
-                        {sub.status === "active" && "✅ Ativo"}
-                        {sub.status === "pending" && "⏳ Pendente"}
-                        {sub.status === "expired" && "⏰ Expirado"}
-                        {sub.status === "cancelled" && "❌ Cancelado"}
-                      </Badge>
-                      <Badge className="bg-cyan-600/20 text-cyan-400">
-                        R$ {sub.amount_paid.toFixed(2)}
-                      </Badge>
+      {subscriptions.length > 0 && (
+        <Card className="glass-card border-0 neon-glow">
+          <CardHeader className="border-b border-purple-900/30">
+            <CardTitle className="text-white">Assinaturas ({filteredSubscriptions.length})</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="space-y-3">
+              {filteredSubscriptions.map((sub, index) => (
+                <motion.div
+                  key={sub.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.03 }}
+                  className="flex flex-col gap-3 p-4 rounded-xl glass-card"
+                >
+                  <div className="flex items-start justify-between gap-4 flex-wrap">
+                    <div className="flex-1">
+                      <p className="text-white font-semibold">{sub.user_email}</p>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        <Badge className="bg-purple-600/20 text-purple-400">
+                          {sub.plan_type === "monthly" && "Mensal"}
+                          {sub.plan_type === "semester" && "Semestral"}
+                          {sub.plan_type === "annual" && "Anual"}
+                          {sub.plan_type === "lifetime" && "Vitalício"}
+                        </Badge>
+                        <Badge className={
+                          sub.status === "active" ? "bg-green-600" :
+                          sub.status === "pending" ? "bg-yellow-600" :
+                          sub.status === "expired" ? "bg-red-600" :
+                          "bg-gray-600"
+                        }>
+                          {sub.status === "active" && "✅ Ativo"}
+                          {sub.status === "pending" && "⏳ Pendente"}
+                          {sub.status === "expired" && "⏰ Expirado"}
+                          {sub.status === "cancelled" && "❌ Cancelado"}
+                        </Badge>
+                        <Badge className="bg-cyan-600/20 text-cyan-400">
+                          R$ {sub.amount_paid.toFixed(2)}
+                        </Badge>
+                      </div>
+                      <p className="text-purple-300 text-sm mt-2">
+                        Criado em: {new Date(sub.created_date).toLocaleDateString('pt-BR')}
+                      </p>
                     </div>
-                    <p className="text-purple-300 text-sm mt-2">
-                      Criado em: {new Date(sub.created_date).toLocaleDateString('pt-BR')}
-                    </p>
                   </div>
-                </div>
 
-                <div className="flex flex-wrap gap-2 pt-2 border-t border-purple-900/30">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleViewDetails(sub)}
-                    className="border-purple-700 text-purple-300"
-                  >
-                    <Eye className="w-3 h-3 mr-1" />
-                    Ver Detalhes
-                  </Button>
+                  <div className="flex flex-wrap gap-2 pt-2 border-t border-purple-900/30">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleViewDetails(sub)}
+                      className="border-purple-700 text-purple-300"
+                    >
+                      <Eye className="w-3 h-3 mr-1" />
+                      Ver Detalhes
+                    </Button>
 
-                  {sub.status === "pending" && (
-                    <>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleApprove(sub)}
-                        className="border-green-700 text-green-300"
-                      >
-                        <CheckCircle className="w-3 h-3 mr-1" />
-                        Aprovar Manualmente
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleReject(sub)}
-                        className="border-red-700 text-red-300"
-                      >
-                        <XCircle className="w-3 h-3 mr-1" />
-                        Rejeitar
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+                    {sub.status === "pending" && (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleApprove(sub)}
+                          className="border-green-700 text-green-300"
+                        >
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          Aprovar Manualmente
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleReject(sub)}
+                          className="border-red-700 text-red-300"
+                        >
+                          <XCircle className="w-3 h-3 mr-1" />
+                          Rejeitar
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Details Modal */}
       <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}>
