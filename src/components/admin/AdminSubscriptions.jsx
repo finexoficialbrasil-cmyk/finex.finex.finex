@@ -32,7 +32,8 @@ import {
   Users,
   ChevronLeft,
   ChevronRight,
-  Loader2
+  Loader2,
+  AlertTriangle
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -45,7 +46,7 @@ export default function AdminSubscriptions() {
   const [selectedSubscription, setSelectedSubscription] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [isBlocking, setIsBlocking] = useState(false);
-  const [isApproving, setIsApproving] = useState(false);
+  const [processingSubscriptions, setProcessingSubscriptions] = useState(new Set()); // ✅ NOVO: Rastrear IDs em processamento
   
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -57,6 +58,7 @@ export default function AdminSubscriptions() {
   const loadData = async () => {
     try {
       console.log("🔄 AdminSubscriptions: Carregando dados via BACKEND...");
+      setIsLoading(true);
       
       // ✅ CHAMAR FUNÇÃO BACKEND que usa asServiceRole
       const response = await base44.functions.invoke('adminGetAllSubscriptions', {});
@@ -188,11 +190,26 @@ export default function AdminSubscriptions() {
   };
 
   const handleApprove = async (subscription) => {
-    if (!confirm(`Aprovar pagamento de ${subscription.user_email}?`)) return;
+    // ✅ PROTEÇÃO: Verificar se já está processando esta assinatura
+    if (processingSubscriptions.has(subscription.id)) {
+      console.log("⚠️ Assinatura já está sendo processada, ignorando clique");
+      return;
+    }
 
-    setIsApproving(true);
+    if (!confirm(`Aprovar pagamento de ${subscription.user_email}?\n\nPlano: ${subscription.plan_type}\nValor: R$ ${subscription.amount_paid.toFixed(2)}`)) {
+      return;
+    }
+
+    // ✅ MARCAR COMO PROCESSANDO
+    setProcessingSubscriptions(prev => new Set(prev).add(subscription.id));
+
     try {
       console.log("🔄 Chamando função de aprovação...");
+      console.log("📋 Dados:", {
+        id: subscription.id,
+        email: subscription.user_email,
+        plan: subscription.plan_type
+      });
       
       // ✅ CHAMAR FUNÇÃO BACKEND QUE USA asServiceRole
       const response = await base44.functions.invoke('adminApproveSubscription', {
@@ -201,7 +218,8 @@ export default function AdminSubscriptions() {
         plan_type: subscription.plan_type
       });
 
-      console.log("📦 Resposta da função:", response.data);
+      console.log("📦 Resposta completa:", response);
+      console.log("📦 Resposta data:", response.data);
 
       if (response.data.success) {
         alert("✅ Assinatura aprovada com sucesso!");
@@ -210,27 +228,63 @@ export default function AdminSubscriptions() {
         throw new Error(response.data.error || "Erro desconhecido");
       }
     } catch (error) {
-      console.error("❌ Erro ao aprovar:", error);
-      alert(`❌ Erro ao aprovar assinatura:\n\n${error.message}\n\nVerifique o console para mais detalhes.`);
+      console.error("❌ ERRO COMPLETO:", error);
+      console.error("📋 Error message:", error.message);
+      console.error("📋 Error response:", error.response);
+      
+      let errorMessage = "Erro ao aprovar assinatura.";
+      
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      alert(`❌ ${errorMessage}\n\nVerifique o console (F12) para mais detalhes.`);
     } finally {
-      setIsApproving(false);
+      // ✅ REMOVER DA LISTA DE PROCESSAMENTO
+      setProcessingSubscriptions(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(subscription.id);
+        return newSet;
+      });
     }
   };
 
   const handleReject = async (subscription) => {
-    if (!confirm(`Rejeitar pagamento de ${subscription.user_email}?`)) return;
+    // ✅ PROTEÇÃO: Verificar se já está processando
+    if (processingSubscriptions.has(subscription.id)) {
+      console.log("⚠️ Assinatura já está sendo processada, ignorando clique");
+      return;
+    }
+
+    if (!confirm(`Rejeitar pagamento de ${subscription.user_email}?\n\nEsta ação NÃO pode ser desfeita!`)) {
+      return;
+    }
+
+    // ✅ MARCAR COMO PROCESSANDO
+    setProcessingSubscriptions(prev => new Set(prev).add(subscription.id));
 
     try {
+      console.log("🔄 Rejeitando assinatura:", subscription.id);
+      
       // ✅ Usar entities normalmente
       await base44.entities.Subscription.update(subscription.id, {
         status: "cancelled"
       });
 
-      alert("❌ Assinatura rejeitada.");
-      loadData();
+      alert("✅ Assinatura rejeitada com sucesso.");
+      await loadData();
     } catch (error) {
-      console.error("Erro ao rejeitar:", error);
-      alert("❌ Erro ao rejeitar assinatura.");
+      console.error("❌ Erro ao rejeitar:", error);
+      alert("❌ Erro ao rejeitar assinatura.\n\nVerifique o console (F12) para mais detalhes.");
+    } finally {
+      // ✅ REMOVER DA LISTA DE PROCESSAMENTO
+      setProcessingSubscriptions(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(subscription.id);
+        return newSet;
+      });
     }
   };
 
@@ -250,12 +304,51 @@ export default function AdminSubscriptions() {
       <div className="flex flex-col items-center justify-center py-12">
         <Loader2 className="w-12 h-12 text-purple-400 animate-spin mb-4" />
         <p className="text-purple-300 text-center">Carregando assinaturas...</p>
+        <p className="text-purple-400 text-sm mt-2">Isso pode levar alguns segundos</p>
       </div>
     );
   }
 
+  // ✅ NOVO: Alerta se há múltiplas assinaturas do mesmo usuário
+  const duplicateUsers = useMemo(() => {
+    const emailCounts = {};
+    filteredSubscriptions.forEach(sub => {
+      if (sub.status === 'pending') {
+        emailCounts[sub.user_email] = (emailCounts[sub.user_email] || 0) + 1;
+      }
+    });
+    return Object.entries(emailCounts).filter(([_, count]) => count > 1);
+  }, [filteredSubscriptions]);
+
   return (
     <div className="space-y-6">
+      {/* ✅ NOVO: Alerta de duplicatas */}
+      {duplicateUsers.length > 0 && (
+        <Card className="glass-card border-0 border-l-4 border-yellow-500">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-yellow-300 font-semibold mb-2">⚠️ Assinaturas Duplicadas Detectadas</p>
+                <p className="text-yellow-200 text-sm mb-3">
+                  Os seguintes usuários têm múltiplas assinaturas pendentes:
+                </p>
+                <ul className="text-yellow-200 text-sm space-y-1">
+                  {duplicateUsers.map(([email, count]) => (
+                    <li key={email}>
+                      • <strong>{email}</strong>: {count} assinaturas pendentes
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-yellow-300 text-xs mt-3">
+                  💡 Aprove apenas UMA por vez e verifique se o pagamento é válido antes de aprovar as demais.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card className="glass-card border-0 border-l-4 border-red-500">
         <CardContent className="p-4">
           <div className="flex items-center justify-between flex-wrap gap-4">
@@ -494,92 +587,106 @@ export default function AdminSubscriptions() {
             </div>
           ) : (
             <div className="space-y-3">
-              {filteredSubscriptions.map((sub, index) => (
-                <motion.div
-                  key={sub.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.03 }}
-                  className="flex flex-col gap-3 p-4 rounded-xl glass-card"
-                >
-                  <div className="flex items-start justify-between gap-4 flex-wrap">
-                    <div className="flex-1">
-                      <p className="text-white font-semibold">{sub.user_email}</p>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        <Badge className="bg-purple-600/20 text-purple-400">
-                          {sub.plan_type === "monthly" && "Mensal"}
-                          {sub.plan_type === "semester" && "Semestral"}
-                          {sub.plan_type === "annual" && "Anual"}
-                          {sub.plan_type === "lifetime" && "Vitalício"}
-                        </Badge>
-                        <Badge className={
-                          sub.status === "active" ? "bg-green-600" :
-                          sub.status === "pending" ? "bg-yellow-600" :
-                          sub.status === "expired" ? "bg-red-600" :
-                          "bg-gray-600"
-                        }>
-                          {sub.status === "active" && "✅ Ativo"}
-                          {sub.status === "pending" && "⏳ Pendente"}
-                          {sub.status === "expired" && "⏰ Expirado"}
-                          {sub.status === "cancelled" && "❌ Cancelado"}
-                        </Badge>
-                        <Badge className="bg-cyan-600/20 text-cyan-400">
-                          R$ {sub.amount_paid.toFixed(2)}
-                        </Badge>
+              {filteredSubscriptions.map((sub, index) => {
+                const isProcessing = processingSubscriptions.has(sub.id); // ✅ NOVO
+
+                return (
+                  <motion.div
+                    key={sub.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.03 }}
+                    className={`flex flex-col gap-3 p-4 rounded-xl glass-card ${isProcessing ? 'opacity-60' : ''}`}
+                  >
+                    <div className="flex items-start justify-between gap-4 flex-wrap">
+                      <div className="flex-1">
+                        <p className="text-white font-semibold">{sub.user_email}</p>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          <Badge className="bg-purple-600/20 text-purple-400">
+                            {sub.plan_type === "monthly" && "Mensal"}
+                            {sub.plan_type === "semester" && "Semestral"}
+                            {sub.plan_type === "annual" && "Anual"}
+                            {sub.plan_type === "lifetime" && "Vitalício"}
+                          </Badge>
+                          <Badge className={
+                            sub.status === "active" ? "bg-green-600" :
+                            sub.status === "pending" ? "bg-yellow-600" :
+                            sub.status === "expired" ? "bg-red-600" :
+                            "bg-gray-600"
+                          }>
+                            {sub.status === "active" && "✅ Ativo"}
+                            {sub.status === "pending" && "⏳ Pendente"}
+                            {sub.status === "expired" && "⏰ Expirado"}
+                            {sub.status === "cancelled" && "❌ Cancelado"}
+                          </Badge>
+                          <Badge className="bg-cyan-600/20 text-cyan-400">
+                            R$ {sub.amount_paid.toFixed(2)}
+                          </Badge>
+                        </div>
+                        <p className="text-purple-300 text-sm mt-2">
+                          Criado em: {new Date(sub.created_date).toLocaleDateString('pt-BR')}
+                        </p>
                       </div>
-                      <p className="text-purple-300 text-sm mt-2">
-                        Criado em: {new Date(sub.created_date).toLocaleDateString('pt-BR')}
-                      </p>
                     </div>
-                  </div>
 
-                  <div className="flex flex-wrap gap-2 pt-2 border-t border-purple-900/30">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleViewDetails(sub)}
-                      className="border-purple-700 text-purple-300"
-                    >
-                      <Eye className="w-3 h-3 mr-1" />
-                      Ver Detalhes
-                    </Button>
+                    <div className="flex flex-wrap gap-2 pt-2 border-t border-purple-900/30">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleViewDetails(sub)}
+                        disabled={isProcessing}
+                        className="border-purple-700 text-purple-300"
+                      >
+                        <Eye className="w-3 h-3 mr-1" />
+                        Ver Detalhes
+                      </Button>
 
-                    {sub.status === "pending" && (
-                      <>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleApprove(sub)}
-                          disabled={isApproving}
-                          className="border-green-700 text-green-300"
-                        >
-                          {isApproving ? (
-                            <>
-                              <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                              Aprovando...
-                            </>
-                          ) : (
-                            <>
-                              <CheckCircle className="w-3 h-3 mr-1" />
-                              Aprovar Manualmente
-                            </>
-                          )}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleReject(sub)}
-                          disabled={isApproving}
-                          className="border-red-700 text-red-300"
-                        >
-                          <XCircle className="w-3 h-3 mr-1" />
-                          Rejeitar
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </motion.div>
-              ))}
+                      {sub.status === "pending" && (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleApprove(sub)}
+                            disabled={isProcessing}
+                            className="border-green-700 text-green-300"
+                          >
+                            {isProcessing ? (
+                              <>
+                                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                Processando...
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle className="w-3 h-3 mr-1" />
+                                Aprovar
+                              </>
+                            )}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleReject(sub)}
+                            disabled={isProcessing}
+                            className="border-red-700 text-red-300"
+                          >
+                            {isProcessing ? (
+                              <>
+                                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                Processando...
+                              </>
+                            ) : (
+                              <>
+                                <XCircle className="w-3 h-3 mr-1" />
+                                Rejeitar
+                              </>
+                            )}
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
           )}
         </CardContent>
