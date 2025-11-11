@@ -16,12 +16,14 @@ Deno.serve(async (req) => {
 
         console.log(`🔍 Admin ${user.email} solicitou todas as assinaturas`);
 
-        // ✅ USAR SERVICE ROLE CORRETAMENTE NO BACKEND
+        // ✅ USAR SERVICE ROLE COM LIMITE (PERFORMANCE)
         try {
-            const subscriptions = await base44.asServiceRole.entities.Subscription.list('-created_date');
-            const users = await base44.asServiceRole.entities.User.list();
+            // Carregar apenas últimas 200 assinaturas (mais recentes)
+            // Isso melhora drasticamente a performance
+            const subscriptions = await base44.asServiceRole.entities.Subscription.list('-created_date', 200);
+            const users = await base44.asServiceRole.entities.User.list('-created_date', 500);
 
-            console.log(`✅ Carregado: ${subscriptions.length} assinaturas e ${users.length} usuários`);
+            console.log(`✅ Carregado: ${subscriptions.length} assinaturas e ${users.length} usuários (com limite de performance)`);
 
             return Response.json({
                 success: true,
@@ -30,20 +32,17 @@ Deno.serve(async (req) => {
                 count: {
                     subscriptions: subscriptions.length,
                     users: users.length
-                }
+                },
+                limited: true // ✅ Indica que há limite
             });
 
         } catch (serviceError) {
             console.error("❌ Erro ao usar asServiceRole:", serviceError);
             console.log("⚠️ Tentando método alternativo...");
 
-            // ✅ FALLBACK: Se asServiceRole falhar, usar método direto
-            // Isso pode acontecer em algumas configurações do Base44
-            
-            // Para Subscriptions, RLS permite que admin veja as que ele criou
-            // Vamos pegar todas que conseguirmos
-            const subscriptions = await base44.entities.Subscription.list('-created_date');
-            const users = await base44.entities.User.list();
+            // ✅ FALLBACK com limite também
+            const subscriptions = await base44.entities.Subscription.list('-created_date', 200);
+            const users = await base44.entities.User.list('-created_date', 500);
 
             console.log(`✅ Fallback: ${subscriptions.length} assinaturas e ${users.length} usuários`);
 
@@ -52,6 +51,7 @@ Deno.serve(async (req) => {
                 subscriptions,
                 users,
                 fallback: true,
+                limited: true,
                 count: {
                     subscriptions: subscriptions.length,
                     users: users.length
