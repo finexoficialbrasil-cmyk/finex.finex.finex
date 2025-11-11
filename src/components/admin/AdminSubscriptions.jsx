@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -54,21 +53,27 @@ export default function AdminSubscriptions() {
 
   const loadData = async () => {
     try {
-      console.log("🔄 AdminSubscriptions: Carregando dados...");
+      console.log("🔄 AdminSubscriptions: Carregando dados via BACKEND...");
       
-      // ✅ CRÍTICO: Usar asServiceRole para admin ver TODAS as assinaturas
-      const [subsData, usersData] = await Promise.all([
-        base44.asServiceRole.entities.Subscription.list("-created_date"),
-        base44.asServiceRole.entities.User.list()
-      ]);
+      // ✅ CHAMAR FUNÇÃO BACKEND que usa asServiceRole
+      const response = await base44.functions.invoke('adminGetAllSubscriptions', {});
       
-      console.log(`✅ AdminSubscriptions: ${subsData.length} assinaturas carregadas`);
-      console.log(`✅ AdminSubscriptions: ${usersData.length} usuários carregados`);
+      if (response.data.success) {
+        const { subscriptions: subsData, users: usersData } = response.data;
+        
+        console.log(`✅ AdminSubscriptions: ${subsData.length} assinaturas recebidas`);
+        console.log(`✅ AdminSubscriptions: ${usersData.length} usuários recebidos`);
+        
+        setSubscriptions(subsData);
+        setUsers(usersData);
+      } else {
+        console.error("❌ Erro ao carregar dados:", response.data.error);
+        alert("❌ Erro ao carregar assinaturas. Verifique o console.");
+      }
       
-      setSubscriptions(subsData);
-      setUsers(usersData);
     } catch (error) {
       console.error("❌ AdminSubscriptions: Erro ao carregar dados:", error);
+      alert("❌ Erro ao carregar assinaturas. Você é admin?");
     } finally {
       setIsLoading(false);
     }
@@ -159,7 +164,8 @@ export default function AdminSubscriptions() {
         const hasLifetime = user.subscription_plan === 'lifetime';
         
         if (!hasActivePlan && !hasLifetime) {
-          await base44.asServiceRole.entities.User.update(user.id, {
+          // ✅ Usar entities normalmente (admin pode editar users)
+          await base44.entities.User.update(user.id, {
             subscription_status: "pending",
             subscription_plan: null,
             subscription_end_date: null
@@ -195,8 +201,8 @@ export default function AdminSubscriptions() {
         endDate.setFullYear(endDate.getFullYear() + 100);
       }
 
-      // ✅ Usar asServiceRole para atualizar
-      await base44.asServiceRole.entities.Subscription.update(subscription.id, {
+      // ✅ Usar entities normalmente (admin pode editar)
+      await base44.entities.Subscription.update(subscription.id, {
         status: "active",
         start_date: startDate.toISOString().split('T')[0],
         end_date: endDate.toISOString().split('T')[0]
@@ -204,7 +210,7 @@ export default function AdminSubscriptions() {
 
       const user = users.find(u => u.email === subscription.user_email);
       if (user) {
-        await base44.asServiceRole.entities.User.update(user.id, {
+        await base44.entities.User.update(user.id, {
           subscription_status: "active",
           subscription_plan: subscription.plan_type,
           subscription_end_date: endDate.toISOString().split('T')[0]
@@ -223,8 +229,8 @@ export default function AdminSubscriptions() {
     if (!confirm(`Rejeitar pagamento de ${subscription.user_email}?`)) return;
 
     try {
-      // ✅ Usar asServiceRole para atualizar
-      await base44.asServiceRole.entities.Subscription.update(subscription.id, {
+      // ✅ Usar entities normalmente
+      await base44.entities.Subscription.update(subscription.id, {
         status: "cancelled"
       });
 
