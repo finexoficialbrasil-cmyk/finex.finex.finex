@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useMemo } from "react";
-import { base44 } from "@/api/base44Client";
+import { Subscription } from "@/entities/Subscription";
 import { User } from "@/entities/User";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,8 +31,7 @@ import {
   TrendingUp,
   Users,
   ChevronLeft,
-  ChevronRight,
-  AlertTriangle
+  ChevronRight
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -43,11 +41,11 @@ export default function AdminSubscriptions() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState(null);
   const [selectedSubscription, setSelectedSubscription] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [isBlocking, setIsBlocking] = useState(false);
   
+  // ✅ NOVO: Controle de mês/ano
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
@@ -56,46 +54,21 @@ export default function AdminSubscriptions() {
   }, []);
 
   const loadData = async () => {
-    setIsLoading(true);
-    setLoadError(null);
-    
     try {
-      console.log("🔄 [AdminSubscriptions] Iniciando carregamento...");
-      
-      const currentUser = await base44.auth.me();
-      console.log("👤 [AdminSubscriptions] Usuário logado:", currentUser?.email, "- Role:", currentUser?.role);
-      
-      if (!currentUser || currentUser.role !== 'admin') {
-        throw new Error("Você não tem permissão para acessar esta página. Apenas administradores.");
-      }
-      
-      // ✅ CORRIGIDO: Usar .list() ao invés de .filter() - sintaxe mais simples
-      console.log("📊 [AdminSubscriptions] Buscando subscriptions com .list()...");
-      const subsData = await base44.entities.Subscription.list("-created_date", 1000);
-      console.log("✅ [AdminSubscriptions] Total de subscriptions carregadas:", subsData.length);
-      
-      console.log("👥 [AdminSubscriptions] Buscando usuários...");
-      const usersData = await User.list();
-      console.log("✅ [AdminSubscriptions] Total de usuários carregados:", usersData.length);
-      
+      const [subsData, usersData] = await Promise.all([
+        Subscription.list("-created_date"),
+        User.list()
+      ]);
       setSubscriptions(subsData);
       setUsers(usersData);
-      
-      console.log("🎉 [AdminSubscriptions] Carregamento concluído com sucesso!");
     } catch (error) {
-      console.error("❌ [AdminSubscriptions] ERRO ao carregar dados:", error);
-      console.error("❌ [AdminSubscriptions] Detalhes do erro:", {
-        message: error.message,
-        stack: error.stack,
-        name: error.name
-      });
-      
-      setLoadError(error.message || "Erro desconhecido ao carregar dados");
+      console.error("Erro ao carregar dados:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
+  // ✅ NOVO: Filtrar assinaturas por mês selecionado
   const subscriptionsOfMonth = useMemo(() => {
     return subscriptions.filter(sub => {
       const subDate = new Date(sub.created_date);
@@ -104,6 +77,7 @@ export default function AdminSubscriptions() {
     });
   }, [subscriptions, selectedMonth, selectedYear]);
 
+  // ✅ NOVO: Estatísticas do mês selecionado
   const monthStats = useMemo(() => {
     const total = subscriptionsOfMonth.length;
     const pending = subscriptionsOfMonth.filter(s => s.status === "pending").length;
@@ -112,6 +86,7 @@ export default function AdminSubscriptions() {
       .filter(s => s.status === "active" || s.status === "pending")
       .reduce((sum, s) => sum + s.amount_paid, 0);
     
+    // Receita por tipo de plano
     const byPlan = {
       monthly: 0,
       semester: 0,
@@ -130,6 +105,7 @@ export default function AdminSubscriptions() {
     return { total, pending, active, revenue, byPlan };
   }, [subscriptionsOfMonth]);
 
+  // ✅ NOVO: Estatísticas gerais (todos os tempos)
   const generalStats = useMemo(() => {
     const total = subscriptions.length;
     const pending = subscriptions.filter(s => s.status === "pending").length;
@@ -141,6 +117,7 @@ export default function AdminSubscriptions() {
     return { total, pending, active, totalRevenue };
   }, [subscriptions]);
 
+  // ✅ NOVO: Navegar entre meses
   const navigateMonth = (direction) => {
     let newMonth = selectedMonth + direction;
     let newYear = selectedYear;
@@ -157,11 +134,13 @@ export default function AdminSubscriptions() {
     setSelectedYear(newYear);
   };
 
+  // ✅ NOVO: Nome do mês em português
   const monthNames = [
     "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
     "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
   ];
 
+  // ✅ NOVA FUNÇÃO: Bloquear todos os usuários sem plano ativo
   const handleBlockAllWithoutPlan = async () => {
     if (!confirm("⚠️ ATENÇÃO!\n\nEsta ação irá BLOQUEAR todos os usuários que não têm plano ativo (exceto admins).\n\nOs usuários bloqueados terão que escolher um plano para continuar usando o sistema.\n\nDeseja continuar?")) {
       return;
@@ -172,14 +151,17 @@ export default function AdminSubscriptions() {
       let blocked = 0;
       
       for (const user of users) {
+        // Pular admins
         if (user.role === 'admin') continue;
         
+        // Verificar se tem plano ativo
         const hasActivePlan = user.subscription_status === 'active' && 
                              user.subscription_end_date && 
                              new Date(user.subscription_end_date) > new Date();
         
         const hasLifetime = user.subscription_plan === 'lifetime';
         
+        // Se não tem plano ativo, bloquear
         if (!hasActivePlan && !hasLifetime) {
           await User.update(user.id, {
             subscription_status: "pending",
@@ -204,6 +186,7 @@ export default function AdminSubscriptions() {
     if (!confirm(`Aprovar pagamento de ${subscription.user_email}?`)) return;
 
     try {
+      // Calcular data de término
       const startDate = new Date();
       const endDate = new Date(startDate);
       
@@ -217,12 +200,15 @@ export default function AdminSubscriptions() {
         endDate.setFullYear(endDate.getFullYear() + 100);
       }
 
-      await base44.entities.Subscription.update(subscription.id, {
+      // Atualizar assinatura para ativa
+      await Subscription.update(subscription.id, {
+        ...subscription,
         status: "active",
         start_date: startDate.toISOString().split('T')[0],
         end_date: endDate.toISOString().split('T')[0]
       });
 
+      // Atualizar dados do usuário
       const user = users.find(u => u.email === subscription.user_email);
       if (user) {
         await User.update(user.id, {
@@ -244,7 +230,8 @@ export default function AdminSubscriptions() {
     if (!confirm(`Rejeitar pagamento de ${subscription.user_email}?`)) return;
 
     try {
-      await base44.entities.Subscription.update(subscription.id, {
+      await Subscription.update(subscription.id, {
+        ...subscription,
         status: "cancelled"
       });
 
@@ -267,55 +254,13 @@ export default function AdminSubscriptions() {
     return matchesSearch && matchesStatus;
   });
 
-  if (loadError) {
-    return (
-      <div className="space-y-6">
-        <Card className="glass-card border-0 border-l-4 border-red-500">
-          <CardContent className="p-8">
-            <div className="text-center">
-              <AlertTriangle className="w-16 h-16 mx-auto mb-4 text-red-400" />
-              <h2 className="text-2xl font-bold text-white mb-4">Erro ao Carregar Assinaturas</h2>
-              <p className="text-red-300 mb-2 font-mono text-sm bg-red-900/20 p-4 rounded">
-                {loadError}
-              </p>
-              <p className="text-purple-300 mb-6">
-                Verifique sua conexão e permissões, ou tente recarregar a página.
-              </p>
-              <div className="flex gap-3 justify-center">
-                <Button
-                  onClick={loadData}
-                  className="bg-gradient-to-r from-purple-600 to-pink-600"
-                >
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Tentar Novamente
-                </Button>
-                <Button
-                  onClick={() => window.location.reload()}
-                  variant="outline"
-                  className="border-purple-700 text-purple-300"
-                >
-                  Recarregar Página
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   if (isLoading) {
-    return (
-      <div className="text-center py-12">
-        <RefreshCw className="w-12 h-12 mx-auto mb-4 text-purple-400 animate-spin" />
-        <p className="text-purple-300 text-lg">Carregando assinaturas...</p>
-        <p className="text-purple-400 text-sm mt-2">Isso pode levar alguns segundos</p>
-      </div>
-    );
+    return <div className="text-purple-300 text-center py-12">Carregando assinaturas...</div>;
   }
 
   return (
     <div className="space-y-6">
+      {/* Botão de Varredura */}
       <Card className="glass-card border-0 border-l-4 border-red-500">
         <CardContent className="p-4">
           <div className="flex items-center justify-between flex-wrap gap-4">
@@ -346,6 +291,7 @@ export default function AdminSubscriptions() {
         </CardContent>
       </Card>
 
+      {/* ✅ NOVO: Estatísticas GERAIS (Todos os Tempos) */}
       <Card className="glass-card border-0 border-l-4 border-cyan-500">
         <CardHeader className="pb-3">
           <CardTitle className="text-white flex items-center gap-2">
@@ -378,6 +324,7 @@ export default function AdminSubscriptions() {
         </CardContent>
       </Card>
 
+      {/* ✅ NOVO: Navegação de Mês */}
       <Card className="glass-card border-0">
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
@@ -415,6 +362,7 @@ export default function AdminSubscriptions() {
         </CardContent>
       </Card>
 
+      {/* ✅ NOVO: Stats do Mês Selecionado */}
       <div className="grid md:grid-cols-4 gap-4">
         <Card className="glass-card border-0">
           <CardContent className="p-4">
@@ -469,6 +417,7 @@ export default function AdminSubscriptions() {
         </Card>
       </div>
 
+      {/* ✅ NOVO: Receita por Tipo de Plano */}
       <Card className="glass-card border-0">
         <CardHeader className="border-b border-purple-900/30">
           <CardTitle className="text-white flex items-center gap-2">
@@ -509,6 +458,7 @@ export default function AdminSubscriptions() {
         </CardContent>
       </Card>
 
+      {/* Filters */}
       <Card className="glass-card border-0">
         <CardContent className="p-4">
           <div className="flex flex-col md:flex-row gap-4">
@@ -537,6 +487,7 @@ export default function AdminSubscriptions() {
         </CardContent>
       </Card>
 
+      {/* Subscriptions List */}
       <Card className="glass-card border-0 neon-glow">
         <CardHeader className="border-b border-purple-900/30">
           <CardTitle className="text-white">
@@ -634,6 +585,7 @@ export default function AdminSubscriptions() {
         </CardContent>
       </Card>
 
+      {/* Details Modal */}
       <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}>
         <DialogContent className="glass-card border-purple-700/50 text-white max-w-2xl">
           <DialogHeader>

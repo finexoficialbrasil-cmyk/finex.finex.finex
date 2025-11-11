@@ -16,8 +16,8 @@ Deno.serve(async (req) => {
     // Usar asServiceRole para operações administrativas
     const users = await base44.asServiceRole.entities.User.list();
     
-    // ✅ CORRIGIDO: Link simples e direto
-    const renewalUrl = 'https://finex.base44.app/Plans';
+    // ✅ CORRIGIDO: URL fixa do site real
+    const appUrl = 'https://finex.base44.app';
     
     // ✅ NOVO: Verificar se Evolution API está configurada
     const hasEvolutionAPI = Deno.env.get('EVOLUTION_API_URL') && 
@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
       if (diffDays === 7) {
         notificationType = '7_days_before';
         subject = '🔔 Seu plano FINEX vence em 7 dias!';
-        whatsappMessage = `🔔 *FINEX - Aviso de Vencimento*\n\nOlá, *${user.full_name}*! 👋\n\n⚠️ Seu plano *${user.subscription_plan === 'monthly' ? 'Mensal' : user.subscription_plan === 'semester' ? 'Semestral' : 'Anual'}* vence em *7 DIAS*!\n📅 Vencimento: *${expiryDate.toLocaleDateString('pt-BR')}*\n\n💡 Renove agora:\n👉 ${renewalUrl}\n\n✨ FINEX - Inteligência Financeira`;
+        whatsappMessage = `🔔 *FINEX - Aviso de Vencimento*\n\nOlá, *${user.full_name}*! 👋\n\n⚠️ Seu plano *${user.subscription_plan === 'monthly' ? 'Mensal' : user.subscription_plan === 'semester' ? 'Semestral' : 'Anual'}* vence em *7 DIAS*!\n📅 Vencimento: *${expiryDate.toLocaleDateString('pt-BR')}*\n\n💡 Renove agora:\n👉 ${appUrl}/Plans\n\n✨ FINEX - Inteligência Financeira`;
         emailMessage = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px;">
             <div style="background: white; padding: 30px; border-radius: 8px;">
@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
               </p>
 
               <div style="margin: 30px 0; text-align: center;">
-                <a href="${renewalUrl}" 
+                <a href="${appUrl}/Plans" 
                    style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
                   🔄 RENOVAR AGORA
                 </a>
@@ -118,7 +118,7 @@ Deno.serve(async (req) => {
       } else if (diffDays === 3) {
         notificationType = '3_days_before';
         subject = '⚠️ Seu plano FINEX vence em 3 dias!';
-        whatsappMessage = `⚠️ *FINEX - Atenção!*\n\nOlá, *${user.full_name}*! 👋\n\n🚨 Seu plano vence em apenas *3 DIAS*!\n📅 Vencimento: *${expiryDate.toLocaleDateString('pt-BR')}*\n\n🔒 Não perca o acesso!\nRenove agora:\n👉 ${renewalUrl}\n\n✨ FINEX - Inteligência Financeira`;
+        whatsappMessage = `⚠️ *FINEX - Atenção!*\n\nOlá, *${user.full_name}*! 👋\n\n🚨 Seu plano vence em apenas *3 DIAS*!\n📅 Vencimento: *${expiryDate.toLocaleDateString('pt-BR')}*\n\n🔒 Não perca o acesso!\nRenove agora:\n👉 ${appUrl}/Plans\n\n✨ FINEX - Inteligência Financeira`;
         emailMessage = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); border-radius: 10px;">
             <div style="background: white; padding: 30px; border-radius: 8px;">
@@ -140,7 +140,7 @@ Deno.serve(async (req) => {
               </p>
 
               <div style="margin: 30px 0; text-align: center;">
-                <a href="${renewalUrl}" 
+                <a href="${appUrl}/Plans" 
                    style="display: inline-block; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; padding: 18px 50px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px; box-shadow: 0 4px 6px rgba(239, 68, 68, 0.3);">
                   🔄 RENOVAR AGORA
                 </a>
@@ -166,7 +166,7 @@ Deno.serve(async (req) => {
       } else if (diffDays === 1) {
         notificationType = '1_day_before';
         subject = '🚨 URGENTE: Seu plano FINEX vence AMANHÃ!';
-        whatsappMessage = `🚨 *FINEX - URGENTE!*\n\n*${user.full_name}*, SEU PLANO VENCE *AMANHÃ*! ⏰\n\n📅 Vencimento: *${expiryDate.toLocaleDateString('pt-BR')}*\n\n⚡ ÚLTIMA CHANCE!\nRenove agora para evitar bloqueio:\n👉 ${renewalUrl}\n\n✨ FINEX - Inteligência Financeira`;
+        whatsappMessage = `🚨 *FINEX - URGENTE!*\n\n*${user.full_name}*, SEU PLANO VENCE *AMANHÃ*! ⏰\n\n📅 Vencimento: *${expiryDate.toLocaleDateString('pt-BR')}*\n\n⚡ ÚLTIMA CHANCE!\nRenove agora para evitar bloqueio:\n👉 ${appUrl}/Plans\n\n✨ FINEX - Inteligência Financeira`;
         emailMessage = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); border-radius: 10px;">
             <div style="background: white; padding: 30px; border-radius: 8px;">
@@ -188,7 +188,7 @@ Deno.serve(async (req) => {
               </p>
 
               <div style="margin: 30px 0; text-align: center;">
-                <a href="${renewalUrl}" 
+                <a href="${appUrl}/Plans" 
                    style="display: inline-block; background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; padding: 20px 60px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 20px; box-shadow: 0 6px 12px rgba(220, 38, 38, 0.4);">
                   ⚡ RENOVAR AGORA
                 </a>
@@ -215,7 +215,7 @@ Deno.serve(async (req) => {
       } else if (diffDays === 0) {
         notificationType = 'on_expiry';
         subject = '🔴 URGENTE: Seu plano FINEX vence HOJE!';
-        whatsappMessage = `🔴 *FINEX - VENCE HOJE!*\n\n*${user.full_name}*, seu acesso será bloqueado EM BREVE! ⏰\n\n📅 Vence HOJE: *${expiryDate.toLocaleDateString('pt-BR')}*\n\n⚡ RENOVE IMEDIATAMENTE:\n👉 ${renewalUrl}\n\n✨ FINEX - Inteligência Financeira`;
+        whatsappMessage = `🔴 *FINEX - VENCE HOJE!*\n\n*${user.full_name}*, seu acesso será bloqueado EM BREVE! ⏰\n\n📅 Vence HOJE: *${expiryDate.toLocaleDateString('pt-BR')}*\n\n⚡ RENOVE IMEDIATAMENTE:\n👉 ${appUrl}/Plans\n\n✨ FINEX - Inteligência Financeira`;
         emailMessage = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #dc2626; border-radius: 10px;">
             <div style="background: white; padding: 30px; border-radius: 8px;">
@@ -235,7 +235,7 @@ Deno.serve(async (req) => {
               </p>
 
               <div style="margin: 30px 0; text-align: center;">
-                <a href="${renewalUrl}" 
+                <a href="${appUrl}/Plans" 
                    style="display: inline-block; background: #dc2626; color: white; padding: 22px 70px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 22px; box-shadow: 0 8px 16px rgba(220, 38, 38, 0.5);">
                   ⚡ RENOVAR IMEDIATAMENTE
                 </a>
@@ -252,7 +252,7 @@ Deno.serve(async (req) => {
       } else if (diffDays === -1) {
         notificationType = '1_day_after';
         subject = '🔒 Seu plano FINEX venceu ontem - Renove agora!';
-        whatsappMessage = `🔒 *FINEX - Acesso Bloqueado*\n\nOlá, *${user.full_name}*\n\nSeu plano venceu ontem e seu acesso está *BLOQUEADO*.\n\n😢 Seus dados estão seguros, mas você não pode acessá-los.\n\n🔓 Renove e desbloqueie:\n👉 ${renewalUrl}\n\n✨ FINEX - Inteligência Financeira`;
+        whatsappMessage = `🔒 *FINEX - Acesso Bloqueado*\n\nOlá, *${user.full_name}*\n\nSeu plano venceu ontem e seu acesso está *BLOQUEADO*.\n\n😢 Seus dados estão seguros, mas você não pode acessá-los.\n\n🔓 Renove e desbloqueie:\n👉 ${appUrl}/Plans\n\n✨ FINEX - Inteligência Financeira`;
         emailMessage = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #374151; border-radius: 10px;">
             <div style="background: white; padding: 30px; border-radius: 8px;">
@@ -274,7 +274,7 @@ Deno.serve(async (req) => {
               </p>
 
               <div style="margin: 30px 0; text-align: center;">
-                <a href="${renewalUrl}" 
+                <a href="${appUrl}/Plans" 
                    style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 18px 50px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px;">
                   🔓 RENOVAR E DESBLOQUEAR
                 </a>
@@ -291,7 +291,7 @@ Deno.serve(async (req) => {
       } else if (diffDays === -3) {
         notificationType = '3_days_after';
         subject = '🔒 Já faz 3 dias - Renove seu FINEX!';
-        whatsappMessage = `💜 *FINEX - Sentimos sua falta!*\n\nOlá, *${user.full_name}*\n\nJá faz *3 dias* que seu acesso está bloqueado.\n\n💜 Volte a ter controle total das suas finanças!\n\nRenove agora:\n👉 ${renewalUrl}\n\n✨ FINEX - Inteligência Financeira`;
+        whatsappMessage = `💜 *FINEX - Sentimos sua falta!*\n\nOlá, *${user.full_name}*\n\nJá faz *3 dias* que seu acesso está bloqueado.\n\n💜 Volte a ter controle total das suas finanças!\n\nRenove agora:\n👉 ${appUrl}/Plans\n\n✨ FINEX - Inteligência Financeira`;
         emailMessage = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #1f2937; border-radius: 10px;">
             <div style="background: white; padding: 30px; border-radius: 8px;">
@@ -310,7 +310,7 @@ Deno.serve(async (req) => {
               </div>
 
               <div style="margin: 30px 0; text-align: center;">
-                <a href="${renewalUrl}" 
+                <a href="${appUrl}/Plans" 
                    style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 18px 50px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px;">
                   💜 RENOVAR AGORA
                 </a>
@@ -327,7 +327,7 @@ Deno.serve(async (req) => {
       } else if (diffDays === -7) {
         notificationType = '7_days_after';
         subject = '🔒 Última chamada - Seu FINEX espera por você!';
-        whatsappMessage = `💔 *FINEX - Última Chamada*\n\nOlá, *${user.full_name}*\n\nJá faz *1 semana* que você está sem acesso ao FINEX.\n\n💡 Seus dados estão seguros e esperando por você!\n\nRenove e volte:\n👉 ${renewalUrl}\n\n✨ FINEX - Inteligência Financeira`;
+        whatsappMessage = `💔 *FINEX - Última Chamada*\n\nOlá, *${user.full_name}*\n\nJá faz *1 semana* que você está sem acesso ao FINEX.\n\n💡 Seus dados estão seguros e esperando por você!\n\nRenove e volte:\n👉 ${appUrl}/Plans\n\n✨ FINEX - Inteligência Financeira`;
         emailMessage = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #111827; border-radius: 10px;">
             <div style="background: white; padding: 30px; border-radius: 8px;">
@@ -347,7 +347,7 @@ Deno.serve(async (req) => {
               </div>
 
               <div style="margin: 30px 0; text-align: center;">
-                <a href="${renewalUrl}" 
+                <a href="${appUrl}/Plans" 
                    style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 18px 50px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px;">
                   💜 VOLTAR PARA O FINEX
                 </a>
@@ -457,8 +457,7 @@ Deno.serve(async (req) => {
             type: notificationType,
             status: 'sent',
             sent_via: sentVia,
-            expiry_date: user.subscription_end_date,
-            full_name: user.full_name
+            expiry_date: user.subscription_end_date
           });
         } else {
           // Ambos falharam

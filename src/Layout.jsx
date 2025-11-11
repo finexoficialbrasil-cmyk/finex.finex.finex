@@ -45,20 +45,7 @@ import ReceivablesNotification from "./components/ReceivablesNotification";
 import { Button } from "@/components/ui/button";
 
 import PerformanceMonitor from "./components/PerformanceMonitor";
-import CompleteProfile from "./components/CompleteProfile";
-
-// ✅ GOOGLE ADS: Função para disparar conversões
-export const trackGoogleAdsConversion = (conversionLabel = 'DEFAULT_CONVERSION') => {
-  if (typeof window !== 'undefined' && window.gtag) {
-    console.log('📊 Google Ads: Disparando conversão -', conversionLabel);
-    window.gtag('event', 'conversion', {
-      'send_to': `AW-17719011172/${conversionLabel}`,
-      'transaction_id': Date.now().toString()
-    });
-  } else {
-    console.warn('⚠️ Google Ads: gtag não disponível');
-  }
-};
+import CompleteProfile from "./components/CompleteProfile"; // ✅ NOVO
 
 const navigationItems = [
   {
@@ -162,8 +149,16 @@ const hasActiveAccess = (user) => {
     
     const trialActive = trialEnd >= today;
     
+    console.log(`🎁 Layout - Verificação TRIAL:`, {
+      email: user.email,
+      trialEnd: user.trial_ends_at,
+      trialActive,
+      daysLeft: Math.ceil((trialEnd - today) / (1000 * 60 * 60 * 24))
+    });
+    
     // ✅ Se trial acabou, BLOQUEAR
     if (!trialActive) {
+      console.log(`❌ Layout - TRIAL EXPIRADO! Bloqueando menu.`);
       return false;
     }
     
@@ -177,8 +172,16 @@ const hasActiveAccess = (user) => {
     
     const isActive = endDate >= today;
     
+    console.log(`💳 Layout - Verificação ASSINATURA:`, {
+      email: user.email,
+      endDate: user.subscription_end_date,
+      isActive,
+      daysLeft: Math.ceil((endDate - today) / (1000 * 60 * 60 * 24))
+    });
+    
     // ✅ Se assinatura venceu, BLOQUEAR (NÃO dar trial novamente)
     if (!isActive) {
+      console.log(`❌ Layout - ASSINATURA VENCIDA! Bloqueando menu.`);
       return false;
     }
     
@@ -186,6 +189,7 @@ const hasActiveAccess = (user) => {
   }
   
   // ✅ Sem trial e sem assinatura = BLOQUEADO
+  console.log(`❌ Layout - SEM ACESSO ATIVO. Bloqueando menu.`);
   return false;
 };
 
@@ -211,6 +215,7 @@ function LayoutContent({ children }) {
   const { setOpenMobile, setOpen } = useSidebar();
   const [user, setUser] = React.useState(null);
   const [userPlan, setUserPlan] = React.useState(null);
+  // Removed: const [hoveredItem, setHoveredItem] = React.useState(null);
   const [theme, setTheme] = React.useState("dark");
   const [appName, setAppName] = React.useState("FINEX");
   const [appLogo, setAppLogo] = React.useState("");
@@ -230,52 +235,13 @@ function LayoutContent({ children }) {
   const [isLoadingLayout, setIsLoadingLayout] = React.useState(true);
   const [hasLayoutError, setHasLayoutError] = React.useState(false);
 
-  // ✅ GOOGLE ADS: Injetar gtag.js no <head> - VERSÃO CORRIGIDA
-  React.useEffect(() => {
-    // Evitar duplicação
-    if (window.gtagLoaded) {
-      console.log('📊 Google Ads: Já carregado');
-      return;
-    }
-
-    try {
-      // Script 1: Carregar gtag.js
-      const script1 = document.createElement('script');
-      script1.async = true;
-      script1.src = 'https://www.googletagmanager.com/gtag/js?id=AW-17719011172';
-      script1.onload = () => {
-        console.log('✅ Google Ads: gtag.js carregado');
-      };
-      script1.onerror = () => {
-        console.error('❌ Google Ads: Erro ao carregar gtag.js');
-      };
-      document.head.appendChild(script1);
-
-      // Script 2: Inicializar gtag
-      const script2 = document.createElement('script');
-      script2.innerHTML = `
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'AW-17719011172');
-        console.log('✅ Google Ads: Tag configurada - ID: AW-17719011172');
-      `;
-      document.head.appendChild(script2);
-
-      // Marcar como carregado
-      window.gtagLoaded = true;
-      console.log('📊 Google Ads: Scripts injetados no <head>');
-    } catch (error) {
-      console.error('❌ Erro ao injetar Google Ads:', error);
-    }
-  }, []);
-
   React.useEffect(() => {
     loadUserAndSettings();
   }, []);
 
   React.useEffect(() => {
     if (previousPath !== location.pathname && window.innerWidth < 768) {
+      // Removed: console.log("📱 Rota mudou no mobile, fechando sidebar");
       setOpenMobile(false);
       setOpen(false);
     }
@@ -307,6 +273,9 @@ function LayoutContent({ children }) {
     } catch (error) {
       console.error("❌ Erro ao carregar dados:", error);
       setHasLayoutError(true);
+      // Removed: setAppName("FINEX");
+      // Removed: setAppLogo("");
+      // Removed: document.title = "FINEX - Inteligência Financeira";
       setIsLoadingLayout(false);
     }
   };
@@ -355,6 +324,8 @@ function LayoutContent({ children }) {
       console.warn("⚠️ Erro ao carregar dados secundários (não crítico):", error);
     }
   };
+
+  // Removed: const updateFavicon = (faviconUrl) => { ... }
 
   if (isLoadingLayout) {
     return (
@@ -445,6 +416,7 @@ function LayoutContent({ children }) {
   const getFilteredMenuItems = () => {
     if (!user) return [];
     
+    // Admin vê tudo
     if (user.role === 'admin') {
       return [
         ...navigationItems,
@@ -458,10 +430,12 @@ function LayoutContent({ children }) {
       ];
     }
 
+    // ✅ TRIAL ou ASSINATURA ATIVA = TUDO LIBERADO
     if (hasActiveAccess(user)) {
       return navigationItems;
     }
 
+    // ✅ Sem acesso = apenas páginas básicas
     return navigationItems.filter(item => 
       ["Dashboard", "Perfil", "Assinaturas"].includes(item.title)
     );
@@ -494,8 +468,9 @@ function LayoutContent({ children }) {
           background: transparent !important;
         }
 
+        /* ✅ FORÇAR estilos nos botões do menu */
         .sidebar-menu-item {
-          background: transparent !important;
+          background: transparent !important; /* Ensure base is transparent */
           transition: all 0.3s ease !important;
         }
 
@@ -512,6 +487,7 @@ function LayoutContent({ children }) {
           box-shadow: 0 0 20px rgba(168, 85, 247, 0.3) !important;
         }
 
+        /* Remover todos os backgrounds padrão dos componentes da UI lib */
         [data-sidebar-menu-button],
         [data-sidebar-menu-button] * {
           background: transparent !important;
@@ -590,6 +566,7 @@ function LayoutContent({ children }) {
           border: 1px solid ${themeColors.border};
         }
 
+        /* ✨ ANIMAÇÕES PERSONALIZÁVEIS */
         ${themeSettings.textGradient ? `
         @keyframes gradient-shift {
           0% { background-position: 0% 50%; }
@@ -787,7 +764,7 @@ function LayoutContent({ children }) {
       `}</style>
       
       <WelcomeEmailSender />
-      <CompleteProfile />
+      <CompleteProfile /> {/* ✅ NOVO: Modal de telefone */}
       
       <div className={`min-h-screen flex w-full bg-gradient-to-br ${themeColors.bg}`}>
         <Sidebar>

@@ -102,32 +102,20 @@ export default function AdminBilling() {
       const data = response.data;
       
       if (data.success) {
-        // ✅ ENRIQUECER relatório com dados dos usuários COMPLETOS
+        setLastReport(data.report);
+        
+        // Enriquecer relatório com dados dos usuários (telefones)
         if (data.report.details && data.report.details.length > 0) {
           const enrichedDetails = data.report.details.map(detail => {
             const user = users.find(u => u.email === detail.email);
-            
-            // ✅ LOGS DE DEBUG
-            console.log(`📧 Processando usuário: ${detail.email}`);
-            console.log(`📅 Data do relatório: ${detail.expiry_date}`);
-            console.log(`👤 Usuário encontrado:`, user);
-            console.log(`📅 Data do usuário: ${user?.subscription_end_date}`);
-            
             return {
               ...detail,
               phone: user?.phone || null,
               full_name: user?.full_name || 'Usuário',
-              whatsapp_enabled: user?.whatsapp_notifications || false,
-              // ✅ GARANTIR que temos a data
-              expiry_date: detail.expiry_date || user?.subscription_end_date || null
+              whatsapp_enabled: user?.whatsapp_notifications || false
             };
           });
-          
-          console.log(`✅ Detalhes enriquecidos:`, enrichedDetails);
-          
           setLastReport({ ...data.report, details: enrichedDetails });
-        } else {
-          setLastReport(data.report);
         }
         
         alert(`✅ Processo concluído!\n\n📧 Emails enviados: ${data.report.emails_sent || data.report.notifications_sent}\n📱 WhatsApp enviados: ${data.report.whatsapp_sent || 0}\n❌ Erros: ${data.report.errors}\n\nVeja os detalhes abaixo.`);
@@ -156,75 +144,41 @@ export default function AdminBilling() {
     return numbers.startsWith('55') ? numbers : `55${numbers}`;
   };
 
-  // ✅ FUNÇÃO ROBUSTA: Formatar data corretamente SEM timezone
+  // NOVA FUNÇÃO: Formatar data corretamente SEM timezone
   const formatDateBR = (dateString) => {
-    // ✅ LOG DE DEBUG
-    console.log(`🔍 formatDateBR recebeu:`, dateString, typeof dateString);
-    
-    if (!dateString) {
-      console.log(`❌ Data vazia ou null`);
-      return 'Data não definida';
-    }
+    if (!dateString) return 'Data não definida';
     
     try {
-      // Converter para string se não for
-      const dateStr = String(dateString).trim();
-      
-      // ✅ LOG DE DEBUG
-      console.log(`📝 String de data:`, dateStr);
-      
       // Parse manual da data YYYY-MM-DD
-      const parts = dateStr.split('-');
-      
-      if (parts.length !== 3) {
-        console.log(`❌ Formato inválido (não tem 3 partes):`, parts);
-        return 'Data inválida';
-      }
-      
-      const year = parseInt(parts[0], 10);
-      const month = parseInt(parts[1], 10);
-      const day = parseInt(parts[2], 10);
-      
-      // ✅ LOG DE DEBUG
-      console.log(`🔢 Valores parseados:`, { year, month, day });
+      const [year, month, day] = dateString.split('-').map(Number);
       
       // Validar se os valores são válidos
-      if (isNaN(year) || isNaN(month) || isNaN(day) || month < 1 || month > 12 || day < 1 || day > 31) {
-        console.log(`❌ Valores inválidos:`, { year, month, day });
+      if (!year || !month || !day || month < 1 || month > 12 || day < 1 || day > 31) {
         return 'Data inválida';
       }
       
-      // Formatar manualmente
+      // Criar data no timezone local
+      // const date = new Date(year, month - 1, day); // This might still have timezone issues depending on local timezone
+      
+      // Formatar manualmente para evitar timezone issues
       const dayStr = String(day).padStart(2, '0');
       const monthStr = String(month).padStart(2, '0');
-      const result = `${dayStr}/${monthStr}/${year}`;
       
-      // ✅ LOG DE DEBUG
-      console.log(`✅ Data formatada:`, result);
-      
-      return result;
+      return `${dayStr}/${monthStr}/${year}`;
     } catch (error) {
-      console.error('❌ Erro ao formatar data:', error);
+      console.error('Erro ao formatar data:', error);
       return 'Data inválida';
     }
   };
 
   const openWhatsApp = (phone, name, type, expiryDate) => {
-    // ✅ LOGS DE DEBUG
-    console.log(`📱 openWhatsApp chamado com:`, { phone, name, type, expiryDate });
-    
     const formattedPhone = formatPhoneForWhatsApp(phone);
-    if (!formattedPhone) {
-      console.log(`❌ Telefone inválido`);
-      return;
-    }
+    if (!formattedPhone) return;
     
     const appUrl = 'https://finex.base44.app';
     
-    // ✅ Usar função de formatação correta
+    // CORRIGIDO: Usar função de formatação correta
     const date = formatDateBR(expiryDate);
-    
-    console.log(`📅 Data formatada para WhatsApp:`, date);
     
     // Template de mensagem baseado no tipo
     let message = '';
@@ -237,8 +191,6 @@ export default function AdminBilling() {
     } else {
       message = `🔒 *FINEX - Acesso Bloqueado*\n\nOlá, *${name}*\n\nSeu plano venceu e seu acesso está *BLOQUEADO*.\n\n📅 Venceu em: *${date}*\n\n😢 Seus dados estão seguros, mas você não pode acessá-los.\n\n🔓 Renove e desbloqueie:\n👉 ${appUrl}/Plans\n\n✨ FINEX - Inteligência Financeira`;
     }
-    
-    console.log(`💬 Mensagem gerada:`, message);
     
     const encodedMessage = encodeURIComponent(message);
     window.open(`https://wa.me/${formattedPhone}?text=${encodedMessage}`, '_blank');
