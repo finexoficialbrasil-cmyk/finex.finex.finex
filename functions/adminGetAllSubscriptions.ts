@@ -3,123 +3,112 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 Deno.serve(async (req) => {
   try {
     console.log("════════════════════════════════════════");
-    console.log("🚀 FUNÇÃO INICIADA - adminGetAllSubscriptions");
+    console.log("🚀 ADMIN GET ALL SUBSCRIPTIONS - INICIADO");
     console.log("════════════════════════════════════════");
     
-    // ✅ 1. Criar cliente Base44
-    console.log("1️⃣ Criando cliente Base44...");
     const base44 = createClientFromRequest(req);
-    console.log("✅ Cliente criado");
     
-    // ✅ 2. Verificar se é admin
-    console.log("2️⃣ Verificando autenticação...");
+    // ✅ 1. Verificar autenticação
+    console.log("1️⃣ Verificando autenticação...");
     const user = await base44.auth.me();
     
     if (!user) {
-      console.log("❌ Usuário não autenticado");
-      return Response.json({ 
-        error: 'Não autenticado' 
-      }, { status: 401 });
+      console.log("❌ Não autenticado");
+      return Response.json({ error: 'Não autenticado' }, { status: 401 });
     }
     
-    console.log(`✅ Usuário: ${user.email} | Role: ${user.role}`);
+    console.log(`✅ Autenticado: ${user.email} | Role: ${user.role}`);
     
     if (user.role !== 'admin') {
-      console.log("❌ Usuário NÃO é admin");
-      return Response.json({ 
-        error: 'Acesso negado. Apenas admins podem ver todas as subscriptions.' 
-      }, { status: 403 });
+      console.log("❌ Não é admin");
+      return Response.json({ error: 'Acesso negado' }, { status: 403 });
     }
     
-    console.log("✅ Usuário É ADMIN! Prosseguindo...");
+    console.log("✅ É ADMIN! Continuando...");
     
-    // ✅ 3. TENTAR DIFERENTES MÉTODOS PARA BUSCAR
-    console.log("3️⃣ Testando diferentes métodos de busca...");
+    // ✅ 2. BUSCAR COM SERVICE ROLE (ignora RLS completamente)
+    console.log("2️⃣ Buscando subscriptions com SERVICE ROLE...");
+    console.log("   Isto DEVE ignorar TODAS as regras de RLS");
     
     let subscriptions = [];
-    let method = "";
+    let users = [];
     
-    // ✅ MÉTODO 1: Service Role com limite
     try {
-      console.log("📊 Método 1: asServiceRole.entities.Subscription.list()");
-      subscriptions = await base44.asServiceRole.entities.Subscription.list('-created_date', 500);
-      method = "service_role";
-      console.log(`✅ Método 1 funcionou! ${subscriptions.length} subscriptions`);
-    } catch (error1) {
-      console.error("❌ Método 1 falhou:", error1.message);
+      // ✅ CRÍTICO: Service role DEVE retornar TODAS as subscriptions
+      subscriptions = await base44.asServiceRole.entities.Subscription.list('-created_date', 1000);
+      console.log(`✅ Service Role retornou: ${subscriptions.length} subscriptions`);
       
-      // ✅ MÉTODO 2: Service Role sem ordenação
-      try {
-        console.log("📊 Método 2: asServiceRole.entities.Subscription.list() sem sort");
-        subscriptions = await base44.asServiceRole.entities.Subscription.list();
-        method = "service_role_no_sort";
-        console.log(`✅ Método 2 funcionou! ${subscriptions.length} subscriptions`);
-      } catch (error2) {
-        console.error("❌ Método 2 falhou:", error2.message);
-        
-        // ✅ MÉTODO 3: Direto sem service role
-        try {
-          console.log("📊 Método 3: entities.Subscription.list() direto");
-          subscriptions = await base44.entities.Subscription.list('-created_date', 500);
-          method = "direct";
-          console.log(`✅ Método 3 funcionou! ${subscriptions.length} subscriptions`);
-        } catch (error3) {
-          console.error("❌ Método 3 falhou:", error3.message);
-          console.error("❌ TODOS OS MÉTODOS FALHARAM!");
-        }
+      // ✅ Mostrar primeiras 3 para debug
+      if (subscriptions.length > 0) {
+        console.log("📋 Primeiras 3 subscriptions:");
+        subscriptions.slice(0, 3).forEach((sub, idx) => {
+          console.log(`   ${idx + 1}. ID: ${sub.id} | User: ${sub.user_email} | Status: ${sub.status}`);
+        });
+      } else {
+        console.log("⚠️ Service Role retornou 0 subscriptions!");
+        console.log("💡 Isto é ANORMAL - Service role deveria ignorar RLS");
       }
+      
+      // ✅ Buscar usuários
+      console.log("3️⃣ Buscando usuários...");
+      users = await base44.asServiceRole.entities.User.list('-created_date', 1000);
+      console.log(`✅ Service Role retornou: ${users.length} usuários`);
+      
+    } catch (error) {
+      console.error("❌ Erro ao buscar com Service Role:");
+      console.error("   Message:", error.message);
+      console.error("   Stack:", error.stack);
+      throw error;
     }
     
-    console.log(`📊 Total encontrado: ${subscriptions.length} subscriptions`);
-    console.log(`📊 Método usado: ${method}`);
+    // ✅ 3. Calcular stats
+    const stats = {
+      total: subscriptions.length,
+      pending: subscriptions.filter(s => s.status === 'pending').length,
+      active: subscriptions.filter(s => s.status === 'active').length,
+      expired: subscriptions.filter(s => s.status === 'expired').length,
+      cancelled: subscriptions.filter(s => s.status === 'cancelled').length,
+      revenue: subscriptions
+        .filter(s => s.status === 'active')
+        .reduce((sum, s) => sum + (s.amount_paid || 0), 0)
+    };
     
-    // ✅ 4. Se encontrou subscriptions, mostrar algumas
-    if (subscriptions.length > 0) {
-      console.log("📋 Primeiras 3 subscriptions:");
-      subscriptions.slice(0, 3).forEach((sub, idx) => {
-        console.log(`   ${idx + 1}. ${sub.user_email} | ${sub.plan_type} | ${sub.status} | R$ ${sub.amount_paid}`);
-      });
-    } else {
-      console.log("⚠️ NENHUMA SUBSCRIPTION ENCONTRADA NO BANCO!");
-      console.log("💡 Verifique se as subscriptions estão sendo criadas corretamente.");
-    }
+    console.log("4️⃣ Stats calculadas:");
+    console.log("   Total:", stats.total);
+    console.log("   Pendentes:", stats.pending);
+    console.log("   Ativas:", stats.active);
+    console.log("   Receita: R$", stats.revenue.toFixed(2));
     
-    // ✅ 5. Buscar usuários
-    console.log("4️⃣ Buscando usuários...");
-    const users = await base44.asServiceRole.entities.User.list('-created_date', 500);
-    console.log(`✅ ${users.length} usuários encontrados`);
-    
-    // ✅ 6. Retornar dados
-    console.log("5️⃣ Retornando dados...");
     console.log("════════════════════════════════════════");
-    console.log(`✅ FUNÇÃO CONCLUÍDA: ${subscriptions.length} subs, ${users.length} users`);
+    console.log("✅ FUNÇÃO CONCLUÍDA COM SUCESSO!");
+    console.log(`   Retornando: ${subscriptions.length} subs, ${users.length} users`);
     console.log("════════════════════════════════════════");
     
     return Response.json({
       success: true,
       subscriptions,
       users,
-      method_used: method,
-      total: subscriptions.length,
-      pending: subscriptions.filter(s => s.status === 'pending').length,
-      active: subscriptions.filter(s => s.status === 'active').length,
+      stats,
       debug: {
-        timestamp: new Date().toISOString(),
         admin_email: user.email,
+        admin_role: user.role,
+        timestamp: new Date().toISOString(),
         subscriptions_count: subscriptions.length,
-        users_count: users.length
+        users_count: users.length,
+        method: 'asServiceRole'
       }
     });
     
   } catch (error) {
     console.error("════════════════════════════════════════");
-    console.error("❌ ERRO NA FUNÇÃO:");
+    console.error("❌ ERRO CRÍTICO NA FUNÇÃO:");
     console.error("   Name:", error.name);
     console.error("   Message:", error.message);
     console.error("   Stack:", error.stack);
     console.error("════════════════════════════════════════");
     
     return Response.json({ 
+      success: false,
       error: error.message,
       details: error.stack 
     }, { status: 500 });
