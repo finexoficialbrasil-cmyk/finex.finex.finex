@@ -18,14 +18,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { 
-  Search, 
-  CheckCircle, 
-  XCircle, 
-  Clock, 
-  Eye, 
-  Download, 
-  DollarSign, 
+import {
+  Search,
+  CheckCircle,
+  XCircle,
+  Clock,
+  Eye,
+  Download,
+  DollarSign,
   RefreshCw,
   Calendar,
   TrendingUp,
@@ -48,7 +48,7 @@ export default function AdminSubscriptions() {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [isBlocking, setIsBlocking] = useState(false);
   const [processingSubscriptions, setProcessingSubscriptions] = useState(new Set());
-  
+
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
@@ -60,22 +60,22 @@ export default function AdminSubscriptions() {
     try {
       console.log("🔄 AdminSubscriptions: Carregando dados via BACKEND...");
       setIsLoading(true);
-      
+
       const response = await base44.functions.invoke('adminGetAllSubscriptions', {});
-      
+
       if (response.data.success) {
         const { subscriptions: subsData, users: usersData } = response.data;
-        
+
         console.log(`✅ AdminSubscriptions: ${subsData.length} assinaturas recebidas`);
         console.log(`✅ AdminSubscriptions: ${usersData.length} usuários recebidos`);
-        
+
         setSubscriptions(subsData);
         setUsers(usersData);
       } else {
         console.error("❌ Erro ao carregar dados:", response.data.error);
         alert("❌ Erro ao carregar assinaturas. Verifique o console.");
       }
-      
+
     } catch (error) {
       console.error("❌ AdminSubscriptions: Erro ao carregar dados:", error);
       alert("❌ Erro ao carregar assinaturas. Você é admin?");
@@ -87,7 +87,7 @@ export default function AdminSubscriptions() {
   const subscriptionsOfMonth = useMemo(() => {
     return subscriptions.filter(sub => {
       const subDate = new Date(sub.created_date);
-      return subDate.getMonth() === selectedMonth && 
+      return subDate.getMonth() === selectedMonth &&
              subDate.getFullYear() === selectedYear;
     });
   }, [subscriptions, selectedMonth, selectedYear]);
@@ -99,14 +99,14 @@ export default function AdminSubscriptions() {
     const revenue = subscriptionsOfMonth
       .filter(s => s.status === "active" || s.status === "pending")
       .reduce((sum, s) => sum + s.amount_paid, 0);
-    
+
     const byPlan = {
       monthly: 0,
       semester: 0,
       annual: 0,
       lifetime: 0
     };
-    
+
     subscriptionsOfMonth
       .filter(s => s.status === "active" || s.status === "pending")
       .forEach(s => {
@@ -125,7 +125,7 @@ export default function AdminSubscriptions() {
     const totalRevenue = subscriptions
       .filter(s => s.status === "active")
       .reduce((sum, s) => sum + s.amount_paid, 0);
-    
+
     return { total, pending, active, totalRevenue };
   }, [subscriptions]);
 
@@ -150,7 +150,7 @@ export default function AdminSubscriptions() {
   const navigateMonth = (direction) => {
     let newMonth = selectedMonth + direction;
     let newYear = selectedYear;
-    
+
     if (newMonth < 0) {
       newMonth = 11;
       newYear -= 1;
@@ -158,7 +158,7 @@ export default function AdminSubscriptions() {
       newMonth = 0;
       newYear += 1;
     }
-    
+
     setSelectedMonth(newMonth);
     setSelectedYear(newYear);
   };
@@ -176,16 +176,16 @@ export default function AdminSubscriptions() {
     setIsBlocking(true);
     try {
       let blocked = 0;
-      
+
       for (const user of users) {
         if (user.role === 'admin') continue;
-        
-        const hasActivePlan = user.subscription_status === 'active' && 
-                             user.subscription_end_date && 
+
+        const hasActivePlan = user.subscription_status === 'active' &&
+                             user.subscription_end_date &&
                              new Date(user.subscription_end_date) > new Date();
-        
+
         const hasLifetime = user.subscription_plan === 'lifetime';
-        
+
         if (!hasActivePlan && !hasLifetime) {
           await base44.entities.User.update(user.id, {
             subscription_status: "pending",
@@ -195,7 +195,7 @@ export default function AdminSubscriptions() {
           blocked++;
         }
       }
-      
+
       alert(`✅ Varredura concluída!\n\n🔒 ${blocked} usuário(s) bloqueado(s)\n\nTodos os usuários sem plano ativo agora precisarão escolher um plano.`);
       await loadData();
     } catch (error) {
@@ -221,7 +221,7 @@ export default function AdminSubscriptions() {
 
     try {
       console.log("🧪 Chamando função de TESTE...");
-      
+
       const response = await base44.functions.invoke('testAdminApprove', {
         subscription_id: subscription.id,
         user_email: subscription.user_email,
@@ -266,24 +266,52 @@ export default function AdminSubscriptions() {
         email: subscription.user_email,
         plan: subscription.plan_type
       });
-      
+
       const response = await base44.functions.invoke('adminApproveSubscription', {
         subscription_id: subscription.id,
         user_email: subscription.user_email,
         plan_type: subscription.plan_type
       });
 
-      console.log("📦 Resposta:", response.data);
+      console.log("📦 Resposta completa:", response.data);
+
+      // ✅ NOVO: Mostrar logs do backend
+      if (response.data.debugLog) {
+        console.log("═══════════════════════════════════════");
+        console.log("📋 LOGS DO BACKEND:");
+        console.log("═══════════════════════════════════════");
+        response.data.debugLog.forEach(log => console.log(log));
+        console.log("═══════════════════════════════════════");
+      }
 
       if (response.data.success) {
         alert("✅ Assinatura aprovada com sucesso!");
         await loadData();
       } else {
-        throw new Error(response.data.error || "Erro desconhecido");
+        // ✅ NOVO: Mostrar erro detalhado
+        let errorMsg = `❌ Erro ao aprovar:\n\n${response.data.error}`;
+
+        if (response.data.errorDetails) {
+          errorMsg += `\n\nDetalhes:\n`;
+          errorMsg += `Nome: ${response.data.errorDetails.name}\n`;
+          errorMsg += `Mensagem: ${response.data.errorDetails.message}`;
+        }
+
+        if (response.data.debugLog) {
+          errorMsg += `\n\n📋 Veja o console (F12) para logs completos do backend.`;
+        }
+
+        alert(errorMsg);
+        throw new Error(response.data.error); // Re-throw to prevent generic catch alert
       }
     } catch (error) {
       console.error("❌ ERRO:", error);
-      alert(`❌ Erro ao aprovar: ${error.message}\n\nVerifique o console (F12) para mais detalhes.`);
+
+      // Only show a generic alert if the more specific alerts weren't triggered by the try block
+      // (e.g., for network errors or unexpected exceptions not caught by backend's 'success: false' path)
+      if (!error.message.includes("Erro ao aprovar:") && !error.message.includes("Failed to fetch")) {
+        alert(`❌ Erro ao aprovar: ${error.message}\n\nVerifique o console (F12) para mais detalhes.`);
+      }
     } finally {
       setProcessingSubscriptions(prev => {
         const newSet = new Set(prev);
@@ -307,7 +335,7 @@ export default function AdminSubscriptions() {
 
     try {
       console.log("🔄 Chamando backend function para rejeitar...");
-      
+
       const response = await base44.functions.invoke('adminRejectSubscription', {
         subscription_id: subscription.id
       });
@@ -798,12 +826,12 @@ export default function AdminSubscriptions() {
               {selectedSubscription.payment_proof_url && (
                 <div>
                   <p className="text-purple-300 text-sm mb-2">Comprovante de Pagamento</p>
-                  <img 
-                    src={selectedSubscription.payment_proof_url} 
-                    alt="Comprovante" 
+                  <img
+                    src={selectedSubscription.payment_proof_url}
+                    alt="Comprovante"
                     className="w-full max-h-96 object-contain rounded border border-purple-700/50"
                   />
-                  <a 
+                  <a
                     href={selectedSubscription.payment_proof_url}
                     target="_blank"
                     rel="noopener noreferrer"

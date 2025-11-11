@@ -1,39 +1,47 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 
 Deno.serve(async (req) => {
+    const debugLog = [];
+    const log = (msg) => {
+        console.log(msg);
+        debugLog.push(msg);
+    };
+
     try {
-        console.log("🚀 adminApproveSubscription iniciada");
+        log("🚀 adminApproveSubscription iniciada");
         const base44 = createClientFromRequest(req);
 
         // ✅ VERIFICAR SE É ADMIN
-        console.log("🔍 Verificando autenticação...");
+        log("🔍 Verificando autenticação...");
         const user = await base44.auth.me();
-        console.log("👤 Usuário:", user?.email, "Role:", user?.role);
+        log(`👤 Usuário: ${user?.email} Role: ${user?.role}`);
         
         if (!user || user.role !== 'admin') {
-            console.error("❌ Acesso negado: Apenas admins podem aprovar");
+            log("❌ Acesso negado: Apenas admins podem aprovar");
             return Response.json({ 
                 success: false,
-                error: 'Unauthorized - Admin only' 
+                error: 'Unauthorized - Admin only',
+                debugLog
             }, { status: 403 });
         }
 
         // ✅ RECEBER DADOS
-        console.log("📦 Lendo body da requisição...");
+        log("📦 Lendo body da requisição...");
         const body = await req.json();
         const { subscription_id, user_email, plan_type } = body;
 
-        console.log(`🔍 Admin ${user.email} aprovando assinatura:`);
-        console.log(`   • Subscription ID: ${subscription_id}`);
-        console.log(`   • User Email: ${user_email}`);
-        console.log(`   • Plan Type: ${plan_type}`);
+        log(`📋 Dados recebidos:`);
+        log(`   • Subscription ID: ${subscription_id}`);
+        log(`   • User Email: ${user_email}`);
+        log(`   • Plan Type: ${plan_type}`);
 
         // ✅ VALIDAR DADOS
         if (!subscription_id || !user_email || !plan_type) {
-            console.error("❌ Dados incompletos:", { subscription_id, user_email, plan_type });
+            log("❌ Dados incompletos");
             return Response.json({ 
                 success: false,
-                error: 'Missing required fields: subscription_id, user_email, or plan_type' 
+                error: 'Missing required fields',
+                debugLog
             }, { status: 400 });
         }
 
@@ -49,36 +57,30 @@ Deno.serve(async (req) => {
             endDate.setFullYear(endDate.getFullYear() + 1);
         } else if (plan_type === 'lifetime') {
             endDate.setFullYear(endDate.getFullYear() + 100);
-        } else {
-            console.error(`❌ Tipo de plano inválido: ${plan_type}`);
-            return Response.json({ 
-                success: false,
-                error: `Invalid plan type: ${plan_type}` 
-            }, { status: 400 });
         }
 
         const startDateStr = startDate.toISOString().split('T')[0];
         const endDateStr = endDate.toISOString().split('T')[0];
 
-        console.log(`📅 Datas calculadas:`);
-        console.log(`   • Início: ${startDateStr}`);
-        console.log(`   • Fim: ${endDateStr}`);
+        log(`📅 Datas: ${startDateStr} → ${endDateStr}`);
 
-        // ✅ VERIFICAR SE asServiceRole EXISTE
-        console.log("🔧 Verificando asServiceRole...");
-        console.log("asServiceRole existe?", !!base44.asServiceRole);
+        // ✅ VERIFICAR asServiceRole
+        log("🔧 Verificando asServiceRole...");
+        log(`   asServiceRole existe? ${!!base44.asServiceRole}`);
         
         if (!base44.asServiceRole) {
-            console.error("❌ asServiceRole não disponível!");
+            log("❌ asServiceRole não disponível!");
             return Response.json({ 
                 success: false,
-                error: 'Service role not available. Please contact support.'
+                error: 'Service role not available',
+                debugLog
             }, { status: 500 });
         }
 
-        // ✅ ATUALIZAR SUBSCRIPTION COM TRY/CATCH
+        // ✅ TENTAR ATUALIZAR SUBSCRIPTION
         try {
-            console.log(`🔄 Tentando atualizar Subscription ${subscription_id}...`);
+            log(`🔄 Atualizando Subscription ${subscription_id}...`);
+            log(`   Dados do update: status=active, start=${startDateStr}, end=${endDateStr}`);
             
             const updateResult = await base44.asServiceRole.entities.Subscription.update(subscription_id, {
                 status: "active",
@@ -86,55 +88,63 @@ Deno.serve(async (req) => {
                 end_date: endDateStr
             });
             
-            console.log(`✅ Subscription atualizada:`, updateResult);
+            log(`✅ Subscription atualizada! Result: ${JSON.stringify(updateResult)}`);
         } catch (subError) {
-            console.error("❌ Erro ao atualizar Subscription:", subError);
-            console.error("📋 Nome:", subError.name);
-            console.error("📋 Mensagem:", subError.message);
-            console.error("📋 Stack:", subError.stack);
+            log(`❌ ERRO ao atualizar Subscription:`);
+            log(`   Nome: ${subError.name}`);
+            log(`   Mensagem: ${subError.message}`);
+            log(`   Stack: ${subError.stack}`);
             
             return Response.json({ 
                 success: false,
                 error: 'Failed to update subscription',
-                details: subError.message,
-                errorName: subError.name
+                errorDetails: {
+                    name: subError.name,
+                    message: subError.message,
+                    stack: subError.stack
+                },
+                debugLog
             }, { status: 500 });
         }
 
-        // ✅ BUSCAR USUÁRIO COM TRY/CATCH
+        // ✅ BUSCAR USUÁRIO
         let targetUser;
         try {
-            console.log(`🔍 Buscando usuário: ${user_email}...`);
+            log(`🔍 Buscando usuário: ${user_email}...`);
             const users = await base44.asServiceRole.entities.User.list();
-            console.log(`📊 Total de usuários encontrados: ${users.length}`);
+            log(`   Total de usuários: ${users.length}`);
             
             targetUser = users.find(u => u.email === user_email);
 
             if (!targetUser) {
-                console.error(`❌ Usuário não encontrado: ${user_email}`);
+                log(`❌ Usuário não encontrado: ${user_email}`);
                 return Response.json({ 
                     success: false,
-                    error: 'User not found' 
+                    error: 'User not found',
+                    debugLog
                 }, { status: 404 });
             }
-            console.log(`✅ Usuário encontrado: ${targetUser.id}`);
+            log(`✅ Usuário encontrado: ${targetUser.id}`);
         } catch (userListError) {
-            console.error("❌ Erro ao buscar usuário:", userListError);
-            console.error("📋 Nome:", userListError.name);
-            console.error("📋 Mensagem:", userListError.message);
-            console.error("📋 Stack:", userListError.stack);
+            log(`❌ ERRO ao buscar usuário:`);
+            log(`   Nome: ${userListError.name}`);
+            log(`   Mensagem: ${userListError.message}`);
             
             return Response.json({ 
                 success: false,
                 error: 'Failed to find user',
-                details: userListError.message,
-                errorName: userListError.name
+                errorDetails: {
+                    name: userListError.name,
+                    message: userListError.message
+                },
+                debugLog
             }, { status: 500 });
         }
 
-        // ✅ ATUALIZAR USUÁRIO COM TRY/CATCH
+        // ✅ ATUALIZAR USUÁRIO
         try {
-            console.log(`🔄 Tentando atualizar User ${targetUser.id}...`);
+            log(`🔄 Atualizando User ${targetUser.id}...`);
+            log(`   Dados: status=active, plan=${plan_type}, end=${endDateStr}`);
             
             const userUpdateResult = await base44.asServiceRole.entities.User.update(targetUser.id, {
                 subscription_status: "active",
@@ -142,22 +152,26 @@ Deno.serve(async (req) => {
                 subscription_end_date: endDateStr
             });
             
-            console.log(`✅ Usuário atualizado:`, userUpdateResult);
+            log(`✅ Usuário atualizado! Result: ${JSON.stringify(userUpdateResult)}`);
         } catch (userUpdateError) {
-            console.error("❌ Erro ao atualizar User:", userUpdateError);
-            console.error("📋 Nome:", userUpdateError.name);
-            console.error("📋 Mensagem:", userUpdateError.message);
-            console.error("📋 Stack:", userUpdateError.stack);
+            log(`❌ ERRO ao atualizar User:`);
+            log(`   Nome: ${userUpdateError.name}`);
+            log(`   Mensagem: ${userUpdateError.message}`);
+            log(`   Stack: ${userUpdateError.stack}`);
             
             return Response.json({ 
                 success: false,
                 error: 'Failed to update user',
-                details: userUpdateError.message,
-                errorName: userUpdateError.name
+                errorDetails: {
+                    name: userUpdateError.name,
+                    message: userUpdateError.message,
+                    stack: userUpdateError.stack
+                },
+                debugLog
             }, { status: 500 });
         }
 
-        console.log("🎉 Assinatura aprovada com sucesso!");
+        log("🎉 Assinatura aprovada com sucesso!");
         
         return Response.json({
             success: true,
@@ -167,22 +181,25 @@ Deno.serve(async (req) => {
                 user_email,
                 start_date: startDateStr,
                 end_date: endDateStr
-            }
+            },
+            debugLog
         });
 
     } catch (error) {
-        console.error("❌ ERRO GERAL ao aprovar assinatura:", error);
-        console.error("📋 Stack:", error.stack);
-        console.error("📋 Name:", error.name);
-        console.error("📋 Message:", error.message);
-        console.error("📋 Tipo:", typeof error);
+        log(`❌ ERRO GERAL:`);
+        log(`   Nome: ${error.name}`);
+        log(`   Mensagem: ${error.message}`);
+        log(`   Stack: ${error.stack}`);
         
         return Response.json({ 
             success: false, 
             error: error.message || 'Internal server error',
-            details: error.stack || 'No stack trace available',
-            errorName: error.name || 'Unknown error',
-            errorType: typeof error
+            errorDetails: {
+                name: error.name,
+                message: error.message,
+                stack: error.stack
+            },
+            debugLog
         }, { status: 500 });
     }
 });
