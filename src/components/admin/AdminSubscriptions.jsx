@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,7 +31,8 @@ import {
   TrendingUp,
   Users,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Loader2
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -43,6 +45,7 @@ export default function AdminSubscriptions() {
   const [selectedSubscription, setSelectedSubscription] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [isBlocking, setIsBlocking] = useState(false);
+  const [isApproving, setIsApproving] = useState(false);
   
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -187,41 +190,30 @@ export default function AdminSubscriptions() {
   const handleApprove = async (subscription) => {
     if (!confirm(`Aprovar pagamento de ${subscription.user_email}?`)) return;
 
+    setIsApproving(true);
     try {
-      const startDate = new Date();
-      const endDate = new Date(startDate);
+      console.log("🔄 Chamando função de aprovação...");
       
-      if (subscription.plan_type === 'monthly') {
-        endDate.setMonth(endDate.getMonth() + 1);
-      } else if (subscription.plan_type === 'semester') {
-        endDate.setMonth(endDate.getMonth() + 6);
-      } else if (subscription.plan_type === 'annual') {
-        endDate.setFullYear(endDate.getFullYear() + 1);
-      } else if (subscription.plan_type === 'lifetime') {
-        endDate.setFullYear(endDate.getFullYear() + 100);
-      }
-
-      // ✅ Usar entities normalmente (admin pode editar)
-      await base44.entities.Subscription.update(subscription.id, {
-        status: "active",
-        start_date: startDate.toISOString().split('T')[0],
-        end_date: endDate.toISOString().split('T')[0]
+      // ✅ CHAMAR FUNÇÃO BACKEND QUE USA asServiceRole
+      const response = await base44.functions.invoke('adminApproveSubscription', {
+        subscription_id: subscription.id,
+        user_email: subscription.user_email,
+        plan_type: subscription.plan_type
       });
 
-      const user = users.find(u => u.email === subscription.user_email);
-      if (user) {
-        await base44.entities.User.update(user.id, {
-          subscription_status: "active",
-          subscription_plan: subscription.plan_type,
-          subscription_end_date: endDate.toISOString().split('T')[0]
-        });
-      }
+      console.log("📦 Resposta da função:", response.data);
 
-      alert("✅ Assinatura aprovada com sucesso!");
-      loadData();
+      if (response.data.success) {
+        alert("✅ Assinatura aprovada com sucesso!");
+        await loadData();
+      } else {
+        throw new Error(response.data.error || "Erro desconhecido");
+      }
     } catch (error) {
-      console.error("Erro ao aprovar:", error);
-      alert("❌ Erro ao aprovar assinatura.");
+      console.error("❌ Erro ao aprovar:", error);
+      alert(`❌ Erro ao aprovar assinatura:\n\n${error.message}\n\nVerifique o console para mais detalhes.`);
+    } finally {
+      setIsApproving(false);
     }
   };
 
@@ -254,7 +246,12 @@ export default function AdminSubscriptions() {
   });
 
   if (isLoading) {
-    return <div className="text-purple-300 text-center py-12">Carregando assinaturas...</div>;
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <Loader2 className="w-12 h-12 text-purple-400 animate-spin mb-4" />
+        <p className="text-purple-300 text-center">Carregando assinaturas...</p>
+      </div>
+    );
   }
 
   return (
@@ -553,15 +550,26 @@ export default function AdminSubscriptions() {
                           variant="outline"
                           size="sm"
                           onClick={() => handleApprove(sub)}
+                          disabled={isApproving}
                           className="border-green-700 text-green-300"
                         >
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          Aprovar Manualmente
+                          {isApproving ? (
+                            <>
+                              <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                              Aprovando...
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle className="w-3 h-3 mr-1" />
+                              Aprovar Manualmente
+                            </>
+                          )}
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleReject(sub)}
+                          disabled={isApproving}
                           className="border-red-700 text-red-300"
                         >
                           <XCircle className="w-3 h-3 mr-1" />
