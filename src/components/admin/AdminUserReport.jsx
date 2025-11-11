@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client"; // ✅ USAR SDK
+import { base44 } from "@/api/base44Client";
 import { User } from "@/entities/User";
-import { Subscription } from "@/entities/Subscription";
+import { Subscription } from "@/entities/Subscription"; // This import is not directly used in loadData, but kept as per original file structure
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +24,7 @@ export default function AdminUserReport() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterPlan, setFilterPlan] = useState("all");
-  const [sortOrder, setSortOrder] = useState("newest"); // ✅ NOVO: ordenação
+  const [sortOrder, setSortOrder] = useState("newest");
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
   const [jsPDFLoaded, setJsPDFLoaded] = useState(false);
@@ -36,7 +36,7 @@ export default function AdminUserReport() {
 
   useEffect(() => {
     applyFilters();
-  }, [users, searchTerm, filterStatus, filterPlan, sortOrder]); // ✅ Adicionar sortOrder
+  }, [users, searchTerm, filterStatus, filterPlan, sortOrder]);
 
   const loadJsPDF = () => {
     // Verificar se já está carregado
@@ -62,10 +62,10 @@ export default function AdminUserReport() {
 
   const loadData = async () => {
     try {
-      // ✅ CORRIGIDO: Usar base44.entities diretamente (admin tem permissão via RLS)
+      // ✅ CORRIGIDO: Usar .list() ao invés de .filter()
       const [usersData, subsData] = await Promise.all([
-        base44.entities.User.filter({}, "-created_date", 1000), // Updated User.list()
-        base44.entities.Subscription.filter({}, "-created_date", 1000) // Updated Subscription.list()
+        User.list(), // Updated User.list() as per instruction
+        base44.entities.Subscription.list("-created_date", 1000) // Updated Subscription.list() as per instruction
       ]);
       setUsers(usersData);
       setSubscriptions(subsData);
@@ -80,7 +80,7 @@ export default function AdminUserReport() {
     let filtered = [...users];
 
     if (searchTerm) {
-      filtered = filtered.filter(u => 
+      filtered = filtered.filter(u =>
         u.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         u.email.toLowerCase().includes(searchTerm.toLowerCase())
       );
@@ -89,13 +89,13 @@ export default function AdminUserReport() {
     if (filterStatus !== "all") {
       filtered = filtered.filter(u => {
         if (filterStatus === "active") {
-          return u.subscription_status === "active" && 
-                 u.subscription_end_date && 
+          return u.subscription_status === "active" &&
+                 u.subscription_end_date &&
                  new Date(u.subscription_end_date) > new Date();
         } else if (filterStatus === "free") {
           return !u.subscription_status || u.subscription_status === "pending";
         } else if (filterStatus === "expired") {
-          return u.subscription_status === "expired" || 
+          return u.subscription_status === "expired" ||
                  (u.subscription_end_date && new Date(u.subscription_end_date) < new Date());
         }
         return u.subscription_status === filterStatus;
@@ -114,7 +114,7 @@ export default function AdminUserReport() {
     filtered.sort((a, b) => {
       const dateA = new Date(a.created_date);
       const dateB = new Date(b.created_date);
-      
+
       if (sortOrder === "newest") {
         return dateB.getTime() - dateA.getTime(); // Mais novos primeiro
       } else {
@@ -132,18 +132,18 @@ export default function AdminUserReport() {
   };
 
   const calculateStats = () => {
-    const activeUsers = users.filter(u => 
-      u.subscription_status === "active" && 
-      u.subscription_end_date && 
+    const activeUsers = users.filter(u =>
+      u.subscription_status === "active" &&
+      u.subscription_end_date &&
       new Date(u.subscription_end_date) > new Date()
     );
 
-    const freeUsers = users.filter(u => 
+    const freeUsers = users.filter(u =>
       !u.subscription_status || u.subscription_status === "pending"
     );
 
-    const expiredUsers = users.filter(u => 
-      u.subscription_status === "expired" || 
+    const expiredUsers = users.filter(u =>
+      u.subscription_status === "expired" ||
       (u.subscription_end_date && new Date(u.subscription_end_date) < new Date())
     );
 
@@ -188,40 +188,40 @@ export default function AdminUserReport() {
       const stats = calculateStats();
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
-      
+
       // ============================================
       // PÁGINA 1: CAPA PROFISSIONAL
       // ============================================
-      
+
       // Fundo gradiente (simulado com retângulos)
       doc.setFillColor(10, 10, 15); // Cor de fundo escura
       doc.rect(0, 0, pageWidth, pageHeight, 'F');
-      
+
       // Retângulo decorativo superior
       doc.setFillColor(139, 92, 246); // Roxo
       doc.rect(0, 0, pageWidth, 60, 'F');
-      
+
       // Logo/Ícone (simulado com círculo)
       doc.setFillColor(255, 255, 255);
       doc.circle(pageWidth / 2, 35, 12, 'F');
       doc.setFillColor(139, 92, 246);
       doc.circle(pageWidth / 2, 35, 8, 'F');
-      
+
       // Título principal
       doc.setFontSize(32);
       doc.setTextColor(255, 255, 255);
       doc.setFont(undefined, 'bold');
       doc.text('FINEX', pageWidth / 2, 90, { align: 'center' });
-      
+
       doc.setFontSize(18);
       doc.setTextColor(200, 200, 200);
       doc.text('Relatório Gerencial de Usuários', pageWidth / 2, 105, { align: 'center' });
-      
+
       // Linha decorativa
       doc.setDrawColor(139, 92, 246);
       doc.setLineWidth(1);
       doc.line(40, 115, pageWidth - 40, 115);
-      
+
       // Informações do relatório
       doc.setFontSize(11);
       doc.setTextColor(180, 180, 180);
@@ -235,16 +235,16 @@ export default function AdminUserReport() {
       });
       doc.text(`Data de Geração: ${reportDate}`, pageWidth / 2, 135, { align: 'center' });
       doc.text(`Total de Registros: ${filteredUsers.length} usuários`, pageWidth / 2, 145, { align: 'center' });
-      
+
       // Box com destaques
       doc.setFillColor(26, 26, 46);
       doc.roundedRect(30, 160, pageWidth - 60, 80, 5, 5, 'F');
-      
+
       doc.setFontSize(14);
       doc.setTextColor(139, 92, 246);
       doc.setFont(undefined, 'bold');
       doc.text('📊 Resumo Executivo', 40, 175);
-      
+
       doc.setFontSize(10);
       doc.setTextColor(255, 255, 255);
       doc.setFont(undefined, 'normal');
@@ -252,22 +252,22 @@ export default function AdminUserReport() {
       doc.text(`🆓 Usuários Free: ${stats.free} (${((stats.total > 0 ? stats.free/stats.total : 0)*100).toFixed(1)}%)`, 40, 200);
       doc.text(`💰 Receita Total: R$ ${stats.totalRevenue.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`, 40, 210);
       doc.text(`📈 Taxa de Conversão: ${((stats.active + stats.free > 0 ? stats.active/(stats.active+stats.free) : 0)*100).toFixed(1)}%`, 40, 220);
-      
+
       // Rodapé da capa
       doc.setFontSize(8);
       doc.setTextColor(120, 120, 120);
       doc.text('DOCUMENTO CONFIDENCIAL - USO ADMINISTRATIVO', pageWidth / 2, pageHeight - 20, { align: 'center' });
-      
+
       // ============================================
       // PÁGINA 2: ESTATÍSTICAS DETALHADAS
       // ============================================
       doc.addPage();
-      
+
       // Cabeçalho
       addHeader(doc, pageWidth);
-      
+
       let y = 45;
-      
+
       // Seção: Visão Geral
       doc.setFillColor(139, 92, 246);
       doc.rect(20, y, pageWidth - 40, 8, 'F');
@@ -275,12 +275,12 @@ export default function AdminUserReport() {
       doc.setTextColor(255, 255, 255);
       doc.setFont(undefined, 'bold');
       doc.text('📊 VISÃO GERAL DO SISTEMA', 25, y + 6);
-      
+
       y += 15;
-      
+
       // Grid de estatísticas
       const colWidth = (pageWidth - 50) / 2;
-      
+
       // Coluna 1
       doc.setFillColor(26, 26, 46);
       doc.roundedRect(20, y, colWidth - 5, 50, 3, 3, 'F');
@@ -295,7 +295,7 @@ export default function AdminUserReport() {
       doc.setTextColor(180, 180, 180);
       doc.setFont(undefined, 'normal');
       doc.text('Registrados no sistema', 25, y + 35);
-      
+
       // Coluna 2
       doc.setFillColor(26, 26, 46);
       doc.roundedRect(20 + colWidth, y, colWidth - 5, 50, 3, 3, 'F');
@@ -310,9 +310,9 @@ export default function AdminUserReport() {
       doc.setTextColor(180, 180, 180);
       doc.setFont(undefined, 'normal');
       doc.text(`${((stats.total > 0 ? stats.active/stats.total : 0)*100).toFixed(1)}% do total`, 25 + colWidth, y + 35);
-      
+
       y += 58;
-      
+
       // Coluna 3
       doc.setFillColor(26, 26, 46);
       doc.roundedRect(20, y, colWidth - 5, 50, 3, 3, 'F');
@@ -327,7 +327,7 @@ export default function AdminUserReport() {
       doc.setTextColor(180, 180, 180);
       doc.setFont(undefined, 'normal');
       doc.text(`${((stats.total > 0 ? stats.free/stats.total : 0)*100).toFixed(1)}% do total`, 25, y + 35);
-      
+
       // Coluna 4
       doc.setFillColor(26, 26, 46);
       doc.roundedRect(20 + colWidth, y, colWidth - 5, 50, 3, 3, 'F');
@@ -342,9 +342,9 @@ export default function AdminUserReport() {
       doc.setTextColor(180, 180, 180);
       doc.setFont(undefined, 'normal');
       doc.text('Arrecadado em assinaturas', 25 + colWidth, y + 35);
-      
+
       y += 58;
-      
+
       // Seção: Distribuição de Planos
       doc.setFillColor(139, 92, 246);
       doc.rect(20, y, pageWidth - 40, 8, 'F');
@@ -352,9 +352,9 @@ export default function AdminUserReport() {
       doc.setTextColor(255, 255, 255);
       doc.setFont(undefined, 'bold');
       doc.text('💎 DISTRIBUIÇÃO DE PLANOS', 25, y + 6);
-      
+
       y += 15;
-      
+
       // Gráfico de barras simulado
       const plans = [
         { name: 'Mensal', count: stats.monthlyPlans, color: [59, 130, 246] },
@@ -362,48 +362,48 @@ export default function AdminUserReport() {
         { name: 'Anual', count: stats.annualPlans, color: [236, 72, 153] },
         { name: 'Vitalício', count: stats.lifetimePlans, color: [245, 158, 11] }
       ];
-      
+
       const maxCount = Math.max(...plans.map(p => p.count), 1);
       const barMaxWidth = 120;
       const barHeight = 12;
-      
+
       plans.forEach((plan, index) => {
         const barY = y + (index * 20);
         const barWidth = (plan.count / maxCount) * barMaxWidth;
-        
+
         // Fundo da barra
         doc.setFillColor(40, 40, 50);
         doc.roundedRect(70, barY, barMaxWidth, barHeight, 2, 2, 'F');
-        
+
         // Barra preenchida
         if (plan.count > 0) {
           doc.setFillColor(...plan.color);
           doc.roundedRect(70, barY, barWidth, barHeight, 2, 2, 'F');
         }
-        
+
         // Label
         doc.setFontSize(10);
         doc.setTextColor(200, 200, 200);
         doc.setFont(undefined, 'normal');
         doc.text(plan.name, 25, barY + 8);
-        
+
         // Valor
         doc.setFont(undefined, 'bold');
         doc.setTextColor(255, 255, 255);
         doc.text(`${plan.count}`, 195, barY + 8, { align: 'right' });
       });
-      
+
       // Rodapé
       addFooter(doc, pageWidth, pageHeight, 2);
-      
+
       // ============================================
       // PÁGINA 3+: DETALHAMENTO DOS USUÁRIOS
       // ============================================
       doc.addPage();
       addHeader(doc, pageWidth);
-      
+
       y = 45;
-      
+
       // Cabeçalho da seção
       doc.setFillColor(139, 92, 246);
       doc.rect(20, y, pageWidth - 40, 8, 'F');
@@ -411,9 +411,9 @@ export default function AdminUserReport() {
       doc.setTextColor(255, 255, 255);
       doc.setFont(undefined, 'bold');
       doc.text('👥 DETALHAMENTO DOS USUÁRIOS', 25, y + 6);
-      
+
       y += 18;
-      
+
       // Tabela de usuários
       filteredUsers.forEach((user, index) => {
         if (y > 260) {
@@ -422,17 +422,17 @@ export default function AdminUserReport() {
           addHeader(doc, pageWidth);
           y = 45;
         }
-        
+
         const subscription = getUserSubscription(user.email);
-        const isActive = user.subscription_status === "active" && 
-                        user.subscription_end_date && 
+        const isActive = user.subscription_status === "active" &&
+                        user.subscription_end_date &&
                         new Date(user.subscription_end_date) > new Date();
         const isFree = !user.subscription_status || user.subscription_status === "pending";
-        
+
         // Box do usuário
         doc.setFillColor(26, 26, 46);
         doc.roundedRect(20, y, pageWidth - 40, 38, 3, 3, 'F');
-        
+
         // Avatar (círculo)
         const avatarColor = isActive ? [16, 185, 129] : isFree ? [245, 158, 11] : [239, 68, 68];
         doc.setFillColor(...avatarColor);
@@ -441,18 +441,18 @@ export default function AdminUserReport() {
         doc.setTextColor(255, 255, 255);
         doc.setFont(undefined, 'bold');
         doc.text((user.full_name?.charAt(0) || "U").toUpperCase(), 30, y + 14, { align: 'center' });
-        
+
         // Nome e Email
         doc.setFontSize(11);
         doc.setTextColor(255, 255, 255);
         doc.setFont(undefined, 'bold');
         doc.text(user.full_name || 'Sem nome', 42, y + 10);
-        
+
         doc.setFontSize(8);
         doc.setTextColor(180, 180, 180);
         doc.setFont(undefined, 'normal');
         doc.text(user.email, 42, y + 16);
-        
+
         // Status Badge
         const statusX = 42;
         const statusY = y + 22;
@@ -478,7 +478,7 @@ export default function AdminUserReport() {
           doc.setFont(undefined, 'bold');
           doc.text('EXPIRADO', statusX + 2, statusY + 4.5);
         }
-        
+
         // Plano
         if (user.subscription_plan) {
           const planTextWidth = doc.getTextWidth(
@@ -486,7 +486,7 @@ export default function AdminUserReport() {
             user.subscription_plan === "semester" ? "SEMESTRAL" :
             user.subscription_plan === "annual" ? "ANUAL" : "VITALÍCIO"
           );
-          const planX = statusX + (isActive || isFree ? (isActive ? 28 + 4 : 20 + 4) : 30 + 4); // Position after status badge + some padding
+          const planX = statusX + (isActive ? 28 + 4 : isFree ? 20 + 4 : 30 + 4); // Position after status badge + some padding
           doc.setFillColor(139, 92, 246, 0.3);
           doc.roundedRect(planX, statusY, planTextWidth + 4, 6, 2, 2, 'F'); // Add padding to width
           doc.setFontSize(7);
@@ -497,7 +497,7 @@ export default function AdminUserReport() {
                           user.subscription_plan === "annual" ? "ANUAL" : "VITALÍCIO";
           doc.text(planText, planX + 2, statusY + 4.5);
         }
-        
+
         // Coluna direita - Valores
         const rightCol = pageWidth - 65;
         doc.setFontSize(8);
@@ -507,14 +507,14 @@ export default function AdminUserReport() {
         doc.setTextColor(6, 182, 212);
         doc.setFont(undefined, 'bold');
         doc.text(subscription && subscription.amount_paid ? `R$ ${subscription.amount_paid.toFixed(2)}` : 'R$ 0,00', rightCol, y + 17);
-        
+
         if (user.subscription_end_date) {
           doc.setFontSize(7);
           doc.setTextColor(180, 180, 180);
           doc.setFont(undefined, 'normal');
           doc.text(`Vence: ${new Date(user.subscription_end_date).toLocaleDateString('pt-BR')}`, rightCol, y + 23);
         }
-        
+
         // Linha separadora
         y += 40;
         doc.setDrawColor(60, 60, 80);
@@ -522,16 +522,16 @@ export default function AdminUserReport() {
         doc.line(20, y, pageWidth - 20, y);
         y += 2;
       });
-      
+
       // Última página - rodapé
       addFooter(doc, pageWidth, pageHeight, doc.internal.getCurrentPageInfo().pageNumber);
-      
+
       // Salvar
       const filename = `FINEX_Relatorio_Usuarios_${new Date().toISOString().split('T')[0]}.pdf`;
       doc.save(filename);
-      
-      alert(`✅ RELATÓRIO PROFISSIONAL GERADO!\n\n📊 Documento inclui:\n• Capa executiva\n• Estatísticas detalhadas\n• Gráficos visuais\n• ${filteredUsers.length} usuários detalhados\n• ${doc.internal.getNumberOfPages()} páginas\n\n💾 Arquivo: ${filename}`);
-      
+
+      alert(`✅ RELATÓRIO GERADO!`);
+
     } catch (error) {
       console.error("Erro ao gerar PDF:", error);
       alert("❌ Erro ao gerar PDF. Tente novamente.");
@@ -544,22 +544,22 @@ export default function AdminUserReport() {
   const addHeader = (doc, pageWidth) => {
     doc.setFillColor(10, 10, 15);
     doc.rect(0, 0, pageWidth, 35, 'F');
-    
+
     doc.setFillColor(139, 92, 246);
     doc.circle(25, 17, 8, 'F');
     doc.setFillColor(255, 255, 255);
     doc.circle(25, 17, 5, 'F');
-    
+
     doc.setFontSize(16);
     doc.setTextColor(255, 255, 255);
     doc.setFont(undefined, 'bold');
     doc.text('FINEX', 40, 20);
-    
+
     doc.setFontSize(8);
     doc.setTextColor(180, 180, 180);
     doc.setFont(undefined, 'normal');
     doc.text('Relatório Gerencial', 40, 26);
-    
+
     doc.setDrawColor(139, 92, 246);
     doc.setLineWidth(0.5);
     doc.line(0, 35, pageWidth, 35);
@@ -568,18 +568,18 @@ export default function AdminUserReport() {
   // Função auxiliar: Rodapé
   const addFooter = (doc, pageWidth, pageHeight, pageNum) => {
     const footerY = pageHeight - 15;
-    
+
     doc.setDrawColor(139, 92, 246);
     doc.setLineWidth(0.5);
     doc.line(0, footerY - 5, pageWidth, footerY - 5);
-    
+
     doc.setFontSize(7);
     doc.setTextColor(120, 120, 120);
     doc.setFont(undefined, 'normal');
     doc.text('FINEX - Inteligência Financeira | Documento Confidencial', 20, footerY);
-    
+
     doc.text(`Página ${pageNum}`, pageWidth - 20, footerY, { align: 'right' });
-    
+
     doc.setFontSize(6);
     doc.text(`Gerado em ${new Date().toLocaleString('pt-BR')}`, pageWidth / 2, footerY + 5, { align: 'center' }); // Adjusted Y for date
   };
@@ -731,11 +731,11 @@ export default function AdminUserReport() {
           <div className="space-y-3">
             {filteredUsers.map((user, index) => {
               const subscription = getUserSubscription(user.email);
-              const isActive = user.subscription_status === "active" && 
-                              user.subscription_end_date && 
+              const isActive = user.subscription_status === "active" &&
+                              user.subscription_end_date &&
                               new Date(user.subscription_end_date) > new Date();
               const isFree = !user.subscription_status || user.subscription_status === "pending";
-              const isExpired = user.subscription_status === "expired" || 
+              const isExpired = user.subscription_status === "expired" ||
                                (user.subscription_end_date && new Date(user.subscription_end_date) < new Date());
 
               return (

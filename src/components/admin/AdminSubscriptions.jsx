@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { User } from "@/entities/User";
@@ -68,9 +69,9 @@ export default function AdminSubscriptions() {
         throw new Error("Você não tem permissão para acessar esta página. Apenas administradores.");
       }
       
-      // ✅ CORRIGIDO: Usar base44.entities diretamente (admin tem permissão via RLS)
-      console.log("📊 [AdminSubscriptions] Buscando subscriptions...");
-      const subsData = await base44.entities.Subscription.filter({}, "-created_date", 1000);
+      // ✅ CORRIGIDO: Usar .list() ao invés de .filter() - sintaxe mais simples
+      console.log("📊 [AdminSubscriptions] Buscando subscriptions com .list()...");
+      const subsData = await base44.entities.Subscription.list("-created_date", 1000);
       console.log("✅ [AdminSubscriptions] Total de subscriptions carregadas:", subsData.length);
       
       console.log("👥 [AdminSubscriptions] Buscando usuários...");
@@ -216,7 +217,6 @@ export default function AdminSubscriptions() {
         endDate.setFullYear(endDate.getFullYear() + 100);
       }
 
-      // ✅ CORRIGIDO: Usar base44.entities diretamente
       await base44.entities.Subscription.update(subscription.id, {
         status: "active",
         start_date: startDate.toISOString().split('T')[0],
@@ -244,7 +244,6 @@ export default function AdminSubscriptions() {
     if (!confirm(`Rejeitar pagamento de ${subscription.user_email}?`)) return;
 
     try {
-      // ✅ CORRIGIDO: Usar base44.entities diretamente
       await base44.entities.Subscription.update(subscription.id, {
         status: "cancelled"
       });
