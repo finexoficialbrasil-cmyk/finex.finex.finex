@@ -96,7 +96,7 @@ const EMAIL_TEMPLATES = {
           </div>
           
           <div style="text-align: center; margin: 30px 0;">
-            <a href="{{RENEWAL_LINK}}" style="display: inline-block; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; padding: 18px 50px; text-decoration: none; border-radius: 50px; font-size: 20px; font-weight: bold; box-shadow: 0 5px 20px rgba(239, 68, 68, 0.5); animation: pulse 2s infinite;">
+            <a href="{{RENEWAL_LINK}}" style="display: inline-block; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; padding: 18px 50px; text-decoration: none; border-radius: 50px; font-size: 20px; font-weight: bold; box-shadow: 0 5px 20px rgba(239, 68, 68, 0.5);">
               🚀 RENOVAR URGENTE
             </a>
           </div>
@@ -114,7 +114,7 @@ const EMAIL_TEMPLATES = {
     body: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); padding: 40px 20px; border-radius: 20px;">
         <div style="background: white; border-radius: 15px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
-          <h1 style="color: #dc2626; text-align: center; font-size: 32px; margin-bottom: 20px; animation: blink 1.5s infinite;">
+          <h1 style="color: #dc2626; text-align: center; font-size: 32px; margin-bottom: 20px;">
             🔴 ÚLTIMO DIA!
           </h1>
           
@@ -160,7 +160,6 @@ const EMAIL_TEMPLATES = {
     `
   },
 
-  // 🔴 VENCIDOS
   'expired_today': {
     subject: '🔴 VENCIDO: Seu plano FINEX expirou hoje!',
     body: `
@@ -439,6 +438,27 @@ const EMAIL_TEMPLATES = {
   }
 };
 
+// ✅ FUNÇÃO PARA LOGAR EMAIL
+async function logEmail(base44, data) {
+  try {
+    await base44.asServiceRole.entities.EmailLog.create({
+      recipient_email: data.recipient_email,
+      recipient_name: data.recipient_name,
+      email_type: data.email_type,
+      subject: data.subject,
+      status: data.status,
+      error_message: data.error_message || null,
+      plan_type: data.plan_type,
+      expiry_date: data.expiry_date,
+      days_difference: data.days_difference,
+      sent_by: data.sent_by || 'automatic'
+    });
+    console.log(`   ✅ Email logado no banco de dados`);
+  } catch (error) {
+    console.error(`   ⚠️ Erro ao logar email:`, error.message);
+  }
+}
+
 // ✅ FUNÇÃO PRINCIPAL
 Deno.serve(async (req) => {
   try {
@@ -523,7 +543,6 @@ Deno.serve(async (req) => {
           templateKey = '30_days_after';
           stageName = '30 dias vencido';
         } else if (diffDays <= -60 && diffDays % 30 === 0) {
-          // ✅ A cada 30 dias após 30 dias
           templateKey = 'monthly_after_30';
           stageName = `${Math.abs(diffDays)} dias vencido (mensal)`;
         }
@@ -542,17 +561,51 @@ Deno.serve(async (req) => {
             .replace(/{{RENEWAL_LINK}}/g, 'https://finex.base44.app/pages/Plans')
             .replace(/{{DAYS_EXPIRED}}/g, Math.abs(diffDays));
           
-          // ✅ Enviar email
-          await base44.integrations.Core.SendEmail({
-            to: user.email,
-            subject: template.subject,
-            body: emailBody
-          });
-          
-          console.log(`   ✅ Email enviado com sucesso!`);
-          
-          results.emails_sent++;
-          results.by_stage[stageName] = (results.by_stage[stageName] || 0) + 1;
+          try {
+            // ✅ Enviar email
+            await base44.integrations.Core.SendEmail({
+              to: user.email,
+              subject: template.subject,
+              body: emailBody
+            });
+            
+            console.log(`   ✅ Email enviado com sucesso!`);
+            
+            // ✅ Logar email enviado
+            await logEmail(base44, {
+              recipient_email: user.email,
+              recipient_name: user.full_name || user.email.split('@')[0],
+              email_type: templateKey,
+              subject: template.subject,
+              status: 'sent',
+              plan_type: user.subscription_plan,
+              expiry_date: user.subscription_end_date,
+              days_difference: diffDays,
+              sent_by: 'automatic'
+            });
+            
+            results.emails_sent++;
+            results.by_stage[stageName] = (results.by_stage[stageName] || 0) + 1;
+            
+          } catch (emailError) {
+            console.error(`   ❌ Erro ao enviar email:`, emailError.message);
+            
+            // ✅ Logar email com erro
+            await logEmail(base44, {
+              recipient_email: user.email,
+              recipient_name: user.full_name || user.email.split('@')[0],
+              email_type: templateKey,
+              subject: template.subject,
+              status: 'failed',
+              error_message: emailError.message,
+              plan_type: user.subscription_plan,
+              expiry_date: user.subscription_end_date,
+              days_difference: diffDays,
+              sent_by: 'automatic'
+            });
+            
+            results.errors++;
+          }
         } else {
           console.log(`   ⏭️ Nenhum email programado para ${diffDays} dias`);
         }

@@ -1,0 +1,480 @@
+import React, { useState, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
+import { EmailLog } from "@/entities/EmailLog";
+import { User } from "@/entities/User";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { 
+  Mail, 
+  Search, 
+  CheckCircle, 
+  XCircle, 
+  Send,
+  Loader2,
+  Calendar,
+  User as UserIcon,
+  Filter,
+  RefreshCw
+} from "lucide-react";
+import { motion } from "framer-motion";
+
+export default function AdminEmailLogs() {
+  const [logs, setLogs] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterType, setFilterType] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [isLoading, setIsLoading] = useState(true);
+  const [showManualModal, setShowManualModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [selectedEmailType, setSelectedEmailType] = useState("3_days_before");
+  const [isSending, setIsSending] = useState(false);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      const [logsData, usersData] = await Promise.all([
+        EmailLog.list("-created_date", 500),
+        User.list("-created_date", 500)
+      ]);
+      
+      setLogs(logsData);
+      setUsers(usersData.filter(u => u.role !== 'admin' && u.subscription_end_date));
+    } catch (error) {
+      console.error("Erro ao carregar dados:", error);
+      alert("Erro ao carregar logs de email.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSendManualEmail = async () => {
+    if (!selectedUser || !selectedEmailType) {
+      alert("Selecione um usuário e tipo de email!");
+      return;
+    }
+
+    setIsSending(true);
+    try {
+      console.log("📧 Enviando email manual...");
+      
+      // Chamar a função backend com parâmetros específicos
+      const response = await base44.functions.invoke('sendManualReminderEmail', {
+        user_email: selectedUser.email,
+        email_type: selectedEmailType
+      });
+
+      if (response.data.success) {
+        alert(`✅ Email enviado com sucesso para ${selectedUser.email}!`);
+        setShowManualModal(false);
+        setSelectedUser(null);
+        loadData(); // Recarregar logs
+      } else {
+        throw new Error(response.data.error || "Erro ao enviar email");
+      }
+    } catch (error) {
+      console.error("Erro ao enviar email:", error);
+      alert(`❌ Erro ao enviar email: ${error.message}`);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const filteredLogs = logs.filter(log => {
+    const matchesSearch = 
+      log.recipient_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      log.recipient_name?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesType = filterType === "all" || log.email_type === filterType;
+    const matchesStatus = filterStatus === "all" || log.status === filterStatus;
+    
+    return matchesSearch && matchesType && matchesStatus;
+  });
+
+  const stats = {
+    total: logs.length,
+    sent: logs.filter(l => l.status === 'sent').length,
+    failed: logs.filter(l => l.status === 'failed').length,
+    automatic: logs.filter(l => l.sent_by === 'automatic').length,
+    manual: logs.filter(l => l.sent_by === 'manual').length
+  };
+
+  const formatEmailType = (type) => {
+    const types = {
+      '3_days_before': '3 Dias Antes',
+      '2_days_before': '2 Dias Antes',
+      '1_day_before': '1 Dia Antes',
+      'expired_today': 'Vence Hoje',
+      '1_day_after': '1 Dia Vencido',
+      '5_days_after': '5 Dias Vencido',
+      '15_days_after': '15 Dias Vencido',
+      '30_days_after': '30 Dias Vencido',
+      'monthly_after_30': 'Mensal (30+ dias)',
+      'manual': 'Enviado Manualmente'
+    };
+    return types[type] || type;
+  };
+
+  const getEmailTypeColor = (type) => {
+    if (type.includes('before')) return 'bg-green-600';
+    if (type === 'expired_today') return 'bg-yellow-600';
+    if (type.includes('after') || type === 'monthly_after_30') return 'bg-red-600';
+    return 'bg-gray-600';
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mb-4"></div>
+        <p className="text-purple-300">Carregando logs de email...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Stats Cards */}
+      <div className="grid md:grid-cols-5 gap-4">
+        <Card className="glass-card border-0">
+          <CardContent className="p-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-purple-300 text-sm">Total Enviados</p>
+                <p className="text-3xl font-bold text-white">{stats.total}</p>
+              </div>
+              <Mail className="w-8 h-8 text-purple-400" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="glass-card border-0">
+          <CardContent className="p-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-green-300 text-sm">Sucesso</p>
+                <p className="text-3xl font-bold text-white">{stats.sent}</p>
+              </div>
+              <CheckCircle className="w-8 h-8 text-green-400" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="glass-card border-0">
+          <CardContent className="p-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-red-300 text-sm">Falhas</p>
+                <p className="text-3xl font-bold text-white">{stats.failed}</p>
+              </div>
+              <XCircle className="w-8 h-8 text-red-400" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="glass-card border-0">
+          <CardContent className="p-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-cyan-300 text-sm">Automáticos</p>
+                <p className="text-3xl font-bold text-white">{stats.automatic}</p>
+              </div>
+              <RefreshCw className="w-8 h-8 text-cyan-400" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="glass-card border-0">
+          <CardContent className="p-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-yellow-300 text-sm">Manuais</p>
+                <p className="text-3xl font-bold text-white">{stats.manual}</p>
+              </div>
+              <Send className="w-8 h-8 text-yellow-400" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Actions */}
+      <Card className="glass-card border-0">
+        <CardContent className="p-4">
+          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+            <div className="flex-1 relative w-full md:w-auto">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400 w-4 h-4" />
+              <Input
+                placeholder="Buscar por email ou nome..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-purple-900/20 border-purple-700/50 text-white"
+              />
+            </div>
+
+            <div className="flex gap-2 w-full md:w-auto">
+              <Select value={filterType} onValueChange={setFilterType}>
+                <SelectTrigger className="w-full md:w-48 bg-purple-900/20 border-purple-700/50 text-white">
+                  <SelectValue placeholder="Tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os Tipos</SelectItem>
+                  <SelectItem value="3_days_before">3 Dias Antes</SelectItem>
+                  <SelectItem value="2_days_before">2 Dias Antes</SelectItem>
+                  <SelectItem value="1_day_before">1 Dia Antes</SelectItem>
+                  <SelectItem value="expired_today">Vence Hoje</SelectItem>
+                  <SelectItem value="1_day_after">1 Dia Vencido</SelectItem>
+                  <SelectItem value="5_days_after">5 Dias Vencido</SelectItem>
+                  <SelectItem value="15_days_after">15 Dias Vencido</SelectItem>
+                  <SelectItem value="30_days_after">30 Dias Vencido</SelectItem>
+                  <SelectItem value="manual">Manual</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="w-full md:w-40 bg-purple-900/20 border-purple-700/50 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos Status</SelectItem>
+                  <SelectItem value="sent">✅ Enviados</SelectItem>
+                  <SelectItem value="failed">❌ Falhas</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Button
+                onClick={() => setShowManualModal(true)}
+                className="bg-gradient-to-r from-green-600 to-emerald-600 whitespace-nowrap"
+              >
+                <Send className="w-4 h-4 mr-2" />
+                Enviar Manual
+              </Button>
+
+              <Button
+                onClick={loadData}
+                variant="outline"
+                className="border-purple-700 text-purple-300"
+              >
+                <RefreshCw className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Logs List */}
+      <Card className="glass-card border-0 neon-glow">
+        <CardHeader className="border-b border-purple-900/30">
+          <CardTitle className="text-white">
+            Histórico de Emails ({filteredLogs.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="space-y-3">
+            {filteredLogs.map((log, index) => (
+              <motion.div
+                key={log.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.02 }}
+                className="flex flex-col gap-3 p-4 rounded-xl glass-card border border-purple-700/30"
+              >
+                <div className="flex items-start justify-between gap-4 flex-wrap">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Mail className="w-4 h-4 text-purple-400" />
+                      <p className="text-white font-semibold">{log.recipient_email}</p>
+                      {log.status === 'sent' ? (
+                        <CheckCircle className="w-4 h-4 text-green-400" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-red-400" />
+                      )}
+                    </div>
+
+                    <p className="text-purple-300 text-sm mb-2">{log.subject}</p>
+
+                    <div className="flex flex-wrap gap-2">
+                      <Badge className={getEmailTypeColor(log.email_type)}>
+                        {formatEmailType(log.email_type)}
+                      </Badge>
+
+                      {log.plan_type && (
+                        <Badge className="bg-purple-600/20 text-purple-400">
+                          {log.plan_type === 'monthly' && '📅 Mensal'}
+                          {log.plan_type === 'semester' && '📅 Semestral'}
+                          {log.plan_type === 'annual' && '📅 Anual'}
+                          {log.plan_type === 'lifetime' && '♾️ Vitalício'}
+                        </Badge>
+                      )}
+
+                      {log.days_difference !== undefined && (
+                        <Badge variant="outline" className="border-cyan-600/40 text-cyan-400">
+                          {log.days_difference > 0 ? `+${log.days_difference}` : log.days_difference} dias
+                        </Badge>
+                      )}
+
+                      {log.sent_by === 'manual' && (
+                        <Badge className="bg-yellow-600/20 text-yellow-400">
+                          📧 Manual
+                        </Badge>
+                      )}
+
+                      {log.status === 'sent' ? (
+                        <Badge className="bg-green-600">✅ Enviado</Badge>
+                      ) : (
+                        <Badge className="bg-red-600">❌ Falhou</Badge>
+                      )}
+                    </div>
+
+                    {log.error_message && (
+                      <p className="text-red-400 text-xs mt-2">
+                        ⚠️ Erro: {log.error_message}
+                      </p>
+                    )}
+
+                    <p className="text-purple-400 text-xs mt-2">
+                      📅 {new Date(log.created_date).toLocaleString('pt-BR')}
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Manual Email Modal */}
+      <Dialog open={showManualModal} onOpenChange={setShowManualModal}>
+        <DialogContent className="glass-card border-purple-700/50 text-white max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
+              📧 Enviar Email Manual de Cobrança
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            <div>
+              <Label className="text-purple-200 mb-2 block">Usuário</Label>
+              <Select 
+                value={selectedUser?.id} 
+                onValueChange={(value) => {
+                  const user = users.find(u => u.id === value);
+                  setSelectedUser(user);
+                }}
+              >
+                <SelectTrigger className="bg-purple-900/20 border-purple-700/50 text-white">
+                  <SelectValue placeholder="Selecione um usuário" />
+                </SelectTrigger>
+                <SelectContent>
+                  {users.map(user => {
+                    const [year, month, day] = user.subscription_end_date.split('-').map(Number);
+                    const expiryDate = new Date(year, month - 1, day);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const diffDays = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+                    
+                    return (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.full_name || user.email} - Vence em {diffDays} dias
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-purple-200 mb-2 block">Tipo de Email</Label>
+              <Select value={selectedEmailType} onValueChange={setSelectedEmailType}>
+                <SelectTrigger className="bg-purple-900/20 border-purple-700/50 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="3_days_before">⏰ 3 Dias Antes do Vencimento</SelectItem>
+                  <SelectItem value="2_days_before">⚠️ 2 Dias Antes (Urgente)</SelectItem>
+                  <SelectItem value="1_day_before">🔴 1 Dia Antes (Último Dia)</SelectItem>
+                  <SelectItem value="expired_today">🔴 Vence Hoje</SelectItem>
+                  <SelectItem value="1_day_after">❌ 1 Dia Vencido (Bloqueado)</SelectItem>
+                  <SelectItem value="5_days_after">💜 5 Dias Vencido (Sentimos Falta)</SelectItem>
+                  <SelectItem value="15_days_after">🎯 15 Dias Vencido (Última Chance)</SelectItem>
+                  <SelectItem value="30_days_after">🚨 30 Dias Vencido (Crítico)</SelectItem>
+                  <SelectItem value="monthly_after_30">💔 Mensal (Após 30 dias)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {selectedUser && (
+              <div className="p-4 rounded-lg bg-purple-900/20 border border-purple-700/30">
+                <p className="text-sm text-purple-200 mb-2">
+                  <strong>📧 Para:</strong> {selectedUser.email}
+                </p>
+                <p className="text-sm text-purple-200 mb-2">
+                  <strong>👤 Nome:</strong> {selectedUser.full_name}
+                </p>
+                <p className="text-sm text-purple-200 mb-2">
+                  <strong>📋 Plano:</strong> {selectedUser.subscription_plan}
+                </p>
+                <p className="text-sm text-purple-200">
+                  <strong>📅 Vencimento:</strong> {new Date(selectedUser.subscription_end_date).toLocaleDateString('pt-BR')}
+                </p>
+              </div>
+            )}
+
+            <div className="bg-yellow-900/20 border border-yellow-700/30 p-4 rounded-lg">
+              <p className="text-yellow-300 text-sm">
+                ⚠️ <strong>ATENÇÃO:</strong> O email será enviado imediatamente após clicar em "Enviar".
+                Certifique-se de escolher o tipo correto de acordo com a situação do usuário.
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowManualModal(false)}
+                disabled={isSending}
+                className="flex-1 border-purple-700 text-purple-300"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleSendManualEmail}
+                disabled={isSending || !selectedUser}
+                className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600"
+              >
+                {isSending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Enviando...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4 mr-2" />
+                    Enviar Email
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
