@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { User } from "@/entities/User";
 import { base44 } from "@/api/base44Client";
 import {
@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { FileText, AlertTriangle, Shield, CheckCircle, Loader2, ExternalLink } from "lucide-react";
+import { FileText, AlertTriangle, Shield, CheckCircle, Loader2, Printer } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function TermsOfServiceModal({ user, onAccepted }) {
@@ -19,6 +19,7 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
   const [accepted, setAccepted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const contentRef = useRef(null);
 
   useEffect(() => {
     loadTerms();
@@ -51,6 +52,112 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
   };
 
   const isOpen = needsToAcceptTerms();
+
+  const handlePrint = () => {
+    if (!contentRef.current) return;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('Por favor, permita pop-ups para imprimir');
+      return;
+    }
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Termos de Uso - FINEX - Versão ${terms.version}</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            color: #333;
+            line-height: 1.6;
+          }
+          h1 {
+            color: #1a1a2e;
+            border-bottom: 3px solid #8b5cf6;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+          }
+          h2 {
+            color: #8b5cf6;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+          }
+          h3 {
+            color: #555;
+            margin-top: 20px;
+            margin-bottom: 10px;
+          }
+          p {
+            margin-bottom: 15px;
+          }
+          ul, ol {
+            margin-bottom: 15px;
+            padding-left: 30px;
+          }
+          li {
+            margin-bottom: 8px;
+          }
+          strong {
+            color: #1a1a2e;
+          }
+          .header-info {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 30px;
+          }
+          .footer {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 2px solid #ddd;
+            text-align: center;
+            font-size: 0.9em;
+            color: #666;
+          }
+          hr {
+            border: none;
+            border-top: 2px solid #ddd;
+            margin: 30px 0;
+          }
+          @media print {
+            body {
+              margin: 0;
+              padding: 20px;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header-info">
+          <h1>${terms.title}</h1>
+          <p><strong>Versão:</strong> ${terms.version}</p>
+          <p><strong>Data de Vigência:</strong> ${new Date(terms.effective_date).toLocaleDateString('pt-BR')}</p>
+          <p><strong>Impresso em:</strong> ${new Date().toLocaleString('pt-BR')}</p>
+        </div>
+        ${terms.content}
+        <div class="footer">
+          <p>FINEX - Inteligência Financeira</p>
+          <p>Este documento foi impresso para fins de consulta e referência.</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    
+    // Aguardar carregar e imprimir
+    printWindow.onload = () => {
+      printWindow.print();
+    };
+  };
 
   const handleAccept = async () => {
     if (!accepted) {
@@ -98,14 +205,6 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
     }
   };
 
-  const handleOpenFullPage = () => {
-    // Abrir em nova aba sem passar pelo router
-    const newWindow = window.open('/TermsOfService', '_blank');
-    if (newWindow) {
-      newWindow.focus();
-    }
-  };
-
   if (isLoading) {
     return null; // Não mostra nada enquanto carrega
   }
@@ -122,12 +221,25 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
         <DialogHeader>
-          <DialogTitle className="text-xl sm:text-2xl bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent text-center">
-            📋 Termos de Uso e Política de Privacidade
-          </DialogTitle>
-          <p className="text-purple-300 text-sm text-center mt-2">
-            Versão {terms.version} • Vigência: {new Date(terms.effective_date).toLocaleDateString('pt-BR')}
-          </p>
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <DialogTitle className="text-xl sm:text-2xl bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent text-center">
+                📋 Termos de Uso e Política de Privacidade
+              </DialogTitle>
+              <p className="text-purple-300 text-sm text-center mt-2">
+                Versão {terms.version} • Vigência: {new Date(terms.effective_date).toLocaleDateString('pt-BR')}
+              </p>
+            </div>
+            <Button
+              onClick={handlePrint}
+              variant="outline"
+              size="sm"
+              className="border-cyan-700 text-cyan-300 hover:bg-cyan-900/20 flex-shrink-0 ml-2"
+              title="Imprimir termos"
+            >
+              <Printer className="w-4 h-4" />
+            </Button>
+          </div>
         </DialogHeader>
 
         <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
@@ -163,20 +275,27 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
           {/* Conteúdo dos Termos */}
           <ScrollArea className="flex-1 border border-purple-700/30 rounded-lg p-4 bg-purple-900/10">
             <div 
-              className="prose prose-sm prose-invert max-w-none text-purple-100"
+              ref={contentRef}
+              className="prose prose-sm prose-invert max-w-none text-purple-100
+                         prose-headings:text-white prose-headings:font-bold
+                         prose-h2:text-xl prose-h2:mt-6 prose-h2:mb-3
+                         prose-h3:text-lg prose-h3:mt-4 prose-h3:mb-2
+                         prose-p:leading-relaxed prose-p:mb-3
+                         prose-ul:my-3 prose-li:my-1
+                         prose-strong:text-cyan-300
+                         prose-a:text-cyan-400"
               dangerouslySetInnerHTML={{ __html: terms.content }}
             />
           </ScrollArea>
 
-          {/* Link para página completa */}
-          <div className="text-center">
-            <button
-              onClick={handleOpenFullPage}
-              className="text-cyan-400 hover:text-cyan-300 text-sm inline-flex items-center gap-1 hover:underline"
-            >
-              <ExternalLink className="w-3 h-3" />
-              Abrir termos em página completa (nova aba)
-            </button>
+          {/* Dica de Impressão */}
+          <div className="bg-cyan-900/20 border border-cyan-700/30 p-3 rounded-lg">
+            <div className="flex items-start gap-2">
+              <Printer className="w-4 h-4 text-cyan-400 flex-shrink-0 mt-0.5" />
+              <p className="text-cyan-200 text-xs sm:text-sm">
+                <strong className="text-cyan-300">💡 Dica:</strong> Use o botão <Printer className="w-3 h-3 inline" /> no topo para imprimir ou salvar os termos em PDF para sua referência.
+              </p>
+            </div>
           </div>
 
           {/* Checkbox de Aceitação */}
