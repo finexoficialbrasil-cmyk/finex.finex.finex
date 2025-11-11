@@ -1,168 +1,335 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 
-// ✅ TEMPLATES DE EMAIL REDESENHADOS - MESMOS DA FUNÇÃO AUTOMÁTICA
+// ✅ TEMPLATES COMPLETOS - DESIGN MODERNO E PROFISSIONAL
 const EMAIL_TEMPLATES = {
   '3_days_before': {
     subject: '⏰ Seu plano FINEX vence em 3 dias - Renove agora!',
     body: `
       <!DOCTYPE html>
       <html>
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      </head>
+      <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
       <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
         <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px;">
-          <tr>
-            <td align="center">
-              <table width="600" cellpadding="0" cellspacing="0" style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
-                <tr>
-                  <td style="background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%); padding: 40px; text-align: center;">
-                    <div style="background: rgba(255,255,255,0.2); display: inline-block; padding: 20px; border-radius: 50%; margin-bottom: 20px;">
-                      <span style="font-size: 60px;">⏰</span>
-                    </div>
-                    <h1 style="color: white; margin: 0; font-size: 32px; font-weight: 900; text-shadow: 2px 2px 4px rgba(0,0,0,0.2);">
-                      Seu plano vence em 3 dias!
-                    </h1>
-                    <p style="color: rgba(255,255,255,0.95); margin: 15px 0 0 0; font-size: 18px;">
-                      Não perca o acesso ao FINEX 💜
-                    </p>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding: 40px;">
-                    <p style="color: #1f2937; font-size: 18px; line-height: 1.8; margin: 0 0 20px 0;">
-                      Olá, <strong style="color: #8b5cf6;">{{USER_NAME}}</strong>! 👋
-                    </p>
-                    <p style="color: #4b5563; font-size: 16px; line-height: 1.8; margin: 0 0 30px 0;">
-                      Passando para te lembrar que seu plano <strong style="color: #8b5cf6;">{{PLAN_NAME}}</strong> 
-                      está chegando ao fim. Mas não se preocupe, é super rápido renovar!
-                    </p>
-                    <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-left: 5px solid #f59e0b; padding: 25px; border-radius: 15px; margin: 30px 0;">
-                      <table width="100%" cellpadding="0" cellspacing="0">
-                        <tr>
-                          <td width="60" style="vertical-align: top;">
-                            <span style="font-size: 32px;">📅</span>
-                          </td>
-                          <td>
-                            <p style="margin: 0 0 5px 0; color: #92400e; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
-                              Data de Vencimento
-                            </p>
-                            <p style="margin: 0 0 15px 0; color: #92400e; font-size: 20px; font-weight: 900;">
-                              {{EXPIRY_DATE}}
-                            </p>
-                            <p style="margin: 0; color: #92400e; font-size: 15px; font-weight: 600;">
-                              ⏳ Restam apenas <strong style="font-size: 18px;">3 DIAS</strong> para renovar!
-                            </p>
-                          </td>
-                        </tr>
-                      </table>
-                    </div>
-                    <h3 style="color: #1f2937; font-size: 20px; margin: 40px 0 20px 0; font-weight: 700;">
-                      🎯 Por que renovar agora?
-                    </h3>
-                    <table width="100%" cellpadding="0" cellspacing="0">
-                      <tr>
-                        <td style="padding: 15px; background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%); border-radius: 12px;">
-                          <table cellpadding="0" cellspacing="0" width="100%">
-                            <tr>
-                              <td width="40" style="vertical-align: top;">
-                                <span style="font-size: 24px;">✅</span>
-                              </td>
-                              <td>
-                                <p style="margin: 0; color: #374151; font-size: 15px; font-weight: 500;">
-                                  Mantenha acesso ilimitado a todas as funcionalidades
-                                </p>
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
-                      </tr>
-                      <tr><td style="height: 10px;"></td></tr>
-                      <tr>
-                        <td style="padding: 15px; background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%); border-radius: 12px;">
-                          <table cellpadding="0" cellspacing="0" width="100%">
-                            <tr>
-                              <td width="40" style="vertical-align: top;">
-                                <span style="font-size: 24px;">✅</span>
-                              </td>
-                              <td>
-                                <p style="margin: 0; color: #374151; font-size: 15px; font-weight: 500;">
-                                  Continue organizando suas finanças sem interrupções
-                                </p>
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
-                      </tr>
-                      <tr><td style="height: 10px;"></td></tr>
-                      <tr>
-                        <td style="padding: 15px; background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%); border-radius: 12px;">
-                          <table cellpadding="0" cellspacing="0" width="100%">
-                            <tr>
-                              <td width="40" style="vertical-align: top;">
-                                <span style="font-size: 24px;">✅</span>
-                              </td>
-                              <td>
-                                <p style="margin: 0; color: #374151; font-size: 15px; font-weight: 500;">
-                                  Preserve todos os seus dados e relatórios
-                                </p>
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
-                      </tr>
-                      <tr><td style="height: 10px;"></td></tr>
-                      <tr>
-                        <td style="padding: 15px; background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%); border-radius: 12px;">
-                          <table cellpadding="0" cellspacing="0" width="100%">
-                            <tr>
-                              <td width="40" style="vertical-align: top;">
-                                <span style="font-size: 24px;">✅</span>
-                              </td>
-                              <td>
-                                <p style="margin: 0; color: #374151; font-size: 15px; font-weight: 500;">
-                                  Suporte prioritário sempre disponível
-                                </p>
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
-                      </tr>
-                    </table>
-                    <div style="text-align: center; margin: 50px 0 30px 0;">
-                      <a href="{{RENEWAL_LINK}}" style="display: inline-block; background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%); color: white; padding: 20px 50px; text-decoration: none; border-radius: 50px; font-size: 20px; font-weight: 900; box-shadow: 0 10px 30px rgba(139, 92, 246, 0.4); text-transform: uppercase; letter-spacing: 1px;">
-                        ⚡ Renovar Meu Plano
-                      </a>
-                    </div>
-                    <div style="background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%); border-radius: 12px; padding: 20px; text-align: center; margin-top: 30px;">
-                      <p style="margin: 0; color: #065f46; font-size: 14px; font-weight: 600;">
-                        🔒 Renovação 100% Segura | ⚡ Ativação Instantânea
-                      </p>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="background: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
-                    <p style="margin: 0 0 10px 0; color: #6b7280; font-size: 14px;">
-                      💜 <strong style="color: #8b5cf6;">FINEX</strong> - Inteligência Financeira
-                    </p>
-                    <p style="margin: 0; color: #9ca3af; font-size: 12px;">
-                      Estamos aqui para ajudar! Dúvidas? Entre em contato conosco.
-                    </p>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
+          <tr><td align="center">
+            <table width="600" cellpadding="0" cellspacing="0" style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+              <tr><td style="background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%); padding: 40px; text-align: center;">
+                <div style="background: rgba(255,255,255,0.2); display: inline-block; padding: 20px; border-radius: 50%; margin-bottom: 20px;">
+                  <span style="font-size: 60px;">⏰</span>
+                </div>
+                <h1 style="color: white; margin: 0; font-size: 32px; font-weight: 900;">Seu plano vence em 3 dias!</h1>
+                <p style="color: rgba(255,255,255,0.95); margin: 15px 0 0 0; font-size: 18px;">Não perca o acesso ao FINEX 💜</p>
+              </td></tr>
+              <tr><td style="padding: 40px;">
+                <p style="color: #1f2937; font-size: 18px; margin: 0 0 20px 0;">Olá, <strong style="color: #8b5cf6;">{{USER_NAME}}</strong>! 👋</p>
+                <p style="color: #4b5563; font-size: 16px; margin: 0 0 30px 0;">Seu plano <strong style="color: #8b5cf6;">{{PLAN_NAME}}</strong> está chegando ao fim. É super rápido renovar!</p>
+                <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-left: 5px solid #f59e0b; padding: 25px; border-radius: 15px; margin: 30px 0;">
+                  <p style="margin: 0; color: #92400e; font-size: 14px; text-transform: uppercase;">📅 Data de Vencimento</p>
+                  <p style="margin: 5px 0 15px 0; color: #92400e; font-size: 20px; font-weight: 900;">{{EXPIRY_DATE}}</p>
+                  <p style="margin: 0; color: #92400e; font-size: 15px; font-weight: 600;">⏳ Restam apenas <strong>3 DIAS</strong>!</p>
+                </div>
+                <div style="text-align: center; margin: 50px 0 30px 0;">
+                  <a href="{{RENEWAL_LINK}}" style="display: inline-block; background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%); color: white; padding: 20px 50px; text-decoration: none; border-radius: 50px; font-size: 20px; font-weight: 900; box-shadow: 0 10px 30px rgba(139, 92, 246, 0.4);">⚡ RENOVAR AGORA</a>
+                </div>
+              </td></tr>
+              <tr><td style="background: #f9fafb; padding: 30px; text-align: center;">
+                <p style="margin: 0; color: #8b5cf6; font-size: 14px; font-weight: 600;">💜 FINEX - Inteligência Financeira</p>
+              </td></tr>
+            </table>
+          </td></tr>
         </table>
       </body>
       </html>
     `
   },
 
-  // ... continuar com os outros templates usando o mesmo padrão
-  // (Incluirei todos, mas de forma resumida devido ao espaço)
+  '2_days_before': {
+    subject: '⚠️ URGENTE: Seu plano FINEX vence em 2 dias!',
+    body: `
+      <!DOCTYPE html>
+      <html>
+      <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+      <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); padding: 40px 20px;">
+          <tr><td align="center">
+            <table width="600" cellpadding="0" cellspacing="0" style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+              <tr><td style="background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); padding: 40px; text-align: center;">
+                <div style="background: rgba(255,255,255,0.2); display: inline-block; padding: 20px; border-radius: 50%; margin-bottom: 20px;">
+                  <span style="font-size: 60px;">⚠️</span>
+                </div>
+                <h1 style="color: white; margin: 0; font-size: 36px; font-weight: 900;">ATENÇÃO!</h1>
+                <p style="color: white; margin: 15px 0 0 0; font-size: 22px;">Faltam apenas <span style="background: white; color: #ef4444; padding: 5px 15px; border-radius: 20px; font-weight: 900;">2 DIAS</span></p>
+              </td></tr>
+              <tr><td style="padding: 40px;">
+                <p style="color: #1f2937; font-size: 18px; margin: 0 0 20px 0;"><strong style="color: #ef4444;">{{USER_NAME}}</strong>, seu acesso está prestes a expirar! ⏳</p>
+                <div style="background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); border: 3px solid #ef4444; border-radius: 15px; padding: 25px; margin: 30px 0; text-align: center;">
+                  <p style="margin: 0 0 10px 0; color: #991b1b; font-size: 18px; font-weight: 900;">🚨 SEU PLANO {{PLAN_NAME}}</p>
+                  <p style="margin: 0; color: #991b1b; font-size: 20px; font-weight: 700;">Vence em <span style="font-size: 28px; color: #dc2626;">48 HORAS!</span></p>
+                </div>
+                <div style="text-align: center; margin: 50px 0 30px 0;">
+                  <a href="{{RENEWAL_LINK}}" style="display: inline-block; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; padding: 22px 55px; text-decoration: none; border-radius: 50px; font-size: 22px; font-weight: 900; box-shadow: 0 10px 40px rgba(239, 68, 68, 0.5);">🚀 RENOVAR URGENTE</a>
+                </div>
+              </td></tr>
+            </table>
+          </td></tr>
+        </table>
+      </body>
+      </html>
+    `
+  },
+
+  '1_day_before': {
+    subject: '🔴 ÚLTIMO DIA! Seu plano vence AMANHÃ - Ação Urgente!',
+    body: `
+      <!DOCTYPE html>
+      <html>
+      <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+      <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); padding: 40px 20px;">
+          <tr><td align="center">
+            <table width="600" cellpadding="0" cellspacing="0" style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 25px 70px rgba(0,0,0,0.4);">
+              <tr><td style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); padding: 50px 40px; text-align: center;">
+                <div style="background: rgba(255,255,255,0.3); display: inline-block; padding: 25px; border-radius: 50%; margin-bottom: 25px;">
+                  <span style="font-size: 70px;">🔴</span>
+                </div>
+                <h1 style="color: white; margin: 0; font-size: 42px; font-weight: 900; letter-spacing: 2px;">ÚLTIMO DIA!</h1>
+                <div style="background: white; display: inline-block; margin-top: 20px; padding: 15px 30px; border-radius: 30px;">
+                  <p style="margin: 0; color: #dc2626; font-size: 24px; font-weight: 900;">⏰ MENOS DE 24 HORAS</p>
+                </div>
+              </td></tr>
+              <tr><td style="padding: 40px;">
+                <p style="color: #1f2937; font-size: 20px; margin: 0 0 30px 0; text-align: center; font-weight: 700;"><span style="color: #dc2626;">{{USER_NAME}}</span>, seu acesso vence AMANHÃ! 🚨</p>
+                <div style="background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); border: 4px solid #dc2626; border-radius: 20px; padding: 35px; margin: 30px 0; text-align: center;">
+                  <p style="margin: 0 0 15px 0; color: #991b1b; font-size: 28px; font-weight: 900;">ATENÇÃO MÁXIMA!</p>
+                  <p style="margin: 0; color: #7f1d1d; font-size: 18px; font-weight: 700;">Plano: <span style="color: #dc2626;">{{PLAN_NAME}}</span></p>
+                </div>
+                <div style="text-align: center; margin: 50px 0 30px 0;">
+                  <a href="{{RENEWAL_LINK}}" style="display: inline-block; background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; padding: 25px 65px; text-decoration: none; border-radius: 50px; font-size: 26px; font-weight: 900; box-shadow: 0 20px 60px rgba(220, 38, 38, 0.7); border: 4px solid white;">⚡ RENOVAR URGENTE</a>
+                </div>
+              </td></tr>
+            </table>
+          </td></tr>
+        </table>
+      </body>
+      </html>
+    `
+  },
+
+  'expired_today': {
+    subject: '🚨 EMERGÊNCIA: Seu plano FINEX vence HOJE!',
+    body: `
+      <!DOCTYPE html>
+      <html>
+      <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+      <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1f2937;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background: #1f2937; padding: 40px 20px;">
+          <tr><td align="center">
+            <table width="600" cellpadding="0" cellspacing="0" style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 30px 80px rgba(0,0,0,0.5); border: 5px solid #dc2626;">
+              <tr><td style="background: linear-gradient(135deg, #1f2937 0%, #111827 100%); padding: 50px 40px; text-align: center;">
+                <div style="background: #dc2626; display: inline-block; padding: 25px; border-radius: 50%; margin-bottom: 25px; box-shadow: 0 0 30px #dc2626;">
+                  <span style="font-size: 70px;">🚨</span>
+                </div>
+                <h1 style="color: #dc2626; margin: 0; font-size: 44px; font-weight: 900; letter-spacing: 3px;">EMERGÊNCIA!</h1>
+                <p style="color: white; margin: 20px 0 0 0; font-size: 22px; font-weight: 700;">Seu plano vence <span style="background: #dc2626; padding: 8px 20px; border-radius: 25px;">HOJE</span></p>
+              </td></tr>
+              <tr><td style="padding: 40px;">
+                <p style="color: #1f2937; font-size: 20px; margin: 0 0 30px 0; text-align: center; font-weight: 700;"><strong style="color: #dc2626;">{{USER_NAME}}</strong>, seu acesso será bloqueado em breve! ⏰</p>
+                <div style="background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); border: 5px solid #dc2626; border-radius: 20px; padding: 40px; margin: 30px 0; text-align: center;">
+                  <p style="margin: 0 0 15px 0; color: #991b1b; font-size: 32px; font-weight: 900;">SEU PLANO VENCE HOJE!</p>
+                  <p style="margin: 0; color: #7f1d1d; font-size: 18px; font-weight: 700;">Renove AGORA!</p>
+                </div>
+                <div style="text-align: center; margin: 50px 0 30px 0;">
+                  <a href="{{RENEWAL_LINK}}" style="display: inline-block; background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; padding: 25px 65px; text-decoration: none; border-radius: 50px; font-size: 26px; font-weight: 900; box-shadow: 0 20px 60px rgba(220, 38, 38, 0.7); border: 4px solid white;">⚡ RENOVAR IMEDIATAMENTE</a>
+                </div>
+              </td></tr>
+            </table>
+          </td></tr>
+        </table>
+      </body>
+      </html>
+    `
+  },
+
+  '1_day_after': {
+    subject: '❌ BLOQUEADO: Seu acesso ao FINEX foi suspenso - Reative agora!',
+    body: `
+      <!DOCTYPE html>
+      <html>
+      <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+      <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1f2937;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background: #1f2937; padding: 40px 20px;">
+          <tr><td align="center">
+            <table width="600" cellpadding="0" cellspacing="0" style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 25px 70px rgba(0,0,0,0.4);">
+              <tr><td style="background: linear-gradient(135deg, #991b1b 0%, #7f1d1d 100%); padding: 50px 40px; text-align: center;">
+                <div style="background: rgba(255,255,255,0.2); display: inline-block; padding: 25px; border-radius: 50%; margin-bottom: 25px;">
+                  <span style="font-size: 70px;">❌</span>
+                </div>
+                <h1 style="color: white; margin: 0; font-size: 40px; font-weight: 900;">ACESSO BLOQUEADO</h1>
+                <p style="color: rgba(255,255,255,0.95); margin: 15px 0 0 0; font-size: 18px;">Mas ainda há tempo! 💜</p>
+              </td></tr>
+              <tr><td style="padding: 40px;">
+                <p style="color: #1f2937; font-size: 18px; margin: 0 0 20px 0;"><strong style="color: #991b1b;">{{USER_NAME}}</strong>, seu plano expirou ontem. 😔</p>
+                <div style="background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); border-radius: 15px; padding: 30px; margin: 30px 0; text-align: center; border: 3px solid #10b981;">
+                  <p style="margin: 0 0 15px 0; font-size: 36px;">✨</p>
+                  <p style="margin: 0 0 15px 0; color: #065f46; font-size: 22px; font-weight: 900;">BOA NOTÍCIA!</p>
+                  <p style="margin: 0; color: #047857; font-size: 16px; font-weight: 600;">Você ainda pode reativar e recuperar todo o seu histórico!</p>
+                </div>
+                <div style="text-align: center; margin: 50px 0 30px 0;">
+                  <a href="{{RENEWAL_LINK}}" style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 22px 55px; text-decoration: none; border-radius: 50px; font-size: 22px; font-weight: 900; box-shadow: 0 10px 40px rgba(16, 185, 129, 0.5);">🔓 REATIVAR CONTA</a>
+                </div>
+              </td></tr>
+            </table>
+          </td></tr>
+        </table>
+      </body>
+      </html>
+    `
+  },
+
+  '5_days_after': {
+    subject: '💜 Sentimos sua falta! Seus dados estão seguros - Volte para o FINEX',
+    body: `
+      <!DOCTYPE html>
+      <html>
+      <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+      <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); padding: 40px 20px;">
+          <tr><td align="center">
+            <table width="600" cellpadding="0" cellspacing="0" style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+              <tr><td style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); padding: 50px 40px; text-align: center;">
+                <div style="background: rgba(255,255,255,0.2); display: inline-block; padding: 25px; border-radius: 50%; margin-bottom: 25px;">
+                  <span style="font-size: 70px;">💜</span>
+                </div>
+                <h1 style="color: white; margin: 0; font-size: 38px; font-weight: 900;">Sentimos Sua Falta!</h1>
+                <p style="color: rgba(255,255,255,0.95); margin: 15px 0 0 0; font-size: 18px;">Já faz 5 dias... Volte! 😊</p>
+              </td></tr>
+              <tr><td style="padding: 40px;">
+                <p style="color: #1f2937; font-size: 18px; margin: 0 0 20px 0;">Olá, <strong style="color: #8b5cf6;">{{USER_NAME}}</strong>!</p>
+                <p style="color: #4b5563; font-size: 16px; margin: 0 0 30px 0;">Estamos com <strong>saudades</strong> de ter você usando o FINEX! 😊</p>
+                <div style="background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%); border-radius: 15px; padding: 30px; margin: 30px 0; border-left: 5px solid #8b5cf6;">
+                  <p style="margin: 0 0 15px 0; color: #5b21b6; font-size: 22px; font-weight: 900;">✨ Seus dados estão 100% seguros!</p>
+                  <p style="margin: 0; color: #6b21a8; font-size: 15px;">• Histórico preservado<br>• Relatórios intactos<br>• Acesso imediato ao renovar</p>
+                </div>
+                <div style="text-align: center; margin: 50px 0 30px 0;">
+                  <a href="{{RENEWAL_LINK}}" style="display: inline-block; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white; padding: 22px 55px; text-decoration: none; border-radius: 50px; font-size: 22px; font-weight: 900; box-shadow: 0 10px 40px rgba(139, 92, 246, 0.5);">💜 VOLTAR PARA O FINEX</a>
+                </div>
+              </td></tr>
+            </table>
+          </td></tr>
+        </table>
+      </body>
+      </html>
+    `
+  },
+
+  '15_days_after': {
+    subject: '🎯 Última chance! Recupere seu histórico financeiro agora',
+    body: `
+      <!DOCTYPE html>
+      <html>
+      <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+      <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #374151;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background: #374151; padding: 40px 20px;">
+          <tr><td align="center">
+            <table width="600" cellpadding="0" cellspacing="0" style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.4);">
+              <tr><td style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 50px 40px; text-align: center;">
+                <div style="background: rgba(255,255,255,0.2); display: inline-block; padding: 25px; border-radius: 50%; margin-bottom: 25px;">
+                  <span style="font-size: 70px;">⚠️</span>
+                </div>
+                <h1 style="color: white; margin: 0; font-size: 38px; font-weight: 900;">15 Dias Sem Você</h1>
+                <p style="color: rgba(255,255,255,0.95); margin: 15px 0 0 0; font-size: 18px;">Seus dados ainda estão seguros! 💾</p>
+              </td></tr>
+              <tr><td style="padding: 40px;">
+                <p style="color: #1f2937; font-size: 18px; margin: 0 0 20px 0;"><strong style="color: #f59e0b;">{{USER_NAME}}</strong>, seu plano expirou há 15 dias.</p>
+                <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 3px solid #f59e0b; border-radius: 20px; padding: 35px; margin: 30px 0; text-align: center;">
+                  <p style="margin: 0 0 15px 0; font-size: 32px;">🔔</p>
+                  <p style="margin: 0 0 10px 0; color: #92400e; font-size: 22px; font-weight: 900;">AVISO IMPORTANTE</p>
+                  <p style="margin: 0; color: #92400e; font-size: 16px; font-weight: 600;">Seus dados estão preservados,<br>mas não por muito tempo...</p>
+                </div>
+                <div style="text-align: center; margin: 50px 0 30px 0;">
+                  <a href="{{RENEWAL_LINK}}" style="display: inline-block; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 22px 55px; text-decoration: none; border-radius: 50px; font-size: 22px; font-weight: 900; box-shadow: 0 10px 40px rgba(245, 158, 11, 0.5);">🔄 REATIVAR AGORA</a>
+                </div>
+              </td></tr>
+            </table>
+          </td></tr>
+        </table>
+      </body>
+      </html>
+    `
+  },
+
+  '30_days_after': {
+    subject: '🚨 URGENTE: 30 dias - Risco de perda permanente!',
+    body: `
+      <!DOCTYPE html>
+      <html>
+      <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+      <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1f2937;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background: #1f2937; padding: 40px 20px;">
+          <tr><td align="center">
+            <table width="600" cellpadding="0" cellspacing="0" style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 30px 80px rgba(0,0,0,0.5);">
+              <tr><td style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); padding: 50px 40px; text-align: center;">
+                <div style="background: rgba(255,255,255,0.2); display: inline-block; padding: 25px; border-radius: 50%; margin-bottom: 25px;">
+                  <span style="font-size: 70px;">🚨</span>
+                </div>
+                <h1 style="color: white; margin: 0; font-size: 40px; font-weight: 900;">ALERTA CRÍTICO</h1>
+                <p style="color: white; margin: 15px 0 0 0; font-size: 20px; font-weight: 700;">30 dias desde o vencimento</p>
+              </td></tr>
+              <tr><td style="padding: 40px;">
+                <p style="color: #1f2937; font-size: 18px; margin: 0 0 30px 0;"><strong style="color: #dc2626;">{{USER_NAME}}</strong>, são 30 dias desde o vencimento.</p>
+                <div style="background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); border: 4px solid #dc2626; border-radius: 20px; padding: 40px; margin: 30px 0; text-align: center;">
+                  <p style="margin: 0 0 20px 0; font-size: 36px;">⚠️</p>
+                  <p style="margin: 0 0 15px 0; color: #991b1b; font-size: 26px; font-weight: 900;">RISCO DE PERDA PERMANENTE</p>
+                  <p style="margin: 0; color: #7f1d1d; font-size: 16px; font-weight: 600;">Seus dados podem ser removidos!</p>
+                </div>
+                <div style="text-align: center; margin: 50px 0 30px 0;">
+                  <a href="{{RENEWAL_LINK}}" style="display: inline-block; background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; padding: 25px 60px; text-decoration: none; border-radius: 50px; font-size: 24px; font-weight: 900; box-shadow: 0 15px 50px rgba(220, 38, 38, 0.6); border: 3px solid white;">🆘 SALVAR DADOS</a>
+                </div>
+              </td></tr>
+            </table>
+          </td></tr>
+        </table>
+      </body>
+      </html>
+    `
+  },
+
+  'monthly_after_30': {
+    subject: '💔 Você realmente vai desistir do controle financeiro?',
+    body: `
+      <!DOCTYPE html>
+      <html>
+      <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+      <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); padding: 40px 20px;">
+          <tr><td align="center">
+            <table width="600" cellpadding="0" cellspacing="0" style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.4);">
+              <tr><td style="background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%); padding: 50px 40px; text-align: center;">
+                <div style="background: rgba(255,255,255,0.2); display: inline-block; padding: 25px; border-radius: 50%; margin-bottom: 25px;">
+                  <span style="font-size: 70px;">💔</span>
+                </div>
+                <h1 style="color: white; margin: 0; font-size: 38px; font-weight: 900;">Sentimos Muito Sua Falta</h1>
+                <p style="color: rgba(255,255,255,0.95); margin: 15px 0 0 0; font-size: 18px;">Volte quando estiver pronto 💜</p>
+              </td></tr>
+              <tr><td style="padding: 40px;">
+                <p style="color: #1f2937; font-size: 18px; margin: 0 0 20px 0;"><strong style="color: #7c3aed;">{{USER_NAME}}</strong>, já faz {{DAYS_EXPIRED}} dias...</p>
+                <div style="background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%); border-radius: 15px; padding: 30px; margin: 30px 0; border-left: 5px solid #7c3aed;">
+                  <p style="margin: 0 0 15px 0; color: #6b21a8; font-size: 16px;">Sabemos que a vida anda corrida, mas não deixe seu futuro financeiro de lado! 💜</p>
+                  <p style="margin: 0; color: #6b21a8; font-size: 16px; font-weight: 700;">Seus dados estão esperando você.</p>
+                </div>
+                <div style="text-align: center; margin: 50px 0 30px 0;">
+                  <a href="{{RENEWAL_LINK}}" style="display: inline-block; background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%); color: white; padding: 22px 55px; text-decoration: none; border-radius: 50px; font-size: 22px; font-weight: 900; box-shadow: 0 10px 40px rgba(124, 58, 237, 0.5);">💜 QUERO VOLTAR!</a>
+                </div>
+              </td></tr>
+              <tr><td style="background: #f9fafb; padding: 30px; text-align: center;">
+                <p style="margin: 0; color: #7c3aed; font-size: 14px; font-weight: 600;">Sempre haverá um lugar para você no FINEX 🚀</p>
+              </td></tr>
+            </table>
+          </td></tr>
+        </table>
+      </body>
+      </html>
+    `
+  }
 };
 
 Deno.serve(async (req) => {
