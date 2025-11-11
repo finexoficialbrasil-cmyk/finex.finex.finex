@@ -136,7 +136,6 @@ export default function AdminSubscriptions() {
     });
   }, [subscriptionsOfMonth, searchTerm, filterStatus]);
 
-  // CORRIGIDO: Mover useMemo ANTES do early return
   const duplicateUsers = useMemo(() => {
     const emailCounts = {};
     filteredSubscriptions.forEach(sub => {
@@ -219,42 +218,63 @@ export default function AdminSubscriptions() {
     setProcessingSubscriptions(prev => new Set(prev).add(subscription.id));
 
     try {
-      console.log("🔄 Chamando função de aprovação...");
+      console.log("🔄 Aprovando assinatura DIRETAMENTE...");
       console.log("📋 Dados:", {
         id: subscription.id,
         email: subscription.user_email,
         plan: subscription.plan_type
       });
       
-      const response = await base44.functions.invoke('adminApproveSubscription', {
-        subscription_id: subscription.id,
-        user_email: subscription.user_email,
-        plan_type: subscription.plan_type
+      // ✅ CALCULAR DATAS
+      const startDate = new Date();
+      const endDate = new Date(startDate);
+      
+      if (subscription.plan_type === 'monthly') {
+        endDate.setMonth(endDate.getMonth() + 1);
+      } else if (subscription.plan_type === 'semester') {
+        endDate.setMonth(endDate.getMonth() + 6);
+      } else if (subscription.plan_type === 'annual') {
+        endDate.setFullYear(endDate.getFullYear() + 1);
+      } else if (subscription.plan_type === 'lifetime') {
+        endDate.setFullYear(endDate.getFullYear() + 100); // Lifetime is 100 years
+      }
+
+      const startDateStr = startDate.toISOString().split('T')[0];
+      const endDateStr = endDate.toISOString().split('T')[0];
+
+      console.log(`📅 Datas calculadas: ${startDateStr} até ${endDateStr}`);
+
+      // ✅ 1. ATUALIZAR SUBSCRIPTION
+      await base44.entities.Subscription.update(subscription.id, {
+        status: "active",
+        start_date: startDateStr,
+        end_date: endDateStr
+      });
+      console.log(`✅ Subscription atualizada`);
+
+      // ✅ 2. BUSCAR E ATUALIZAR USUÁRIO
+      const allUsers = await base44.entities.User.list();
+      const targetUser = allUsers.find(u => u.email === subscription.user_email);
+
+      if (!targetUser) {
+        throw new Error(`Usuário ${subscription.user_email} não encontrado`);
+      }
+
+      console.log(`👤 Usuário encontrado: ${targetUser.id}`);
+
+      await base44.entities.User.update(targetUser.id, {
+        subscription_status: "active",
+        subscription_plan: subscription.plan_type,
+        subscription_end_date: endDateStr
       });
 
-      console.log("📦 Resposta completa:", response);
-      console.log("📦 Resposta data:", response.data);
+      console.log(`✅ Usuário atualizado`);
 
-      if (response.data.success) {
-        alert("✅ Assinatura aprovada com sucesso!");
-        await loadData();
-      } else {
-        throw new Error(response.data.error || "Erro desconhecido");
-      }
+      alert("✅ Assinatura aprovada com sucesso!");
+      await loadData();
     } catch (error) {
-      console.error("❌ ERRO COMPLETO:", error);
-      console.error("📋 Error message:", error.message);
-      console.error("📋 Error response:", error.response);
-      
-      let errorMessage = "Erro ao aprovar assinatura.";
-      
-      if (error.response?.data?.error) {
-        errorMessage = error.response.data.error;
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      alert(`❌ ${errorMessage}\n\nVerifique o console (F12) para mais detalhes.`);
+      console.error("❌ ERRO:", error);
+      alert(`❌ Erro ao aprovar: ${error.message}\n\nVerifique o console (F12) para mais detalhes.`);
     } finally {
       setProcessingSubscriptions(prev => {
         const newSet = new Set(prev);
@@ -302,7 +322,6 @@ export default function AdminSubscriptions() {
     setShowDetailsModal(true);
   };
 
-  // CORRIGIDO: Early return APÓS todos os hooks
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
