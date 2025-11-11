@@ -17,14 +17,11 @@ export default function PhoneVerificationModal({ user, onPhoneUpdated }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  // Modal sempre aberto se não tiver telefone
   const isOpen = !user?.phone || user.phone.trim() === "";
 
   const formatPhoneNumber = (value) => {
-    // Remove tudo que não é número
     const numbers = value.replace(/\D/g, '');
     
-    // Formato brasileiro: (XX) XXXXX-XXXX
     if (numbers.length <= 2) {
       return numbers;
     } else if (numbers.length <= 7) {
@@ -39,18 +36,15 @@ export default function PhoneVerificationModal({ user, onPhoneUpdated }) {
   const validatePhone = (phoneNumber) => {
     const numbers = phoneNumber.replace(/\D/g, '');
     
-    // Deve ter 10 ou 11 dígitos (celular ou fixo)
     if (numbers.length < 10 || numbers.length > 11) {
       return "Telefone inválido. Use formato: (XX) XXXXX-XXXX";
     }
     
-    // DDD válido (11 a 99)
     const ddd = parseInt(numbers.slice(0, 2));
     if (ddd < 11 || ddd > 99) {
       return "DDD inválido";
     }
     
-    // Se for celular (11 dígitos), deve começar com 9
     if (numbers.length === 11 && numbers[2] !== '9') {
       return "Celular deve começar com 9";
     }
@@ -77,7 +71,6 @@ export default function PhoneVerificationModal({ user, onPhoneUpdated }) {
     setError("");
     
     try {
-      // Converter para formato internacional
       const numbers = phone.replace(/\D/g, '');
       const internationalPhone = `+55${numbers}`;
       
@@ -90,12 +83,10 @@ export default function PhoneVerificationModal({ user, onPhoneUpdated }) {
       
       console.log("✅ Telefone salvo com sucesso!");
       
-      // Notificar componente pai
       if (onPhoneUpdated) {
         onPhoneUpdated(internationalPhone);
       }
       
-      // Recarregar página
       window.location.reload();
       
     } catch (error) {
@@ -109,17 +100,17 @@ export default function PhoneVerificationModal({ user, onPhoneUpdated }) {
   return (
     <Dialog open={isOpen} onOpenChange={() => {}}>
       <DialogContent 
-        className="glass-card border-purple-700/50 text-white max-w-md"
+        className="glass-card border-purple-700/50 text-white w-[95vw] max-w-md max-h-[95vh] overflow-y-auto p-4 sm:p-6"
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
         <DialogHeader>
-          <DialogTitle className="text-2xl bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent text-center">
+          <DialogTitle className="text-xl sm:text-2xl bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent text-center">
             📱 Verificação de Telefone Obrigatória
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Ilustração */}
           <motion.div
             initial={{ scale: 0 }}
@@ -128,22 +119,22 @@ export default function PhoneVerificationModal({ user, onPhoneUpdated }) {
           >
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-full blur-2xl"></div>
-              <div className="relative p-6 rounded-full bg-gradient-to-br from-green-600 to-emerald-600">
-                <Smartphone className="w-16 h-16 text-white" />
+              <div className="relative p-4 sm:p-6 rounded-full bg-gradient-to-br from-green-600 to-emerald-600">
+                <Smartphone className="w-12 h-12 sm:w-16 sm:h-16 text-white" />
               </div>
             </div>
           </motion.div>
 
           {/* Explicação */}
-          <div className="space-y-4">
-            <div className="bg-yellow-900/20 border border-yellow-700/30 p-4 rounded-lg">
-              <div className="flex items-start gap-3">
-                <AlertTriangle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+          <div className="space-y-3 sm:space-y-4">
+            <div className="bg-yellow-900/20 border border-yellow-700/30 p-3 sm:p-4 rounded-lg">
+              <div className="flex items-start gap-2 sm:gap-3">
+                <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-yellow-300 font-bold mb-2">
+                  <p className="text-yellow-300 font-bold mb-2 text-sm sm:text-base">
                     Por que precisamos do seu telefone?
                   </p>
-                  <ul className="text-yellow-200 text-sm space-y-1">
+                  <ul className="text-yellow-200 text-xs sm:text-sm space-y-1">
                     <li>✅ Enviar avisos de vencimento de assinatura</li>
                     <li>✅ Notificar sobre cobranças importantes</li>
                     <li>✅ Comunicados e atualizações do sistema</li>
@@ -153,14 +144,14 @@ export default function PhoneVerificationModal({ user, onPhoneUpdated }) {
               </div>
             </div>
 
-            <div className="bg-green-900/20 border border-green-700/30 p-4 rounded-lg">
-              <div className="flex items-start gap-3">
-                <Shield className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+            <div className="bg-green-900/20 border border-green-700/30 p-3 sm:p-4 rounded-lg">
+              <div className="flex items-start gap-2 sm:gap-3">
+                <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-green-400 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-green-300 font-bold mb-1">
+                  <p className="text-green-300 font-bold mb-1 text-sm sm:text-base">
                     🔒 Seus dados estão seguros
                   </p>
-                  <p className="text-green-200 text-sm">
+                  <p className="text-green-200 text-xs sm:text-sm">
                     Não compartilhamos seu telefone com terceiros. 
                     Usamos apenas para comunicação oficial do FINEX.
                   </p>
@@ -172,8 +163,8 @@ export default function PhoneVerificationModal({ user, onPhoneUpdated }) {
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <Label className="text-purple-200 mb-2 block">
-                <Smartphone className="w-4 h-4 inline mr-2" />
+              <Label className="text-purple-200 mb-2 block text-sm sm:text-base">
+                <Smartphone className="w-3 h-3 sm:w-4 sm:h-4 inline mr-2" />
                 Número de Telefone *
               </Label>
               <Input
@@ -182,26 +173,26 @@ export default function PhoneVerificationModal({ user, onPhoneUpdated }) {
                 onChange={handlePhoneChange}
                 placeholder="(65) 98129-7511"
                 required
-                className="bg-purple-900/20 border-purple-700/50 text-white text-lg"
+                className="bg-purple-900/20 border-purple-700/50 text-white text-base sm:text-lg"
                 maxLength={15}
               />
               <p className="text-purple-400 text-xs mt-2">
                 📱 Digite seu celular com DDD (usado para WhatsApp)
               </p>
               {error && (
-                <p className="text-red-400 text-sm mt-2 flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4" />
+                <p className="text-red-400 text-xs sm:text-sm mt-2 flex items-center gap-2">
+                  <AlertTriangle className="w-3 h-3 sm:w-4 sm:h-4" />
                   {error}
                 </p>
               )}
             </div>
 
             {/* Exemplo */}
-            <div className="bg-cyan-900/20 border border-cyan-700/30 p-4 rounded-lg">
-              <p className="text-cyan-300 text-sm mb-2 font-bold">
+            <div className="bg-cyan-900/20 border border-cyan-700/30 p-3 sm:p-4 rounded-lg">
+              <p className="text-cyan-300 text-xs sm:text-sm mb-2 font-bold">
                 📝 Exemplo de formato válido:
               </p>
-              <div className="space-y-1 text-cyan-200 text-sm">
+              <div className="space-y-1 text-cyan-200 text-xs sm:text-sm">
                 <p>✅ (65) 98129-7511</p>
                 <p>✅ (11) 99876-5432</p>
                 <p>✅ (21) 3456-7890 (fixo)</p>
@@ -209,10 +200,10 @@ export default function PhoneVerificationModal({ user, onPhoneUpdated }) {
             </div>
 
             {/* Aviso Bloqueio */}
-            <div className="bg-red-900/20 border border-red-700/30 p-4 rounded-lg">
-              <div className="flex items-start gap-3">
-                <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
-                <p className="text-red-300 text-sm font-bold">
+            <div className="bg-red-900/20 border border-red-700/30 p-3 sm:p-4 rounded-lg">
+              <div className="flex items-start gap-2 sm:gap-3">
+                <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                <p className="text-red-300 text-xs sm:text-sm font-bold">
                   ⚠️ OBRIGATÓRIO: Você não poderá usar o sistema sem cadastrar um telefone válido!
                 </p>
               </div>
@@ -221,16 +212,16 @@ export default function PhoneVerificationModal({ user, onPhoneUpdated }) {
             <Button
               type="submit"
               disabled={isSubmitting || !phone}
-              className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-lg py-6"
+              className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-base sm:text-lg py-5 sm:py-6"
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 mr-2 animate-spin" />
                   Salvando...
                 </>
               ) : (
                 <>
-                  <CheckCircle className="w-5 h-5 mr-2" />
+                  <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                   Confirmar e Continuar
                 </>
               )}
