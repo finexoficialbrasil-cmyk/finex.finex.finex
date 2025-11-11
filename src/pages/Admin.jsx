@@ -1,16 +1,10 @@
+
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Shield, Users, Crown, Video, Tags, Bell, Settings, Database, DollarSign, Smartphone, Zap, FileText, Loader2, Mail, ChevronDown } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Shield, Users, Crown, Video, Tags, Bell, Settings, Database, DollarSign, Smartphone, Zap, FileText, Loader2 } from "lucide-react";
 
 // ✅ Lazy loading dos componentes admin
 const AdminDashboard = React.lazy(() => import("../components/admin/AdminDashboard"));
@@ -27,7 +21,6 @@ const AdminMobileApp = React.lazy(() => import("../components/admin/AdminMobileA
 const AdminWebhookLogs = React.lazy(() => import("../components/admin/AdminWebhookLogs"));
 const AdminBackup = React.lazy(() => import("../components/admin/AdminBackup"));
 const AdminUserReport = React.lazy(() => import("../components/admin/AdminUserReport"));
-const AdminBilling = React.lazy(() => import("../components/admin/AdminBilling"));
 
 // ✅ Loading fallback
 const TabLoading = () => (
@@ -82,6 +75,7 @@ export default function Admin() {
     }
   };
 
+  // ✅ CORRIGIDO: Usar base44.functions.invoke ao invés de import dinâmico
   const handleFixSubscriptions = async () => {
     if (!confirm("🔧 CORRIGIR STATUS DE ASSINATURAS\n\nEsta ação irá:\n\n1. Verificar TODOS os usuários do sistema\n2. Recalcular se a assinatura está ativa baseado na data de vencimento\n3. Atualizar o status automaticamente\n\n⚠️ Esta operação é segura e reversível.\n\nDeseja continuar?")) {
       return;
@@ -119,26 +113,6 @@ export default function Admin() {
     } finally {
       setIsFixingSubscriptions(false);
     }
-  };
-
-  // ✅ NOVO: Lista de abas com ícones e nomes
-  const mainTabs = [
-    { value: "dashboard", label: "Dashboard", icon: Shield },
-    { value: "users", label: "Usuários", icon: Users },
-    { value: "report", label: "Relatório", icon: FileText },
-    { value: "plans", label: "Planos", icon: Crown },
-    { value: "subscriptions", label: "Assinaturas", icon: DollarSign },
-    { value: "billing", label: "Cobranças", icon: Mail },
-    { value: "backup", label: "Backup", icon: Database },
-    { value: "tutorials", label: "Tutoriais", icon: Video },
-    { value: "categories", label: "Categorias", icon: Tags },
-    { value: "notifications", label: "Notificações", icon: Bell },
-    { value: "settings", label: "Config", icon: Settings }
-  ];
-
-  const getCurrentTabLabel = () => {
-    const tab = mainTabs.find(t => t.value === activeTab);
-    return tab ? tab.label : "Selecione";
   };
 
   if (!user) {
@@ -195,50 +169,48 @@ export default function Admin() {
 
         <Card className="glass-card border-0 neon-glow">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            {/* ✅ NOVO: Select para Mobile + Tabs para Desktop */}
-            <div className="p-4 border-b border-purple-900/30">
-              {/* Mobile: Dropdown */}
-              <div className="md:hidden">
-                <Select value={activeTab} onValueChange={setActiveTab}>
-                  <SelectTrigger className="w-full bg-purple-900/20 border-purple-700/50 text-white h-12">
-                    <SelectValue>
-                      <div className="flex items-center gap-2">
-                        {mainTabs.find(t => t.value === activeTab)?.icon && 
-                          React.createElement(mainTabs.find(t => t.value === activeTab).icon, { className: "w-4 h-4" })
-                        }
-                        <span>{getCurrentTabLabel()}</span>
-                      </div>
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {mainTabs.map((tab) => (
-                      <SelectItem key={tab.value} value={tab.value}>
-                        <div className="flex items-center gap-2">
-                          <tab.icon className="w-4 h-4" />
-                          <span>{tab.label}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Desktop: Tabs normais (com scroll horizontal) */}
-              <div className="hidden md:block overflow-x-auto">
-                <TabsList className="bg-purple-900/20 inline-flex min-w-full gap-2 p-2">
-                  {mainTabs.map((tab) => (
-                    <TabsTrigger 
-                      key={tab.value} 
-                      value={tab.value} 
-                      className="flex items-center gap-2 whitespace-nowrap"
-                    >
-                      <tab.icon className="w-4 h-4" />
-                      <span>{tab.label}</span>
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </div>
-            </div>
+            <TabsList className="bg-purple-900/20 w-full grid grid-cols-2 md:grid-cols-4 lg:grid-cols-9 gap-2 p-2">
+              <TabsTrigger value="dashboard" className="flex items-center gap-2">
+                <Shield className="w-4 h-4" />
+                <span className="hidden md:inline">Dashboard</span>
+              </TabsTrigger>
+              <TabsTrigger value="users" className="flex items-center gap-2">
+                <Users className="w-4 h-4" />
+                <span className="hidden md:inline">Usuários</span>
+              </TabsTrigger>
+              <TabsTrigger value="report" className="flex items-center gap-2">
+                <FileText className="w-4 h-4" />
+                <span className="hidden md:inline">Relatório</span>
+              </TabsTrigger>
+              <TabsTrigger value="plans" className="flex items-center gap-2">
+                <Crown className="w-4 h-4" />
+                <span className="hidden md:inline">Planos</span>
+              </TabsTrigger>
+              <TabsTrigger value="subscriptions" className="flex items-center gap-2">
+                <DollarSign className="w-4 h-4" />
+                <span className="hidden md:inline">Assinaturas</span>
+              </TabsTrigger>
+              <TabsTrigger value="backup" className="flex items-center gap-2">
+                <Database className="w-4 h-4" />
+                <span className="hidden md:inline">Backup</span>
+              </TabsTrigger>
+              <TabsTrigger value="tutorials" className="flex items-center gap-2">
+                <Video className="w-4 h-4" />
+                <span className="hidden md:inline">Tutoriais</span>
+              </TabsTrigger>
+              <TabsTrigger value="categories" className="flex items-center gap-2">
+                <Tags className="w-4 h-4" />
+                <span className="hidden md:inline">Categorias</span>
+              </TabsTrigger>
+              <TabsTrigger value="notifications" className="flex items-center gap-2">
+                <Bell className="w-4 h-4" />
+                <span className="hidden md:inline">Notificações</span>
+              </TabsTrigger>
+              <TabsTrigger value="settings" className="flex items-center gap-2">
+                <Settings className="w-4 h-4" />
+                <span className="hidden md:inline">Config</span>
+              </TabsTrigger>
+            </TabsList>
 
             <div className="p-6">
               <React.Suspense fallback={<TabLoading />}>
@@ -257,9 +229,6 @@ export default function Admin() {
                 <TabsContent value="subscriptions">
                   <AdminSubscriptions />
                 </TabsContent>
-                <TabsContent value="billing">
-                  <AdminBilling />
-                </TabsContent>
                 <TabsContent value="backup">
                   <AdminBackup />
                 </TabsContent>
@@ -274,91 +243,48 @@ export default function Admin() {
                 </TabsContent>
                 <TabsContent value="settings">
                   <Tabs defaultValue="branding">
-                    {/* ✅ NOVO: Select para Mobile nas sub-tabs também */}
-                    <div className="mb-6">
-                      <div className="md:hidden">
-                        <Select defaultValue="branding">
-                          <SelectTrigger className="w-full bg-purple-900/20 border-purple-700/50 text-white">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="branding">
-                              <div className="flex items-center gap-2">
-                                <Settings className="w-4 h-4" />
-                                <span>Branding</span>
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="payments">
-                              <div className="flex items-center gap-2">
-                                <DollarSign className="w-4 h-4" />
-                                <span>Pagamentos</span>
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="webhooks">
-                              <div className="flex items-center gap-2">
-                                <Zap className="w-4 h-4" />
-                                <span>Webhooks</span>
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="mobile">
-                              <div className="flex items-center gap-2">
-                                <Smartphone className="w-4 h-4" />
-                                <span>App Mobile</span>
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="cleanup">
-                              <div className="flex items-center gap-2">
-                                <Database className="w-4 h-4" />
-                                <span>Limpeza</span>
-                              </div>
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                    <TabsList className="bg-purple-900/20 mb-6 w-full grid grid-cols-2 md:grid-cols-5 lg:grid-cols-5 gap-2 p-2">
+                      <TabsTrigger value="branding" className="flex items-center gap-2">
+                        <Settings className="w-4 h-4" />
+                        <span className="hidden md:inline">Branding</span>
+                      </TabsTrigger>
+                      <TabsTrigger value="payments" className="flex items-center gap-2">
+                        <DollarSign className="w-4 h-4" />
+                        <span className="hidden md:inline">Pagamentos</span>
+                      </TabsTrigger>
+                      <TabsTrigger value="webhooks" className="flex items-center gap-2">
+                        <Zap className="w-4 h-4" />
+                        <span className="hidden md:inline">Webhooks</span>
+                      </TabsTrigger>
+                      <TabsTrigger value="mobile" className="flex items-center gap-2">
+                        <Smartphone className="w-4 h-4" />
+                        <span className="hidden md:inline">App Mobile</span>
+                      </TabsTrigger>
+                      <TabsTrigger value="cleanup" className="flex items-center gap-2">
+                        <Database className="w-4 h-4" />
+                        <span className="hidden md:inline">Limpeza</span>
+                      </TabsTrigger>
+                    </TabsList>
 
-                      <div className="hidden md:block">
-                        <TabsList className="bg-purple-900/20 w-full grid grid-cols-5 gap-2 p-2">
-                          <TabsTrigger value="branding" className="flex items-center gap-2">
-                            <Settings className="w-4 h-4" />
-                            <span className="hidden md:inline">Branding</span>
-                          </TabsTrigger>
-                          <TabsTrigger value="payments" className="flex items-center gap-2">
-                            <DollarSign className="w-4 h-4" />
-                            <span className="hidden md:inline">Pagamentos</span>
-                          </TabsTrigger>
-                          <TabsTrigger value="webhooks" className="flex items-center gap-2">
-                            <Zap className="w-4 h-4" />
-                            <span className="hidden md:inline">Webhooks</span>
-                          </TabsTrigger>
-                          <TabsTrigger value="mobile" className="flex items-center gap-2">
-                            <Smartphone className="w-4 h-4" />
-                            <span className="hidden md:inline">App Mobile</span>
-                          </TabsTrigger>
-                          <TabsTrigger value="cleanup" className="flex items-center gap-2">
-                            <Database className="w-4 h-4" />
-                            <span className="hidden md:inline">Limpeza</span>
-                          </TabsTrigger>
-                        </TabsList>
-                      </div>
+                    <div className="p-6">
+                      <React.Suspense fallback={<TabLoading />}>
+                        <TabsContent value="branding">
+                          <AdminSettings />
+                        </TabsContent>
+                        <TabsContent value="payments">
+                          <AdminAsaasSettings />
+                        </TabsContent>
+                        <TabsContent value="webhooks">
+                          <AdminWebhookLogs />
+                        </TabsContent>
+                        <TabsContent value="mobile">
+                          <AdminMobileApp />
+                        </TabsContent>
+                        <TabsContent value="cleanup">
+                          <AdminDatabaseCleanup />
+                        </TabsContent>
+                      </React.Suspense>
                     </div>
-
-                    <React.Suspense fallback={<TabLoading />}>
-                      <TabsContent value="branding">
-                        <AdminSettings />
-                      </TabsContent>
-                      <TabsContent value="payments">
-                        <AdminAsaasSettings />
-                      </TabsContent>
-                      <TabsContent value="webhooks">
-                        <AdminWebhookLogs />
-                      </TabsContent>
-                      <TabsContent value="mobile">
-                        <AdminMobileApp />
-                      </TabsContent>
-                      <TabsContent value="cleanup">
-                        <AdminDatabaseCleanup />
-                      </TabsContent>
-                    </React.Suspense>
                   </Tabs>
                 </TabsContent>
               </React.Suspense>

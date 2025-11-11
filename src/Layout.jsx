@@ -45,7 +45,6 @@ import ReceivablesNotification from "./components/ReceivablesNotification";
 import { Button } from "@/components/ui/button";
 
 import PerformanceMonitor from "./components/PerformanceMonitor";
-import CompleteProfile from "./components/CompleteProfile"; // ✅ NOVO
 
 const navigationItems = [
   {
@@ -215,6 +214,7 @@ function LayoutContent({ children }) {
   const { setOpenMobile, setOpen } = useSidebar();
   const [user, setUser] = React.useState(null);
   const [userPlan, setUserPlan] = React.useState(null);
+  // Removed: const [hoveredItem, setHoveredItem] = React.useState(null);
   const [theme, setTheme] = React.useState("dark");
   const [appName, setAppName] = React.useState("FINEX");
   const [appLogo, setAppLogo] = React.useState("");
@@ -240,6 +240,7 @@ function LayoutContent({ children }) {
 
   React.useEffect(() => {
     if (previousPath !== location.pathname && window.innerWidth < 768) {
+      // Removed: console.log("📱 Rota mudou no mobile, fechando sidebar");
       setOpenMobile(false);
       setOpen(false);
     }
@@ -271,68 +272,59 @@ function LayoutContent({ children }) {
     } catch (error) {
       console.error("❌ Erro ao carregar dados:", error);
       setHasLayoutError(true);
+      // Removed: setAppName("FINEX");
+      // Removed: setAppLogo("");
+      // Removed: document.title = "FINEX - Inteligência Financeira";
       setIsLoadingLayout(false);
     }
   };
 
   const loadAdditionalDataInBackground = async (userData) => {
     try {
-      // ✅ CORRIGIDO: Lazy import dentro do try/catch
       if (userData.subscription_plan && userData.role !== 'admin' && hasActiveAccess(userData)) {
-        try {
-          const { SystemPlan } = await import("@/entities/SystemPlan");
-          const plans = await SystemPlan.list();
-          const plan = plans.find(p => p.plan_type === userData.subscription_plan);
-          setUserPlan(plan);
-        } catch (planError) {
-          console.warn("⚠️ Erro ao carregar planos (não crítico):", planError);
-        }
+        const { SystemPlan } = await import("@/entities/SystemPlan");
+        const plans = await SystemPlan.list();
+        const plan = plans.find(p => p.plan_type === userData.subscription_plan);
+        setUserPlan(plan);
       }
 
-      // ✅ CORRIGIDO: Tentar carregar SystemSettings com fallback
-      try {
-        const { SystemSettings } = await import("@/entities/SystemSettings");
-        const allSettings = await SystemSettings.list();
-        
-        const appNameSetting = allSettings.find(s => s.key === "app_name");
-        const appLogoSetting = allSettings.find(s => s.key === "app_logo_url");
-        const faviconSetting = allSettings.find(s => s.key === "favicon_url");
-        
-        if (appNameSetting && appNameSetting.value) {
-          setAppName(appNameSetting.value);
-          document.title = `${appNameSetting.value} - Inteligência Financeira`;
-        } else {
-          setAppName("FINEX");
-          document.title = "FINEX - Inteligência Financeira";
-        }
-        
-        if (appLogoSetting && appLogoSetting.value) {
-          setAppLogo(appLogoSetting.value);
-        } else {
-          setAppLogo("");
-        }
-
-        if (faviconSetting && faviconSetting.value) {
-          const existingFavicons = document.querySelectorAll("link[rel*='icon']");
-          existingFavicons.forEach(favicon => favicon.remove());
-
-          const link = document.createElement('link');
-          link.rel = 'icon';
-          link.type = 'image/png';
-          link.href = faviconSetting.value;
-          document.head.appendChild(link);
-        }
-      } catch (settingsError) {
-        console.warn("⚠️ Erro ao carregar configurações (não crítico):", settingsError);
-        // ✅ FALLBACK: Usar valores padrão
+      const { SystemSettings } = await import("@/entities/SystemSettings");
+      const allSettings = await SystemSettings.list();
+      
+      const appNameSetting = allSettings.find(s => s.key === "app_name");
+      const appLogoSetting = allSettings.find(s => s.key === "app_logo_url");
+      const faviconSetting = allSettings.find(s => s.key === "favicon_url");
+      
+      if (appNameSetting && appNameSetting.value) {
+        setAppName(appNameSetting.value);
+        document.title = `${appNameSetting.value} - Inteligência Financeira`;
+      } else {
         setAppName("FINEX");
         document.title = "FINEX - Inteligência Financeira";
+      }
+      
+      if (appLogoSetting && appLogoSetting.value) {
+        setAppLogo(appLogoSetting.value);
+      } else {
         setAppLogo("");
+      }
+
+      if (faviconSetting && faviconSetting.value) {
+        const existingFavicons = document.querySelectorAll("link[rel*='icon']");
+        existingFavicons.forEach(favicon => favicon.remove());
+
+        const link = document.createElement('link');
+        link.rel = 'icon';
+        link.type = 'image/png';
+        link.href = faviconSetting.value;
+        document.head.appendChild(link);
       }
     } catch (error) {
       console.warn("⚠️ Erro ao carregar dados secundários (não crítico):", error);
     }
   };
+
+  // Removed: const updateFavicon = (faviconUrl) => { ... }
 
   if (isLoadingLayout) {
     return (
@@ -771,7 +763,6 @@ function LayoutContent({ children }) {
       `}</style>
       
       <WelcomeEmailSender />
-      <CompleteProfile /> {/* ✅ NOVO: Modal de telefone */}
       
       <div className={`min-h-screen flex w-full bg-gradient-to-br ${themeColors.bg}`}>
         <Sidebar>
