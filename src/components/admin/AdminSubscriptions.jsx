@@ -42,7 +42,7 @@ export default function AdminSubscriptions() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState(null); // ✅ NOVO: Estado para erro
+  const [loadError, setLoadError] = useState(null);
   const [selectedSubscription, setSelectedSubscription] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [isBlocking, setIsBlocking] = useState(false);
@@ -56,12 +56,11 @@ export default function AdminSubscriptions() {
 
   const loadData = async () => {
     setIsLoading(true);
-    setLoadError(null); // ✅ Resetar erro
+    setLoadError(null);
     
     try {
       console.log("🔄 [AdminSubscriptions] Iniciando carregamento...");
       
-      // ✅ VERIFICAR AUTENTICAÇÃO PRIMEIRO
       const currentUser = await base44.auth.me();
       console.log("👤 [AdminSubscriptions] Usuário logado:", currentUser?.email, "- Role:", currentUser?.role);
       
@@ -69,12 +68,11 @@ export default function AdminSubscriptions() {
         throw new Error("Você não tem permissão para acessar esta página. Apenas administradores.");
       }
       
-      // ✅ BUSCAR SUBSCRIPTIONS COM SERVIÇO ROLE
+      // ✅ CORRIGIDO: Usar filter vazio para pegar TUDO
       console.log("📊 [AdminSubscriptions] Buscando subscriptions...");
-      const subsData = await base44.asServiceRole.entities.Subscription.list("-created_date", 1000);
+      const subsData = await base44.asServiceRole.entities.Subscription.filter({}, "-created_date", 1000);
       console.log("✅ [AdminSubscriptions] Total de subscriptions carregadas:", subsData.length);
       
-      // ✅ BUSCAR USERS
       console.log("👥 [AdminSubscriptions] Buscando usuários...");
       const usersData = await User.list();
       console.log("✅ [AdminSubscriptions] Total de usuários carregados:", usersData.length);
@@ -268,7 +266,6 @@ export default function AdminSubscriptions() {
     return matchesSearch && matchesStatus;
   });
 
-  // ✅ NOVO: Tela de erro
   if (loadError) {
     return (
       <div className="space-y-6">
@@ -318,7 +315,6 @@ export default function AdminSubscriptions() {
 
   return (
     <div className="space-y-6">
-      {/* Botão de Varredura */}
       <Card className="glass-card border-0 border-l-4 border-red-500">
         <CardContent className="p-4">
           <div className="flex items-center justify-between flex-wrap gap-4">
@@ -349,7 +345,6 @@ export default function AdminSubscriptions() {
         </CardContent>
       </Card>
 
-      {/* Estatísticas GERAIS */}
       <Card className="glass-card border-0 border-l-4 border-cyan-500">
         <CardHeader className="pb-3">
           <CardTitle className="text-white flex items-center gap-2">
@@ -382,7 +377,6 @@ export default function AdminSubscriptions() {
         </CardContent>
       </Card>
 
-      {/* Navegação de Mês */}
       <Card className="glass-card border-0">
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
@@ -420,7 +414,6 @@ export default function AdminSubscriptions() {
         </CardContent>
       </Card>
 
-      {/* Stats do Mês */}
       <div className="grid md:grid-cols-4 gap-4">
         <Card className="glass-card border-0">
           <CardContent className="p-4">
@@ -475,7 +468,6 @@ export default function AdminSubscriptions() {
         </Card>
       </div>
 
-      {/* Receita por Tipo de Plano */}
       <Card className="glass-card border-0">
         <CardHeader className="border-b border-purple-900/30">
           <CardTitle className="text-white flex items-center gap-2">
@@ -516,7 +508,6 @@ export default function AdminSubscriptions() {
         </CardContent>
       </Card>
 
-      {/* Filters */}
       <Card className="glass-card border-0">
         <CardContent className="p-4">
           <div className="flex flex-col md:flex-row gap-4">
@@ -545,7 +536,6 @@ export default function AdminSubscriptions() {
         </CardContent>
       </Card>
 
-      {/* Subscriptions List */}
       <Card className="glass-card border-0 neon-glow">
         <CardHeader className="border-b border-purple-900/30">
           <CardTitle className="text-white">
@@ -643,7 +633,6 @@ export default function AdminSubscriptions() {
         </CardContent>
       </Card>
 
-      {/* Details Modal */}
       <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}>
         <DialogContent className="glass-card border-purple-700/50 text-white max-w-2xl">
           <DialogHeader>
