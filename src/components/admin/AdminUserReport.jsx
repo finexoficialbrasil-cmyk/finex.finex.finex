@@ -1,4 +1,6 @@
+
 import React, { useState, useEffect } from "react";
+import { base44 } from "@/api/base44Client"; // ✅ USAR SDK
 import { User } from "@/entities/User";
 import { Subscription } from "@/entities/Subscription";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -60,9 +62,10 @@ export default function AdminUserReport() {
 
   const loadData = async () => {
     try {
+      // ✅ CORRIGIDO: Usar base44.entities diretamente (admin tem permissão via RLS)
       const [usersData, subsData] = await Promise.all([
-        User.list(),
-        Subscription.list("-created_date")
+        base44.entities.User.filter({}, "-created_date", 1000), // Updated User.list()
+        base44.entities.Subscription.filter({}, "-created_date", 1000) // Updated Subscription.list()
       ]);
       setUsers(usersData);
       setSubscriptions(subsData);
