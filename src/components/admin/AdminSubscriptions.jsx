@@ -33,7 +33,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
-  AlertTriangle
+  AlertTriangle,
+  Bug
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -202,6 +203,47 @@ export default function AdminSubscriptions() {
       alert("❌ Erro durante a varredura. Tente novamente.");
     } finally {
       setIsBlocking(false);
+    }
+  };
+
+  // ✅ NOVO: Função de teste
+  const handleTestApprove = async (subscription) => {
+    if (processingSubscriptions.has(subscription.id)) {
+      console.log("⚠️ Assinatura já está sendo processada");
+      return;
+    }
+
+    if (!confirm(`🧪 TESTE DE APROVAÇÃO\n\nVou chamar a função de TESTE primeiro para verificar se tudo está OK.\n\nAssinatura: ${subscription.user_email}\n\nContinuar?`)) {
+      return;
+    }
+
+    setProcessingSubscriptions(prev => new Set(prev).add(subscription.id));
+
+    try {
+      console.log("🧪 Chamando função de TESTE...");
+      
+      const response = await base44.functions.invoke('testAdminApprove', {
+        subscription_id: subscription.id,
+        user_email: subscription.user_email,
+        plan_type: subscription.plan_type
+      });
+
+      console.log("📦 Resposta do TESTE:", response.data);
+
+      if (response.data.success) {
+        alert(`✅ TESTE PASSOU!\n\nTodos os checks funcionaram:\n• Autenticação: OK\n• Admin: OK\n• asServiceRole: OK\n• Entidades: OK\n\nAgora você pode tentar a aprovação real!`);
+      } else {
+        alert(`❌ TESTE FALHOU:\n\n${response.data.error}\n\nVeja o console (F12) para detalhes.`);
+      }
+    } catch (error) {
+      console.error("❌ ERRO NO TESTE:", error);
+      alert(`❌ Erro no teste:\n\n${error.message}\n\nVeja o console para mais detalhes.`);
+    } finally {
+      setProcessingSubscriptions(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(subscription.id);
+        return newSet;
+      });
     }
   };
 
@@ -627,6 +669,25 @@ export default function AdminSubscriptions() {
 
                       {sub.status === "pending" && (
                         <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleTestApprove(sub)}
+                            disabled={isProcessing}
+                            className="border-cyan-700 text-cyan-300"
+                          >
+                            {isProcessing ? (
+                              <>
+                                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                Testando...
+                              </>
+                            ) : (
+                              <>
+                                <Bug className="w-3 h-3 mr-1" />
+                                🧪 Testar
+                              </>
+                            )}
+                          </Button>
                           <Button
                             variant="outline"
                             size="sm"
