@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Subscription } from "@/entities/Subscription";
+import { base44 } from "@/api/base44Client"; // ✅ USAR SDK
 import { User } from "@/entities/User";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -55,14 +55,19 @@ export default function AdminSubscriptions() {
 
   const loadData = async () => {
     try {
-      const [subsData, usersData] = await Promise.all([
-        Subscription.list("-created_date"),
-        User.list()
-      ]);
+      console.log("🔄 Carregando assinaturas...");
+      
+      // ✅ BUSCAR SUBSCRIPTIONS - SEM FILTRO (para pegar TODAS)
+      const subsData = await base44.entities.Subscription.list("-created_date", 1000);
+      console.log("📊 Total de subscriptions no banco:", subsData.length);
+      
+      const usersData = await User.list();
+      
       setSubscriptions(subsData);
       setUsers(usersData);
     } catch (error) {
-      console.error("Erro ao carregar dados:", error);
+      console.error("❌ Erro ao carregar dados:", error);
+      alert("❌ Erro ao carregar assinaturas. Verifique o console.");
     } finally {
       setIsLoading(false);
     }
@@ -200,9 +205,8 @@ export default function AdminSubscriptions() {
         endDate.setFullYear(endDate.getFullYear() + 100);
       }
 
-      // Atualizar assinatura para ativa
-      await Subscription.update(subscription.id, {
-        ...subscription,
+      // ✅ USAR SDK PARA ATUALIZAR
+      await base44.entities.Subscription.update(subscription.id, {
         status: "active",
         start_date: startDate.toISOString().split('T')[0],
         end_date: endDate.toISOString().split('T')[0]
@@ -230,8 +234,7 @@ export default function AdminSubscriptions() {
     if (!confirm(`Rejeitar pagamento de ${subscription.user_email}?`)) return;
 
     try {
-      await Subscription.update(subscription.id, {
-        ...subscription,
+      await base44.entities.Subscription.update(subscription.id, {
         status: "cancelled"
       });
 
