@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { User } from "@/entities/User";
-import { Subscription } from "@/entities/Subscription";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -12,585 +12,296 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Download, FileText, Users, DollarSign, Calendar, Filter } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { 
+  Users, 
+  Download, 
+  Search, 
+  Calendar, 
+  DollarSign, 
+  Crown,
+  Edit,
+  CheckCircle,
+  XCircle,
+  Clock,
+  Loader2
+} from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function AdminUserReport() {
   const [users, setUsers] = useState([]);
-  const [subscriptions, setSubscriptions] = useState([]);
-  const [filteredUsers, setFilteredUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterPlan, setFilterPlan] = useState("all");
-  const [sortOrder, setSortOrder] = useState("newest"); // ✅ NOVO: ordenação
   const [isLoading, setIsLoading] = useState(true);
-  const [isExporting, setIsExporting] = useState(false);
-  const [jsPDFLoaded, setJsPDFLoaded] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  
+  const [editForm, setEditForm] = useState({
+    subscription_plan: "",
+    subscription_status: "",
+    subscription_end_date: "",
+    trial_ends_at: ""
+  });
 
   useEffect(() => {
-    loadData();
-    loadJsPDF();
+    loadUsers();
   }, []);
 
-  useEffect(() => {
-    applyFilters();
-  }, [users, searchTerm, filterStatus, filterPlan, sortOrder]); // ✅ Adicionar sortOrder
-
-  const loadJsPDF = () => {
-    // Verificar se já está carregado
-    if (window.jspdf && window.jspdf.jsPDF) {
-      setJsPDFLoaded(true);
-      return;
-    }
-
-    // Carregar script dinamicamente
-    const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-    script.async = true;
-    script.onload = () => {
-      console.log("✅ jsPDF carregado com sucesso!");
-      setJsPDFLoaded(true);
-    };
-    script.onerror = () => {
-      console.error("❌ Erro ao carregar jsPDF");
-      alert("Erro ao carregar biblioteca de PDF. Recarregue a página.");
-    };
-    document.body.appendChild(script);
-  };
-
-  const loadData = async () => {
+  const loadUsers = async () => {
+    setIsLoading(true);
     try {
-      const [usersData, subsData] = await Promise.all([
-        User.list(),
-        Subscription.list("-created_date")
-      ]);
+      const usersData = await User.list("-created_date", 500);
       setUsers(usersData);
-      setSubscriptions(subsData);
     } catch (error) {
-      console.error("Erro ao carregar dados:", error);
+      console.error("Erro ao carregar usuários:", error);
+      alert("Erro ao carregar usuários. Tente novamente.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const applyFilters = () => {
-    let filtered = [...users];
-
-    if (searchTerm) {
-      filtered = filtered.filter(u => 
-        u.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        u.email.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    if (filterStatus !== "all") {
-      filtered = filtered.filter(u => {
-        if (filterStatus === "active") {
-          return u.subscription_status === "active" && 
-                 u.subscription_end_date && 
-                 new Date(u.subscription_end_date) > new Date();
-        } else if (filterStatus === "free") {
-          return !u.subscription_status || u.subscription_status === "pending";
-        } else if (filterStatus === "expired") {
-          return u.subscription_status === "expired" || 
-                 (u.subscription_end_date && new Date(u.subscription_end_date) < new Date());
-        }
-        return u.subscription_status === filterStatus;
-      });
-    }
-
-    if (filterPlan !== "all") {
-      if (filterPlan === "none") {
-        filtered = filtered.filter(u => !u.subscription_plan);
-      } else {
-        filtered = filtered.filter(u => u.subscription_plan === filterPlan);
-      }
-    }
-
-    // ✅ NOVO: Aplicar ordenação
-    filtered.sort((a, b) => {
-      const dateA = new Date(a.created_date);
-      const dateB = new Date(b.created_date);
-      
-      if (sortOrder === "newest") {
-        return dateB.getTime() - dateA.getTime(); // Mais novos primeiro
-      } else {
-        return dateA.getTime() - dateB.getTime(); // Mais antigos primeiro
-      }
+  const handleEditPlan = (user) => {
+    setSelectedUser(user);
+    setEditForm({
+      subscription_plan: user.subscription_plan || "",
+      subscription_status: user.subscription_status || "pending",
+      subscription_end_date: user.subscription_end_date || "",
+      trial_ends_at: user.trial_ends_at || ""
     });
-
-    setFilteredUsers(filtered);
+    setShowEditModal(true);
   };
 
-  const getUserSubscription = (userEmail) => {
-    return subscriptions
-      .filter(s => s.user_email === userEmail)
-      .sort((a, b) => new Date(b.created_date) - new Date(a.created_date))[0];
-  };
-
-  const calculateStats = () => {
-    const activeUsers = users.filter(u => 
-      u.subscription_status === "active" && 
-      u.subscription_end_date && 
-      new Date(u.subscription_end_date) > new Date()
-    );
-
-    const freeUsers = users.filter(u => 
-      !u.subscription_status || u.subscription_status === "pending"
-    );
-
-    const expiredUsers = users.filter(u => 
-      u.subscription_status === "expired" || 
-      (u.subscription_end_date && new Date(u.subscription_end_date) < new Date())
-    );
-
-    const totalRevenue = subscriptions
-      .filter(s => s.status === "active")
-      .reduce((sum, s) => sum + (s.amount_paid || 0), 0);
-
-    const monthlyPlans = users.filter(u => u.subscription_plan === "monthly").length;
-    const semesterPlans = users.filter(u => u.subscription_plan === "semester").length;
-    const annualPlans = users.filter(u => u.subscription_plan === "annual").length;
-    const lifetimePlans = users.filter(u => u.subscription_plan === "lifetime").length;
-
-    return {
-      total: users.length,
-      active: activeUsers.length,
-      free: freeUsers.length,
-      expired: expiredUsers.length,
-      totalRevenue,
-      monthlyPlans,
-      semesterPlans,
-      annualPlans,
-      lifetimePlans
-    };
-  };
-
-  const exportToPDF = async () => {
-    if (!jsPDFLoaded) {
-      alert("⏳ Aguarde... A biblioteca de PDF ainda está carregando. Tente novamente em alguns segundos.");
-      return;
-    }
-
-    if (!window.jspdf || !window.jspdf.jsPDF) {
-      alert("❌ Erro ao carregar jsPDF. Recarregue a página e tente novamente.");
-      return;
-    }
-
-    setIsExporting(true);
+  const handleSavePlan = async () => {
+    if (!selectedUser) return;
+    
+    setIsUpdating(true);
     try {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-
-      const stats = calculateStats();
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
+      console.log("════════════════════════════════════════");
+      console.log("✏️ ADMIN EDITANDO PLANO DO USUÁRIO");
+      console.log("════════════════════════════════════════");
+      console.log("👤 Usuário:", selectedUser.email);
+      console.log("📊 Plano anterior:", selectedUser.subscription_plan);
+      console.log("📊 Plano novo:", editForm.subscription_plan);
+      console.log("📅 Status:", editForm.subscription_status);
+      console.log("📅 Vencimento:", editForm.subscription_end_date);
       
-      // ============================================
-      // PÁGINA 1: CAPA PROFISSIONAL
-      // ============================================
+      const updateData = {
+        subscription_plan: editForm.subscription_plan || null,
+        subscription_status: editForm.subscription_status || "pending",
+        subscription_end_date: editForm.subscription_end_date || null,
+        trial_ends_at: editForm.trial_ends_at || null
+      };
       
-      // Fundo gradiente (simulado com retângulos)
-      doc.setFillColor(10, 10, 15); // Cor de fundo escura
-      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+      // ✅ Se não tem plano, limpar também o trial
+      if (!editForm.subscription_plan) {
+        updateData.trial_ends_at = null;
+        updateData.trial_started_at = null;
+      }
       
-      // Retângulo decorativo superior
-      doc.setFillColor(139, 92, 246); // Roxo
-      doc.rect(0, 0, pageWidth, 60, 'F');
+      await User.update(selectedUser.id, updateData);
       
-      // Logo/Ícone (simulado com círculo)
-      doc.setFillColor(255, 255, 255);
-      doc.circle(pageWidth / 2, 35, 12, 'F');
-      doc.setFillColor(139, 92, 246);
-      doc.circle(pageWidth / 2, 35, 8, 'F');
+      console.log("✅ Plano atualizado com sucesso!");
+      console.log("════════════════════════════════════════");
       
-      // Título principal
-      doc.setFontSize(32);
-      doc.setTextColor(255, 255, 255);
-      doc.setFont(undefined, 'bold');
-      doc.text('FINEX', pageWidth / 2, 90, { align: 'center' });
-      
-      doc.setFontSize(18);
-      doc.setTextColor(200, 200, 200);
-      doc.text('Relatório Gerencial de Usuários', pageWidth / 2, 105, { align: 'center' });
-      
-      // Linha decorativa
-      doc.setDrawColor(139, 92, 246);
-      doc.setLineWidth(1);
-      doc.line(40, 115, pageWidth - 40, 115);
-      
-      // Informações do relatório
-      doc.setFontSize(11);
-      doc.setTextColor(180, 180, 180);
-      doc.setFont(undefined, 'normal');
-      const reportDate = new Date().toLocaleString('pt-BR', {
-        day: '2-digit',
-        month: 'long',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-      doc.text(`Data de Geração: ${reportDate}`, pageWidth / 2, 135, { align: 'center' });
-      doc.text(`Total de Registros: ${filteredUsers.length} usuários`, pageWidth / 2, 145, { align: 'center' });
-      
-      // Box com destaques
-      doc.setFillColor(26, 26, 46);
-      doc.roundedRect(30, 160, pageWidth - 60, 80, 5, 5, 'F');
-      
-      doc.setFontSize(14);
-      doc.setTextColor(139, 92, 246);
-      doc.setFont(undefined, 'bold');
-      doc.text('📊 Resumo Executivo', 40, 175);
-      
-      doc.setFontSize(10);
-      doc.setTextColor(255, 255, 255);
-      doc.setFont(undefined, 'normal');
-      doc.text(`✅ Usuários Ativos: ${stats.active} (${((stats.total > 0 ? stats.active/stats.total : 0)*100).toFixed(1)}%)`, 40, 190);
-      doc.text(`🆓 Usuários Free: ${stats.free} (${((stats.total > 0 ? stats.free/stats.total : 0)*100).toFixed(1)}%)`, 40, 200);
-      doc.text(`💰 Receita Total: R$ ${stats.totalRevenue.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`, 40, 210);
-      doc.text(`📈 Taxa de Conversão: ${((stats.active + stats.free > 0 ? stats.active/(stats.active+stats.free) : 0)*100).toFixed(1)}%`, 40, 220);
-      
-      // Rodapé da capa
-      doc.setFontSize(8);
-      doc.setTextColor(120, 120, 120);
-      doc.text('DOCUMENTO CONFIDENCIAL - USO ADMINISTRATIVO', pageWidth / 2, pageHeight - 20, { align: 'center' });
-      
-      // ============================================
-      // PÁGINA 2: ESTATÍSTICAS DETALHADAS
-      // ============================================
-      doc.addPage();
-      
-      // Cabeçalho
-      addHeader(doc, pageWidth);
-      
-      let y = 45;
-      
-      // Seção: Visão Geral
-      doc.setFillColor(139, 92, 246);
-      doc.rect(20, y, pageWidth - 40, 8, 'F');
-      doc.setFontSize(12);
-      doc.setTextColor(255, 255, 255);
-      doc.setFont(undefined, 'bold');
-      doc.text('📊 VISÃO GERAL DO SISTEMA', 25, y + 6);
-      
-      y += 15;
-      
-      // Grid de estatísticas
-      const colWidth = (pageWidth - 50) / 2;
-      
-      // Coluna 1
-      doc.setFillColor(26, 26, 46);
-      doc.roundedRect(20, y, colWidth - 5, 50, 3, 3, 'F');
-      doc.setFontSize(10);
-      doc.setTextColor(139, 92, 246);
-      doc.setFont(undefined, 'bold');
-      doc.text('Total de Usuários', 25, y + 8);
-      doc.setFontSize(24);
-      doc.setTextColor(255, 255, 255);
-      doc.text(stats.total.toString(), 25, y + 25);
-      doc.setFontSize(8);
-      doc.setTextColor(180, 180, 180);
-      doc.setFont(undefined, 'normal');
-      doc.text('Registrados no sistema', 25, y + 35);
-      
-      // Coluna 2
-      doc.setFillColor(26, 26, 46);
-      doc.roundedRect(20 + colWidth, y, colWidth - 5, 50, 3, 3, 'F');
-      doc.setFontSize(10);
-      doc.setTextColor(16, 185, 129);
-      doc.setFont(undefined, 'bold');
-      doc.text('Usuários Ativos', 25 + colWidth, y + 8);
-      doc.setFontSize(24);
-      doc.setTextColor(255, 255, 255);
-      doc.text(stats.active.toString(), 25 + colWidth, y + 25);
-      doc.setFontSize(8);
-      doc.setTextColor(180, 180, 180);
-      doc.setFont(undefined, 'normal');
-      doc.text(`${((stats.total > 0 ? stats.active/stats.total : 0)*100).toFixed(1)}% do total`, 25 + colWidth, y + 35);
-      
-      y += 58;
-      
-      // Coluna 3
-      doc.setFillColor(26, 26, 46);
-      doc.roundedRect(20, y, colWidth - 5, 50, 3, 3, 'F');
-      doc.setFontSize(10);
-      doc.setTextColor(245, 158, 11);
-      doc.setFont(undefined, 'bold');
-      doc.text('Usuários Free', 25, y + 8);
-      doc.setFontSize(24);
-      doc.setTextColor(255, 255, 255);
-      doc.text(stats.free.toString(), 25, y + 25);
-      doc.setFontSize(8);
-      doc.setTextColor(180, 180, 180);
-      doc.setFont(undefined, 'normal');
-      doc.text(`${((stats.total > 0 ? stats.free/stats.total : 0)*100).toFixed(1)}% do total`, 25, y + 35);
-      
-      // Coluna 4
-      doc.setFillColor(26, 26, 46);
-      doc.roundedRect(20 + colWidth, y, colWidth - 5, 50, 3, 3, 'F');
-      doc.setFontSize(10);
-      doc.setTextColor(6, 182, 212);
-      doc.setFont(undefined, 'bold');
-      doc.text('Receita Total', 25 + colWidth, y + 8);
-      doc.setFontSize(20);
-      doc.setTextColor(255, 255, 255);
-      doc.text(`R$ ${stats.totalRevenue.toFixed(2)}`, 25 + colWidth, y + 25);
-      doc.setFontSize(8);
-      doc.setTextColor(180, 180, 180);
-      doc.setFont(undefined, 'normal');
-      doc.text('Arrecadado em assinaturas', 25 + colWidth, y + 35);
-      
-      y += 58;
-      
-      // Seção: Distribuição de Planos
-      doc.setFillColor(139, 92, 246);
-      doc.rect(20, y, pageWidth - 40, 8, 'F');
-      doc.setFontSize(12);
-      doc.setTextColor(255, 255, 255);
-      doc.setFont(undefined, 'bold');
-      doc.text('💎 DISTRIBUIÇÃO DE PLANOS', 25, y + 6);
-      
-      y += 15;
-      
-      // Gráfico de barras simulado
-      const plans = [
-        { name: 'Mensal', count: stats.monthlyPlans, color: [59, 130, 246] },
-        { name: 'Semestral', count: stats.semesterPlans, color: [139, 92, 246] },
-        { name: 'Anual', count: stats.annualPlans, color: [236, 72, 153] },
-        { name: 'Vitalício', count: stats.lifetimePlans, color: [245, 158, 11] }
-      ];
-      
-      const maxCount = Math.max(...plans.map(p => p.count), 1);
-      const barMaxWidth = 120;
-      const barHeight = 12;
-      
-      plans.forEach((plan, index) => {
-        const barY = y + (index * 20);
-        const barWidth = (plan.count / maxCount) * barMaxWidth;
-        
-        // Fundo da barra
-        doc.setFillColor(40, 40, 50);
-        doc.roundedRect(70, barY, barMaxWidth, barHeight, 2, 2, 'F');
-        
-        // Barra preenchida
-        if (plan.count > 0) {
-          doc.setFillColor(...plan.color);
-          doc.roundedRect(70, barY, barWidth, barHeight, 2, 2, 'F');
-        }
-        
-        // Label
-        doc.setFontSize(10);
-        doc.setTextColor(200, 200, 200);
-        doc.setFont(undefined, 'normal');
-        doc.text(plan.name, 25, barY + 8);
-        
-        // Valor
-        doc.setFont(undefined, 'bold');
-        doc.setTextColor(255, 255, 255);
-        doc.text(`${plan.count}`, 195, barY + 8, { align: 'right' });
-      });
-      
-      // Rodapé
-      addFooter(doc, pageWidth, pageHeight, 2);
-      
-      // ============================================
-      // PÁGINA 3+: DETALHAMENTO DOS USUÁRIOS
-      // ============================================
-      doc.addPage();
-      addHeader(doc, pageWidth);
-      
-      y = 45;
-      
-      // Cabeçalho da seção
-      doc.setFillColor(139, 92, 246);
-      doc.rect(20, y, pageWidth - 40, 8, 'F');
-      doc.setFontSize(12);
-      doc.setTextColor(255, 255, 255);
-      doc.setFont(undefined, 'bold');
-      doc.text('👥 DETALHAMENTO DOS USUÁRIOS', 25, y + 6);
-      
-      y += 18;
-      
-      // Tabela de usuários
-      filteredUsers.forEach((user, index) => {
-        if (y > 260) {
-          addFooter(doc, pageWidth, pageHeight, doc.internal.getCurrentPageInfo().pageNumber);
-          doc.addPage();
-          addHeader(doc, pageWidth);
-          y = 45;
-        }
-        
-        const subscription = getUserSubscription(user.email);
-        const isActive = user.subscription_status === "active" && 
-                        user.subscription_end_date && 
-                        new Date(user.subscription_end_date) > new Date();
-        const isFree = !user.subscription_status || user.subscription_status === "pending";
-        
-        // Box do usuário
-        doc.setFillColor(26, 26, 46);
-        doc.roundedRect(20, y, pageWidth - 40, 38, 3, 3, 'F');
-        
-        // Avatar (círculo)
-        const avatarColor = isActive ? [16, 185, 129] : isFree ? [245, 158, 11] : [239, 68, 68];
-        doc.setFillColor(...avatarColor);
-        doc.circle(30, y + 12, 6, 'F');
-        doc.setFontSize(10);
-        doc.setTextColor(255, 255, 255);
-        doc.setFont(undefined, 'bold');
-        doc.text((user.full_name?.charAt(0) || "U").toUpperCase(), 30, y + 14, { align: 'center' });
-        
-        // Nome e Email
-        doc.setFontSize(11);
-        doc.setTextColor(255, 255, 255);
-        doc.setFont(undefined, 'bold');
-        doc.text(user.full_name || 'Sem nome', 42, y + 10);
-        
-        doc.setFontSize(8);
-        doc.setTextColor(180, 180, 180);
-        doc.setFont(undefined, 'normal');
-        doc.text(user.email, 42, y + 16);
-        
-        // Status Badge
-        const statusX = 42;
-        const statusY = y + 22;
-        if (isActive) {
-          doc.setFillColor(16, 185, 129, 0.3); // RGBA for transparency
-          doc.roundedRect(statusX, statusY, 28, 6, 2, 2, 'F');
-          doc.setFontSize(7);
-          doc.setTextColor(16, 185, 129);
-          doc.setFont(undefined, 'bold');
-          doc.text('✓ ATIVO', statusX + 2, statusY + 4.5); // Adjust for vertical alignment
-        } else if (isFree) {
-          doc.setFillColor(245, 158, 11, 0.3);
-          doc.roundedRect(statusX, statusY, 20, 6, 2, 2, 'F');
-          doc.setFontSize(7);
-          doc.setTextColor(245, 158, 11);
-          doc.setFont(undefined, 'bold');
-          doc.text('FREE', statusX + 2, statusY + 4.5);
-        } else { // Expired
-          doc.setFillColor(239, 68, 68, 0.3);
-          doc.roundedRect(statusX, statusY, 30, 6, 2, 2, 'F');
-          doc.setFontSize(7);
-          doc.setTextColor(239, 68, 68);
-          doc.setFont(undefined, 'bold');
-          doc.text('EXPIRADO', statusX + 2, statusY + 4.5);
-        }
-        
-        // Plano
-        if (user.subscription_plan) {
-          const planTextWidth = doc.getTextWidth(
-            user.subscription_plan === "monthly" ? "MENSAL" :
-            user.subscription_plan === "semester" ? "SEMESTRAL" :
-            user.subscription_plan === "annual" ? "ANUAL" : "VITALÍCIO"
-          );
-          const planX = statusX + (isActive || isFree ? (isActive ? 28 + 4 : 20 + 4) : 30 + 4); // Position after status badge + some padding
-          doc.setFillColor(139, 92, 246, 0.3);
-          doc.roundedRect(planX, statusY, planTextWidth + 4, 6, 2, 2, 'F'); // Add padding to width
-          doc.setFontSize(7);
-          doc.setTextColor(139, 92, 246);
-          doc.setFont(undefined, 'bold');
-          const planText = user.subscription_plan === "monthly" ? "MENSAL" :
-                          user.subscription_plan === "semester" ? "SEMESTRAL" :
-                          user.subscription_plan === "annual" ? "ANUAL" : "VITALÍCIO";
-          doc.text(planText, planX + 2, statusY + 4.5);
-        }
-        
-        // Coluna direita - Valores
-        const rightCol = pageWidth - 65;
-        doc.setFontSize(8);
-        doc.setTextColor(180, 180, 180);
-        doc.text('Valor Pago:', rightCol, y + 10);
-        doc.setFontSize(11);
-        doc.setTextColor(6, 182, 212);
-        doc.setFont(undefined, 'bold');
-        doc.text(subscription && subscription.amount_paid ? `R$ ${subscription.amount_paid.toFixed(2)}` : 'R$ 0,00', rightCol, y + 17);
-        
-        if (user.subscription_end_date) {
-          doc.setFontSize(7);
-          doc.setTextColor(180, 180, 180);
-          doc.setFont(undefined, 'normal');
-          doc.text(`Vence: ${new Date(user.subscription_end_date).toLocaleDateString('pt-BR')}`, rightCol, y + 23);
-        }
-        
-        // Linha separadora
-        y += 40;
-        doc.setDrawColor(60, 60, 80);
-        doc.setLineWidth(0.1);
-        doc.line(20, y, pageWidth - 20, y);
-        y += 2;
-      });
-      
-      // Última página - rodapé
-      addFooter(doc, pageWidth, pageHeight, doc.internal.getCurrentPageInfo().pageNumber);
-      
-      // Salvar
-      const filename = `FINEX_Relatorio_Usuarios_${new Date().toISOString().split('T')[0]}.pdf`;
-      doc.save(filename);
-      
-      alert(`✅ RELATÓRIO PROFISSIONAL GERADO!\n\n📊 Documento inclui:\n• Capa executiva\n• Estatísticas detalhadas\n• Gráficos visuais\n• ${filteredUsers.length} usuários detalhados\n• ${doc.internal.getNumberOfPages()} páginas\n\n💾 Arquivo: ${filename}`);
-      
+      alert(`✅ Plano de ${selectedUser.full_name} atualizado com sucesso!`);
+      setShowEditModal(false);
+      setSelectedUser(null);
+      loadUsers(); // Recarregar lista
     } catch (error) {
-      console.error("Erro ao gerar PDF:", error);
-      alert("❌ Erro ao gerar PDF. Tente novamente.");
+      console.error("❌ Erro ao atualizar plano:", error);
+      alert(`❌ Erro ao atualizar plano: ${error.message}`);
     } finally {
-      setIsExporting(false);
+      setIsUpdating(false);
     }
   };
 
-  // Função auxiliar: Cabeçalho
-  const addHeader = (doc, pageWidth) => {
-    doc.setFillColor(10, 10, 15);
-    doc.rect(0, 0, pageWidth, 35, 'F');
-    
-    doc.setFillColor(139, 92, 246);
-    doc.circle(25, 17, 8, 'F');
-    doc.setFillColor(255, 255, 255);
-    doc.circle(25, 17, 5, 'F');
-    
-    doc.setFontSize(16);
-    doc.setTextColor(255, 255, 255);
-    doc.setFont(undefined, 'bold');
-    doc.text('FINEX', 40, 20);
-    
-    doc.setFontSize(8);
-    doc.setTextColor(180, 180, 180);
-    doc.setFont(undefined, 'normal');
-    doc.text('Relatório Gerencial', 40, 26);
-    
-    doc.setDrawColor(139, 92, 246);
-    doc.setLineWidth(0.5);
-    doc.line(0, 35, pageWidth, 35);
+  const exportToPDF = () => {
+    const doc = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Relatório de Usuários - FINEX</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; }
+          h1 { color: #8b5cf6; text-align: center; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+          th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+          th { background-color: #8b5cf6; color: white; }
+          tr:nth-child(even) { background-color: #f9f9f9; }
+          .stats { display: flex; justify-content: space-around; margin: 20px 0; }
+          .stat-card { text-align: center; padding: 15px; background: #f3f4f6; border-radius: 8px; }
+          .stat-value { font-size: 24px; font-weight: bold; color: #8b5cf6; }
+        </style>
+      </head>
+      <body>
+        <h1>📊 Relatório de Usuários - FINEX</h1>
+        <p style="text-align: center; color: #666;">Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}</p>
+        
+        <div class="stats">
+          <div class="stat-card">
+            <div class="stat-value">${stats.total}</div>
+            <div>Total de Usuários</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">${stats.active}</div>
+            <div>Ativos (Pagos)</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">${stats.trial}</div>
+            <div>Em Trial</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">${stats.free}</div>
+            <div>Gratuitos</div>
+          </div>
+        </div>
+        
+        <table>
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Email</th>
+              <th>Plano</th>
+              <th>Status</th>
+              <th>Vencimento</th>
+              <th>Cadastro</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filteredUsers.map(user => `
+              <tr>
+                <td>${user.full_name || '-'}</td>
+                <td>${user.email}</td>
+                <td>${formatPlan(user.subscription_plan)}</td>
+                <td>${formatStatus(user.subscription_status)}</td>
+                <td>${user.subscription_end_date ? new Date(user.subscription_end_date).toLocaleDateString('pt-BR') : '-'}</td>
+                <td>${new Date(user.created_date).toLocaleDateString('pt-BR')}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        
+        <p style="margin-top: 30px; text-align: center; color: #666; font-size: 12px;">
+          FINEX - Sistema de Inteligência Financeira | Relatório gerado automaticamente
+        </p>
+      </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(doc);
+    printWindow.document.close();
+    printWindow.print();
   };
 
-  // Função auxiliar: Rodapé
-  const addFooter = (doc, pageWidth, pageHeight, pageNum) => {
-    const footerY = pageHeight - 15;
-    
-    doc.setDrawColor(139, 92, 246);
-    doc.setLineWidth(0.5);
-    doc.line(0, footerY - 5, pageWidth, footerY - 5);
-    
-    doc.setFontSize(7);
-    doc.setTextColor(120, 120, 120);
-    doc.setFont(undefined, 'normal');
-    doc.text('FINEX - Inteligência Financeira | Documento Confidencial', 20, footerY);
-    
-    doc.text(`Página ${pageNum}`, pageWidth - 20, footerY, { align: 'right' });
-    
-    doc.setFontSize(6);
-    doc.text(`Gerado em ${new Date().toLocaleString('pt-BR')}`, pageWidth / 2, footerY + 5, { align: 'center' }); // Adjusted Y for date
+  const formatPlan = (plan) => {
+    if (!plan) return "Sem plano";
+    const plans = {
+      monthly: "Mensal",
+      semester: "Semestral",
+      annual: "Anual",
+      lifetime: "Vitalício",
+      free: "Gratuito"
+    };
+    return plans[plan] || plan;
   };
 
-  const stats = calculateStats();
+  const formatStatus = (status) => {
+    if (!status) return "Pendente";
+    const statuses = {
+      active: "Ativo",
+      pending: "Pendente",
+      trial: "Trial",
+      expired: "Expirado"
+    };
+    return statuses[status] || status;
+  };
+
+  const getStatusBadge = (user) => {
+    if (user.role === 'admin') {
+      return <Badge className="bg-red-600">👑 Admin</Badge>;
+    }
+    
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    // Trial
+    if (user.subscription_status === 'trial' && user.trial_ends_at) {
+      const [year, month, day] = user.trial_ends_at.split('-').map(Number);
+      const trialEnd = new Date(year, month - 1, day);
+      const isActive = trialEnd >= today;
+      
+      if (isActive) {
+        const daysLeft = Math.ceil((trialEnd - today) / (1000 * 60 * 60 * 24));
+        return <Badge className="bg-yellow-600">🎁 Trial ({daysLeft}d)</Badge>;
+      } else {
+        return <Badge className="bg-red-600">⏰ Trial Expirado</Badge>;
+      }
+    }
+    
+    // Pago
+    if (user.subscription_status === 'active' && user.subscription_end_date) {
+      const [year, month, day] = user.subscription_end_date.split('-').map(Number);
+      const endDate = new Date(year, month - 1, day);
+      const isActive = endDate >= today;
+      
+      if (isActive) {
+        const daysLeft = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
+        return <Badge className="bg-green-600">✅ Ativo ({daysLeft}d)</Badge>;
+      } else {
+        return <Badge className="bg-red-600">⏰ Expirado</Badge>;
+      }
+    }
+    
+    return <Badge className="bg-gray-600">⏳ Pendente</Badge>;
+  };
+
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = 
+      user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = 
+      filterStatus === "all" || 
+      user.subscription_status === filterStatus ||
+      (filterStatus === "admin" && user.role === "admin");
+    
+    const matchesPlan = 
+      filterPlan === "all" || 
+      user.subscription_plan === filterPlan ||
+      (filterPlan === "none" && !user.subscription_plan);
+    
+    return matchesSearch && matchesStatus && matchesPlan;
+  });
+
+  const stats = {
+    total: users.length,
+    active: users.filter(u => u.subscription_status === 'active').length,
+    trial: users.filter(u => u.subscription_status === 'trial').length,
+    free: users.filter(u => !u.subscription_plan || u.subscription_plan === 'free').length,
+    admins: users.filter(u => u.role === 'admin').length
+  };
 
   if (isLoading) {
-    return <div className="text-purple-300 text-center py-12">Carregando relatório...</div>;
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mb-4"></div>
+        <p className="text-purple-300">Carregando relatório...</p>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
-      <div className="grid md:grid-cols-4 gap-4">
+      <div className="grid md:grid-cols-5 gap-4">
         <Card className="glass-card border-0">
           <CardContent className="p-4">
             <div className="flex justify-between items-start">
@@ -610,7 +321,7 @@ export default function AdminUserReport() {
                 <p className="text-green-300 text-sm">Ativos (Pagos)</p>
                 <p className="text-3xl font-bold text-white">{stats.active}</p>
               </div>
-              <Users className="w-8 h-8 text-green-400" />
+              <CheckCircle className="w-8 h-8 text-green-400" />
             </div>
           </CardContent>
         </Card>
@@ -619,10 +330,22 @@ export default function AdminUserReport() {
           <CardContent className="p-4">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-yellow-300 text-sm">Free/Pendentes</p>
+                <p className="text-yellow-300 text-sm">Trial</p>
+                <p className="text-3xl font-bold text-white">{stats.trial}</p>
+              </div>
+              <Clock className="w-8 h-8 text-yellow-400" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="glass-card border-0">
+          <CardContent className="p-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-gray-300 text-sm">Gratuitos</p>
                 <p className="text-3xl font-bold text-white">{stats.free}</p>
               </div>
-              <Users className="w-8 h-8 text-yellow-400" />
+              <XCircle className="w-8 h-8 text-gray-400" />
             </div>
           </CardContent>
         </Card>
@@ -631,16 +354,16 @@ export default function AdminUserReport() {
           <CardContent className="p-4">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-cyan-300 text-sm">Receita Total</p>
-                <p className="text-2xl font-bold text-white">R$ {stats.totalRevenue.toFixed(2)}</p>
+                <p className="text-red-300 text-sm">Admins</p>
+                <p className="text-3xl font-bold text-white">{stats.admins}</p>
               </div>
-              <DollarSign className="w-8 h-8 text-cyan-400" />
+              <Crown className="w-8 h-8 text-red-400" />
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filters and Export */}
+      {/* Filters */}
       <Card className="glass-card border-0">
         <CardContent className="p-4">
           <div className="flex flex-col md:flex-row gap-4">
@@ -653,22 +376,23 @@ export default function AdminUserReport() {
                 className="pl-10 bg-purple-900/20 border-purple-700/50 text-white"
               />
             </div>
-
+            
             <Select value={filterStatus} onValueChange={setFilterStatus}>
               <SelectTrigger className="w-full md:w-48 bg-purple-900/20 border-purple-700/50 text-white">
-                <SelectValue />
+                <SelectValue placeholder="Todos os Status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos os Status</SelectItem>
-                <SelectItem value="active">✅ Ativos (Pagos)</SelectItem>
-                <SelectItem value="free">🆓 Free/Pendentes</SelectItem>
-                <SelectItem value="expired">⏰ Expirados</SelectItem>
+                <SelectItem value="active">✅ Ativos</SelectItem>
+                <SelectItem value="trial">🎁 Trial</SelectItem>
+                <SelectItem value="pending">⏳ Pendentes</SelectItem>
+                <SelectItem value="admin">👑 Admins</SelectItem>
               </SelectContent>
             </Select>
 
             <Select value={filterPlan} onValueChange={setFilterPlan}>
               <SelectTrigger className="w-full md:w-48 bg-purple-900/20 border-purple-700/50 text-white">
-                <SelectValue />
+                <SelectValue placeholder="Todos os Planos" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos os Planos</SelectItem>
@@ -680,38 +404,12 @@ export default function AdminUserReport() {
               </SelectContent>
             </Select>
 
-            {/* ✅ NOVO: Select de Ordenação */}
-            <Select value={sortOrder} onValueChange={setSortOrder}>
-              <SelectTrigger className="w-full md:w-48 bg-purple-900/20 border-purple-700/50 text-white">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="newest">Mais Novos Primeiro</SelectItem>
-                <SelectItem value="oldest">Mais Antigos Primeiro</SelectItem>
-              </SelectContent>
-            </Select>
-
             <Button
               onClick={exportToPDF}
-              disabled={isExporting || !jsPDFLoaded}
-              className="bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700"
+              className="bg-gradient-to-r from-cyan-600 to-blue-600"
             >
-              {isExporting ? (
-                <>
-                  <FileText className="w-4 h-4 mr-2 animate-spin" />
-                  Gerando...
-                </>
-              ) : !jsPDFLoaded ? (
-                <>
-                  <FileText className="w-4 h-4 mr-2 animate-pulse" />
-                  Carregando...
-                </>
-              ) : (
-                <>
-                  <Download className="w-4 h-4 mr-2" />
-                  Exportar PDF
-                </>
-              )}
+              <Download className="w-4 h-4 mr-2" />
+              Exportar PDF
             </Button>
           </div>
         </CardContent>
@@ -726,81 +424,201 @@ export default function AdminUserReport() {
         </CardHeader>
         <CardContent className="p-6">
           <div className="space-y-3">
-            {filteredUsers.map((user, index) => {
-              const subscription = getUserSubscription(user.email);
-              const isActive = user.subscription_status === "active" && 
-                              user.subscription_end_date && 
-                              new Date(user.subscription_end_date) > new Date();
-              const isFree = !user.subscription_status || user.subscription_status === "pending";
-              const isExpired = user.subscription_status === "expired" || 
-                               (user.subscription_end_date && new Date(user.subscription_end_date) < new Date());
-
-              return (
-                <motion.div
-                  key={user.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.02 }}
-                  className="flex items-start justify-between p-4 rounded-xl glass-card"
-                >
+            {filteredUsers.map((user, index) => (
+              <motion.div
+                key={user.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.03 }}
+                className="flex flex-col gap-3 p-4 rounded-xl glass-card hover:bg-purple-900/20 transition-all"
+              >
+                <div className="flex items-start justify-between gap-4 flex-wrap">
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                        <span className="text-white font-bold">{user.full_name?.charAt(0) || "U"}</span>
-                      </div>
-                      <div>
-                        <p className="text-white font-semibold">{user.full_name || "Sem nome"}</p>
-                        <p className="text-purple-300 text-sm">{user.email}</p>
-                      </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-white font-semibold">{user.full_name || "Sem nome"}</p>
+                      {getStatusBadge(user)}
                     </div>
-
-                    <div className="flex flex-wrap gap-2 ml-13">
-                      {isActive && (
-                        <Badge className="bg-green-600 text-white">
-                          ✅ ATIVO (PAGO)
-                        </Badge>
-                      )}
-                      {isFree && (
-                        <Badge className="bg-yellow-600 text-white">
-                          🆓 FREE
-                        </Badge>
-                      )}
-                      {isExpired && (
-                        <Badge className="bg-red-600 text-white">
-                          ⏰ EXPIRADO
-                        </Badge>
-                      )}
-
+                    <p className="text-purple-300 text-sm mt-1">{user.email}</p>
+                    
+                    <div className="flex flex-wrap gap-2 mt-2">
                       {user.subscription_plan && (
-                        <Badge className="bg-purple-600/20 text-purple-400 border-purple-600/40">
-                          {user.subscription_plan === "monthly" && "📅 Mensal"}
-                          {user.subscription_plan === "semester" && "📅 Semestral"}
-                          {user.subscription_plan === "annual" && "📅 Anual"}
-                          {user.subscription_plan === "lifetime" && "♾️ Vitalício"}
+                        <Badge className="bg-purple-600/20 text-purple-400">
+                          📋 {formatPlan(user.subscription_plan)}
                         </Badge>
                       )}
-
+                      
                       {user.subscription_end_date && (
-                        <Badge variant="outline" className="border-cyan-600/40 text-cyan-400">
-                          <Calendar className="w-3 h-3 mr-1" />
-                          Vence: {new Date(user.subscription_end_date).toLocaleDateString('pt-BR')}
+                        <Badge className="bg-cyan-600/20 text-cyan-400">
+                          📅 Vence: {new Date(user.subscription_end_date).toLocaleDateString('pt-BR')}
                         </Badge>
                       )}
-
-                      {subscription && (
-                        <Badge className="bg-cyan-600/20 text-cyan-400 border-cyan-600/40">
-                          <DollarSign className="w-3 h-3 mr-1" />
-                          R$ {subscription.amount_paid.toFixed(2)}
+                      
+                      {user.trial_ends_at && (
+                        <Badge className="bg-yellow-600/20 text-yellow-400">
+                          🎁 Trial até: {new Date(user.trial_ends_at).toLocaleDateString('pt-BR')}
                         </Badge>
                       )}
                     </div>
+                    
+                    <p className="text-purple-400 text-xs mt-2">
+                      Cadastrado em: {new Date(user.created_date).toLocaleDateString('pt-BR')}
+                    </p>
                   </div>
-                </motion.div>
-              );
-            })}
+
+                  {user.role !== 'admin' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEditPlan(user)}
+                      className="border-purple-700 text-purple-300 hover:bg-purple-900/20"
+                    >
+                      <Edit className="w-3 h-3 mr-1" />
+                      Editar Plano
+                    </Button>
+                  )}
+                </div>
+              </motion.div>
+            ))}
           </div>
         </CardContent>
       </Card>
+
+      {/* Edit Plan Modal */}
+      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+        <DialogContent className="glass-card border-purple-700/50 text-white max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+              ✏️ Editar Plano do Usuário
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedUser && (
+            <div className="space-y-6">
+              {/* User Info */}
+              <div className="p-4 rounded-lg bg-purple-900/20 border border-purple-700/30">
+                <p className="text-white font-bold text-lg">{selectedUser.full_name}</p>
+                <p className="text-purple-300 text-sm">{selectedUser.email}</p>
+                <div className="flex gap-2 mt-2">
+                  {getStatusBadge(selectedUser)}
+                  {selectedUser.subscription_plan && (
+                    <Badge className="bg-purple-600/20 text-purple-400">
+                      📋 {formatPlan(selectedUser.subscription_plan)}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
+              {/* Edit Form */}
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-purple-200">Plano</Label>
+                  <Select 
+                    value={editForm.subscription_plan} 
+                    onValueChange={(value) => setEditForm({...editForm, subscription_plan: value})}
+                  >
+                    <SelectTrigger className="bg-purple-900/20 border-purple-700/50 text-white mt-1">
+                      <SelectValue placeholder="Selecione o plano" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={null}>🚫 Sem Plano</SelectItem>
+                      <SelectItem value="monthly">📅 Mensal</SelectItem>
+                      <SelectItem value="semester">📆 Semestral</SelectItem>
+                      <SelectItem value="annual">🗓️ Anual</SelectItem>
+                      <SelectItem value="lifetime">👑 Vitalício</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="text-purple-200">Status</Label>
+                  <Select 
+                    value={editForm.subscription_status} 
+                    onValueChange={(value) => setEditForm({...editForm, subscription_status: value})}
+                  >
+                    <SelectTrigger className="bg-purple-900/20 border-purple-700/50 text-white mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">⏳ Pendente</SelectItem>
+                      <SelectItem value="active">✅ Ativo</SelectItem>
+                      <SelectItem value="trial">🎁 Trial</SelectItem>
+                      <SelectItem value="expired">⏰ Expirado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="text-purple-200">Data de Vencimento (Assinatura)</Label>
+                  <Input
+                    type="date"
+                    value={editForm.subscription_end_date}
+                    onChange={(e) => setEditForm({...editForm, subscription_end_date: e.target.value})}
+                    className="bg-purple-900/20 border-purple-700/50 text-white mt-1"
+                  />
+                  <p className="text-purple-400 text-xs mt-1">
+                    Para planos pagos (Mensal, Semestral, Anual, Vitalício)
+                  </p>
+                </div>
+
+                <div>
+                  <Label className="text-purple-200">Data de Término do Trial</Label>
+                  <Input
+                    type="date"
+                    value={editForm.trial_ends_at}
+                    onChange={(e) => setEditForm({...editForm, trial_ends_at: e.target.value})}
+                    className="bg-purple-900/20 border-purple-700/50 text-white mt-1"
+                  />
+                  <p className="text-purple-400 text-xs mt-1">
+                    Para status "Trial" (3 dias gratuitos)
+                  </p>
+                </div>
+              </div>
+
+              {/* Warning */}
+              <div className="p-4 rounded-lg bg-yellow-900/20 border border-yellow-700/30">
+                <p className="text-yellow-300 text-sm flex items-start gap-2">
+                  <span>⚠️</span>
+                  <span>
+                    <strong>ATENÇÃO:</strong> Esta alteração afetará imediatamente o acesso do usuário ao sistema.
+                    {editForm.subscription_plan === 'lifetime' && (
+                      <><br/><br/><strong>🔒 Plano Vitalício:</strong> Defina uma data de vencimento distante (ex: 100 anos) para simular acesso vitalício.</>
+                    )}
+                  </span>
+                </p>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowEditModal(false)}
+                  disabled={isUpdating}
+                  className="flex-1 border-purple-700 text-purple-300"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={handleSavePlan}
+                  disabled={isUpdating}
+                  className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600"
+                >
+                  {isUpdating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Salvar Alterações
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
