@@ -13,8 +13,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { FileText, AlertTriangle, Shield, CheckCircle, Loader2, ExternalLink } from "lucide-react";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
-import { createPageUrl } from "@/utils";
 
 export default function TermsOfServiceModal({ user, onAccepted }) {
   const [terms, setTerms] = useState(null);
@@ -100,6 +98,14 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
     }
   };
 
+  const handleOpenFullPage = () => {
+    // Abrir em nova aba sem passar pelo router
+    const newWindow = window.open('/TermsOfService', '_blank');
+    if (newWindow) {
+      newWindow.focus();
+    }
+  };
+
   if (isLoading) {
     return null; // Não mostra nada enquanto carrega
   }
@@ -164,14 +170,13 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
 
           {/* Link para página completa */}
           <div className="text-center">
-            <Link 
-              to={createPageUrl("TermsOfService")}
-              target="_blank"
-              className="text-cyan-400 hover:text-cyan-300 text-sm inline-flex items-center gap-1"
+            <button
+              onClick={handleOpenFullPage}
+              className="text-cyan-400 hover:text-cyan-300 text-sm inline-flex items-center gap-1 hover:underline"
             >
               <ExternalLink className="w-3 h-3" />
-              Abrir termos em página completa
-            </Link>
+              Abrir termos em página completa (nova aba)
+            </button>
           </div>
 
           {/* Checkbox de Aceitação */}

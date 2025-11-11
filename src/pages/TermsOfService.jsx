@@ -10,14 +10,24 @@ import { createPageUrl } from "@/utils";
 export default function TermsOfService() {
   const [terms, setTerms] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    loadTerms();
+    checkAuthAndLoadTerms();
     document.title = "Termos de Uso - FINEX";
   }, []);
 
-  const loadTerms = async () => {
+  const checkAuthAndLoadTerms = async () => {
     try {
+      // Verificar se está autenticado
+      try {
+        const user = await base44.auth.me();
+        setIsAuthenticated(!!user);
+      } catch (error) {
+        setIsAuthenticated(false);
+      }
+
+      // Carregar termos (mesmo sem login)
       const { TermsOfService } = await import("@/entities/TermsOfService");
       const allTerms = await TermsOfService.list("-created_date", 1);
       const activeTerms = allTerms.find(t => t.is_active);
@@ -52,12 +62,14 @@ export default function TermsOfService() {
             <p className="text-purple-300 mb-4">
               Não há termos de uso cadastrados no sistema.
             </p>
-            <Link to={createPageUrl("Dashboard")}>
-              <Button className="bg-gradient-to-r from-purple-600 to-pink-600">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Voltar ao Dashboard
-              </Button>
-            </Link>
+            {isAuthenticated && (
+              <Link to={createPageUrl("Dashboard")}>
+                <Button className="bg-gradient-to-r from-purple-600 to-pink-600">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Voltar ao Dashboard
+                </Button>
+              </Link>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -77,12 +89,14 @@ export default function TermsOfService() {
               Documentos oficiais do sistema FINEX
             </p>
           </div>
-          <Link to={createPageUrl("Dashboard")}>
-            <Button variant="outline" className="border-purple-700 text-purple-300">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Voltar
-            </Button>
-          </Link>
+          {isAuthenticated && (
+            <Link to={createPageUrl("Dashboard")}>
+              <Button variant="outline" className="border-purple-700 text-purple-300">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Voltar
+              </Button>
+            </Link>
+          )}
         </div>
 
         {/* Info Card */}
@@ -182,6 +196,18 @@ export default function TermsOfService() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Contact Info */}
+        <Card className="glass-card border-0 bg-blue-900/20">
+          <CardContent className="p-6">
+            <h3 className="text-white font-bold text-lg mb-3">📞 Contato</h3>
+            <div className="space-y-2 text-purple-200 text-sm">
+              <p>📧 E-mail: <a href="mailto:suporte@finex.app" className="text-cyan-400 hover:underline">suporte@finex.app</a></p>
+              <p>💬 WhatsApp: <a href="https://wa.me/5565981297511" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline">(65) 98129-7511</a></p>
+              <p>🌐 Site: <a href="https://finex.base44.app" className="text-cyan-400 hover:underline">https://finex.base44.app</a></p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Print Styles */}
@@ -195,6 +221,9 @@ export default function TermsOfService() {
             background: white !important;
           }
           button {
+            display: none !important;
+          }
+          nav, header {
             display: none !important;
           }
         }
