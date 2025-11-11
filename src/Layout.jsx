@@ -46,6 +46,7 @@ import { Button } from "@/components/ui/button";
 
 import PerformanceMonitor from "./components/PerformanceMonitor";
 import PhoneVerificationModal from "./components/PhoneVerificationModal";
+import TermsOfServiceModal from "./components/TermsOfServiceModal";
 
 const navigationItems = [
   {
@@ -324,6 +325,12 @@ function LayoutContent({ children }) {
     console.log("📞 Telefone atualizado:", newPhone);
     // Atualizar estado do usuário
     setUser(prev => ({ ...prev, phone: newPhone, phone_verified: true }));
+  };
+
+  const handleTermsAccepted = () => {
+    console.log("📋 Termos aceitos pelo usuário");
+    // Atualizar estado do usuário
+    setUser(prev => ({ ...prev, terms_accepted: true }));
   };
 
   if (isLoadingLayout) {
@@ -764,6 +771,7 @@ function LayoutContent({ children }) {
       
       <WelcomeEmailSender />
       <PhoneVerificationModal user={user} onPhoneUpdated={handlePhoneUpdated} />
+      <TermsOfServiceModal user={user} onAccepted={handleTermsAccepted} />
       
       <div className={`min-h-screen flex w-full bg-gradient-to-br ${themeColors.bg}`}>
         <Sidebar>
