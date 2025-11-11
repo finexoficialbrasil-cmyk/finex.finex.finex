@@ -444,7 +444,15 @@ export default function Plans() {
     setIsSubmitting(true);
 
     try {
-      await Subscription.create({
+      console.log("📝 Criando registro de assinatura...");
+      console.log("📋 Dados:", {
+        user_email: user.email,
+        plan_type: selectedPlan.plan_type,
+        amount_paid: selectedPlan.price,
+        status: "pending"
+      });
+      
+      const newSubscription = await Subscription.create({
         user_email: user.email,
         plan_type: selectedPlan.plan_type,
         status: "pending",
@@ -452,15 +460,22 @@ export default function Plans() {
         payment_method: "pix",
         payment_proof_url: paymentData.payment_proof_url,
         transaction_id: paymentData.asaas_payment_id || null,
-        notes: paymentData.notes
+        notes: paymentData.notes || `Pagamento manual via PIX - ${selectedPlan.name}`
       });
 
-      alert("✅ Pagamento registrado! Aguarde a confirmação.");
+      console.log("✅ Subscription criada com sucesso!");
+      console.log("📦 ID:", newSubscription.id);
+      console.log("📧 User:", newSubscription.user_email);
+      console.log("📊 Status:", newSubscription.status);
+
+      alert("✅ Pagamento registrado!\n\n📝 Sua assinatura foi enviada para análise.\n\n⏱️ Aguarde a confirmação do administrador (até 24h).\n\n🔔 Você receberá uma notificação quando for aprovada!");
       setShowPaymentModal(false);
       loadData();
     } catch (error) {
-      console.error("Erro ao enviar pagamento:", error);
-      alert("❌ Erro ao enviar comprovante. Tente novamente.");
+      console.error("❌ Erro ao enviar pagamento:", error);
+      console.error("📋 Detalhes:", error.message);
+      console.error("📋 Stack:", error.stack);
+      alert(`❌ Erro ao enviar comprovante.\n\nDetalhes: ${error.message}\n\nTente novamente ou entre em contato com o suporte.`);
     } finally {
       setIsSubmitting(false);
     }

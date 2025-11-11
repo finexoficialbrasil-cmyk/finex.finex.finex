@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client"; // ✅ USAR SDK
+import { Subscription } from "@/entities/Subscription"; // ✅ IMPORT ADICIONAL para debug
 import { User } from "@/entities/User";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Search, CheckCircle, XCircle, Clock, Eye, Download, DollarSign, RefreshCw } from "lucide-react";
+import { Search, CheckCircle, XCircle, Clock, Eye, Download, DollarSign, RefreshCw, AlertTriangle } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function AdminSubscriptions() {
@@ -31,6 +32,7 @@ export default function AdminSubscriptions() {
   const [selectedSubscription, setSelectedSubscription] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [isBlocking, setIsBlocking] = useState(false);
+  const [debugInfo, setDebugInfo] = useState(null); // ✅ NOVO ESTADO para informações de debug
 
   useEffect(() => {
     loadData();
@@ -38,26 +40,54 @@ export default function AdminSubscriptions() {
 
   const loadData = async () => {
     try {
-      console.log("🔄 Carregando dados do admin...");
+      console.log("════════════════════════════════════════");
+      console.log("🔄 AdminSubscriptions - Carregando dados...");
+      console.log("════════════════════════════════════════");
       
-      // ✅ USAR BACKEND FUNCTION para buscar TODAS as subscriptions (ignorando RLS)
-      const { data: response } = await base44.functions.invoke('adminGetAllSubscriptions');
-      
-      console.log("📦 Resposta da função:", response);
-      
-      if (response?.subscriptions && response?.users) {
-        console.log(`✅ ${response.subscriptions.length} subscriptions carregadas`);
-        console.log(`✅ ${response.users.length} usuários carregados`);
+      // ✅ TESTE 1: Tentar com função backend
+      try {
+        console.log("📊 Teste 1: Usando backend function...");
+        const { data: response } = await base44.functions.invoke('adminGetAllSubscriptions');
         
-        setSubscriptions(response.subscriptions);
-        setUsers(response.users);
-      } else {
-        console.error("❌ Resposta inválida:", response);
-        alert("❌ Erro ao carregar dados. Verifique o console.");
+        console.log("📦 Resposta da função:", response);
+        
+        if (response?.success && response?.subscriptions && response?.users) {
+          console.log(`✅ Backend function OK: ${response.subscriptions.length} subs`);
+          setSubscriptions(response.subscriptions);
+          setUsers(response.users);
+          setDebugInfo(response.debug); // ✅ Definir debugInfo do backend
+          setIsLoading(false);
+          return; // Sai da função se o backend for bem-sucedido
+        } else {
+          console.warn("⚠️ Backend function retornou dados vazios ou inválidos, tentando fallback.");
+        }
+      } catch (funcError) {
+        console.error("❌ Erro na backend function, tentando fallback:", funcError);
       }
+      
+      // ✅ TESTE 2: Tentar direto com SDK (fallback) - executa apenas se a função backend falhar ou retornar dados inválidos
+      console.log("📊 Teste 2: Fallback - buscando direto com SDK...");
+      const subsData = await Subscription.list("-created_date", 500);
+      const usersData = await User.list("-created_date", 500);
+      
+      console.log(`✅ Fallback OK: ${subsData.length} subs, ${usersData.length} users`);
+      
+      setSubscriptions(subsData);
+      setUsers(usersData);
+      setDebugInfo({ // ✅ Definir um debugInfo básico para o fallback
+        subscriptions_count: subsData.length,
+        users_count: usersData.length,
+        timestamp: new Date().toISOString(),
+        method: "SDK Fallback"
+      });
+      
     } catch (error) {
-      console.error("❌ Erro ao carregar dados:", error);
-      alert(`❌ Erro: ${error.message}\n\nVerifique se você é admin.`);
+      console.error("════════════════════════════════════════");
+      console.error("❌ ERRO CRÍTICO ao carregar dados:");
+      console.error("   Message:", error.message);
+      console.error("   Stack:", error.stack);
+      console.error("════════════════════════════════════════");
+      alert(`❌ Erro ao carregar dados:\n\n${error.message}\n\nVerifique o console (F12) para mais detalhes.`);
     } finally {
       setIsLoading(false);
     }
@@ -185,22 +215,61 @@ export default function AdminSubscriptions() {
   };
 
   if (isLoading) {
-    return <div className="text-purple-300 text-center py-12">Carregando assinaturas...</div>;
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mb-4"></div>
+        <p className="text-purple-300">Carregando assinaturas...</p>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
-      {/* ✅ NOVO: Aviso se não houver subscriptions */}
-      {subscriptions.length === 0 && (
-        <Card className="glass-card border-0 border-l-4 border-yellow-500">
+      {/* ✅ Debug Info */}
+      {debugInfo && (
+        <Card className="glass-card border-0 border-l-4 border-cyan-500">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <Clock className="w-6 h-6 text-yellow-400" />
+              <AlertTriangle className="w-5 h-5 text-cyan-400" />
+              <div className="text-xs text-cyan-200">
+                <p>Debug: {debugInfo.subscriptions_count} subs carregadas | {debugInfo.users_count} users | {debugInfo.timestamp}</p>
+                {debugInfo.method && <p>Método: {debugInfo.method}</p>}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ✅ Aviso se não houver subscriptions */}
+      {subscriptions.length === 0 && (
+        <Card className="glass-card border-0 border-l-4 border-yellow-500">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              <AlertTriangle className="w-8 h-8 text-yellow-400 flex-shrink-0" />
               <div>
-                <p className="text-white font-semibold">Nenhuma assinatura encontrada</p>
-                <p className="text-purple-300 text-sm">
-                  Aguarde os usuários fazerem pagamentos ou verifique se você é admin.
+                <p className="text-white font-bold text-lg mb-2">⚠️ Nenhuma Assinatura Encontrada</p>
+                <p className="text-yellow-300 mb-3">
+                  Não há registros de assinaturas no sistema.
                 </p>
+                <div className="bg-yellow-900/20 p-3 rounded-lg text-sm space-y-1 text-yellow-200">
+                  <p><strong>Possíveis causas:</strong></p>
+                  <ul className="list-disc list-inside ml-2 space-y-1">
+                    <li>Nenhum usuário fez pagamento ainda</li>
+                    <li>As subscriptions não estão sendo criadas corretamente</li>
+                    <li>Problema de permissão no banco de dados</li>
+                  </ul>
+                  <p className="mt-3"><strong>💡 Solução:</strong></p>
+                  <p>1. Peça para um usuário fazer um pagamento de teste</p>
+                  <p>2. Verifique o console do navegador (F12) para erros</p>
+                  <p>3. Verifique se você é admin</p>
+                </div>
+                <Button
+                  onClick={loadData}
+                  className="mt-4 bg-yellow-600 hover:bg-yellow-700"
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Recarregar Dados
+                </Button>
               </div>
             </div>
           </CardContent>
