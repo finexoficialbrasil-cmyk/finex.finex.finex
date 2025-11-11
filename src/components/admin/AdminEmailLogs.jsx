@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { EmailLog } from "@/entities/EmailLog";
@@ -30,7 +31,8 @@ import {
   Calendar,
   User as UserIcon,
   Filter,
-  RefreshCw
+  RefreshCw,
+  MessageCircle // ✅ NOVO
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -42,8 +44,10 @@ export default function AdminEmailLogs() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [isLoading, setIsLoading] = useState(true);
   const [showManualModal, setShowManualModal] = useState(false);
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false); // ✅ NOVO
   const [selectedUser, setSelectedUser] = useState(null);
   const [selectedEmailType, setSelectedEmailType] = useState("3_days_before");
+  const [whatsappMessage, setWhatsappMessage] = useState(""); // ✅ NOVO
   const [isSending, setIsSending] = useState(false);
 
   useEffect(() => {
@@ -97,6 +101,100 @@ export default function AdminEmailLogs() {
       alert(`❌ Erro ao enviar email: ${error.message}`);
     } finally {
       setIsSending(false);
+    }
+  };
+
+  // ✅ NOVA FUNÇÃO: Enviar WhatsApp
+  const handleSendWhatsApp = async () => {
+    if (!selectedUser) {
+      alert("Selecione um usuário!");
+      return;
+    }
+
+    if (!selectedUser.phone) {
+      alert("❌ Este usuário não tem telefone cadastrado!");
+      return;
+    }
+
+    if (!whatsappMessage.trim()) {
+      alert("❌ Digite uma mensagem!");
+      return;
+    }
+
+    setIsSending(true);
+    try {
+      // Abrir WhatsApp Web com mensagem pré-preenchida
+      const phone = selectedUser.phone.replace(/\D/g, '');
+      const encodedMessage = encodeURIComponent(whatsappMessage);
+      const whatsappUrl = `https://wa.me/55${phone}?text=${encodedMessage}`; // Assuming Brazilian numbers need 55 prefix
+      
+      window.open(whatsappUrl, '_blank');
+      
+      alert(`✅ WhatsApp aberto para ${selectedUser.full_name || selectedUser.email}!`);
+      setShowWhatsAppModal(false);
+      setWhatsappMessage("");
+      setSelectedUser(null);
+      
+    } catch (error) {
+      console.error("Erro ao abrir WhatsApp:", error);
+      alert("❌ Erro ao abrir WhatsApp. Tente novamente.");
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  // ✅ TEMPLATES DE MENSAGENS WHATSAPP
+  const whatsappTemplates = {
+    reminder: `Olá, {{USER_NAME}}! 👋
+
+Passando para te lembrar que seu plano *{{PLAN_NAME}}* no FINEX está próximo do vencimento!
+
+📅 *Vencimento:* {{EXPIRY_DATE}}
+
+💜 Renove agora e mantenha acesso completo:
+https://finex.base44.app
+
+Qualquer dúvida, estou à disposição! 😊`,
+
+    expired: `Olá, {{USER_NAME}}! 
+
+Notamos que seu plano no FINEX expirou. 😔
+
+Mas calma! Seus dados estão 100% seguros e você pode reativar a qualquer momento:
+
+✅ Todo histórico preservado
+✅ Reativação instantânea
+✅ Acesso completo restaurado
+
+🔓 Reative agora:
+https://finex.base44.app
+
+Estamos esperando você! 💜`,
+
+    welcome: `Olá, {{USER_NAME}}! Seja muito bem-vindo(a) ao FINEX! 🎉
+
+Estamos muito felizes em ter você conosco! 💜
+
+🚀 *Próximos passos:*
+1. Complete seu perfil
+2. Escolha um plano
+3. Comece a organizar suas finanças
+
+📱 Precisa de ajuda? Responda esta mensagem!
+
+Vamos juntos rumo ao sucesso financeiro! 💰✨`
+  };
+
+  const loadTemplate = (templateKey) => {
+    const template = whatsappTemplates[templateKey];
+    if (selectedUser && template) {
+      const message = template
+        .replace(/{{USER_NAME}}/g, selectedUser.full_name || selectedUser.email.split('@')[0])
+        .replace(/{{PLAN_NAME}}/g, formatPlanName(selectedUser.subscription_plan))
+        .replace(/{{EXPIRY_DATE}}/g, selectedUser.subscription_end_date ? 
+          new Date(selectedUser.subscription_end_date).toLocaleDateString('pt-BR') : '-');
+      
+      setWhatsappMessage(message);
     }
   };
 
@@ -230,7 +328,7 @@ export default function AdminEmailLogs() {
               />
             </div>
 
-            <div className="flex gap-2 w-full md:w-auto">
+            <div className="flex gap-2 w-full md:w-auto flex-wrap">
               <Select value={filterType} onValueChange={setFilterType}>
                 <SelectTrigger className="w-full md:w-48 bg-purple-900/20 border-purple-700/50 text-white">
                   <SelectValue placeholder="Tipo" />
@@ -262,10 +360,19 @@ export default function AdminEmailLogs() {
 
               <Button
                 onClick={() => setShowManualModal(true)}
-                className="bg-gradient-to-r from-green-600 to-emerald-600 whitespace-nowrap"
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 whitespace-nowrap"
               >
                 <Send className="w-4 h-4 mr-2" />
-                Enviar Manual
+                📧 Email
+              </Button>
+
+              {/* ✅ NOVO: Botão WhatsApp */}
+              <Button
+                onClick={() => setShowWhatsAppModal(true)}
+                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 whitespace-nowrap"
+              >
+                <MessageCircle className="w-4 h-4 mr-2" />
+                💬 WhatsApp
               </Button>
 
               <Button
@@ -475,6 +582,168 @@ export default function AdminEmailLogs() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* ✅ NOVO: WhatsApp Modal */}
+      <Dialog open={showWhatsAppModal} onOpenChange={setShowWhatsAppModal}>
+        <DialogContent className="glass-card border-green-700/50 text-white max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
+              💬 Enviar Mensagem WhatsApp
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            {/* Usuário */}
+            <div>
+              <Label className="text-purple-200 mb-2 block">Usuário</Label>
+              <Select 
+                value={selectedUser?.id} 
+                onValueChange={(value) => {
+                  const user = users.find(u => u.id === value);
+                  setSelectedUser(user);
+                  setWhatsappMessage(""); // Limpar mensagem ao trocar usuário
+                }}
+              >
+                <SelectTrigger className="bg-purple-900/20 border-purple-700/50 text-white">
+                  <SelectValue placeholder="Selecione um usuário" />
+                </SelectTrigger>
+                <SelectContent>
+                  {users.map(user => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.full_name || user.email} {!user.phone && '(⚠️ SEM TELEFONE)'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Detalhes do Usuário */}
+            {selectedUser && (
+              <div className="p-4 rounded-lg bg-purple-900/20 border border-purple-700/30">
+                <p className="text-sm text-purple-200 mb-2">
+                  <strong>📧 Email:</strong> {selectedUser.email}
+                </p>
+                <p className="text-sm text-purple-200 mb-2">
+                  <strong>👤 Nome:</strong> {selectedUser.full_name}
+                </p>
+                <p className="text-sm text-purple-200 mb-2">
+                  <strong>📱 Telefone:</strong> {selectedUser.phone || '❌ Não cadastrado'}
+                </p>
+                {selectedUser.subscription_end_date && (
+                  <p className="text-sm text-purple-200">
+                    <strong>📅 Vencimento:</strong> {new Date(selectedUser.subscription_end_date).toLocaleDateString('pt-BR')}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Templates Rápidos */}
+            <div>
+              <Label className="text-purple-200 mb-2 block">Templates Rápidos</Label>
+              <div className="grid grid-cols-3 gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => loadTemplate('welcome')}
+                  disabled={!selectedUser}
+                  className="border-green-700 text-green-300"
+                >
+                  🎉 Boas-vindas
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => loadTemplate('reminder')}
+                  disabled={!selectedUser}
+                  className="border-yellow-700 text-yellow-300"
+                >
+                  ⏰ Lembrete
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => loadTemplate('expired')}
+                  disabled={!selectedUser}
+                  className="border-red-700 text-red-300"
+                >
+                  ❌ Expirado
+                </Button>
+              </div>
+            </div>
+
+            {/* Mensagem */}
+            <div>
+              <Label className="text-purple-200 mb-2 block">Mensagem</Label>
+              <textarea
+                value={whatsappMessage}
+                onChange={(e) => setWhatsappMessage(e.target.value)}
+                placeholder="Digite sua mensagem aqui..."
+                className="w-full min-h-[200px] bg-purple-900/20 border border-purple-700/50 text-white rounded-lg p-4 resize-y"
+                required
+              />
+              <p className="text-purple-400 text-xs mt-2">
+                💡 Use *negrito* para destacar palavras importantes
+              </p>
+            </div>
+
+            {/* Aviso */}
+            <div className="bg-yellow-900/20 border border-yellow-700/30 p-4 rounded-lg">
+              <p className="text-yellow-300 text-sm">
+                ⚠️ <strong>ATENÇÃO:</strong> Isso abrirá o WhatsApp Web com a mensagem pronta. 
+                Você precisará clicar em "Enviar" manualmente no WhatsApp.
+              </p>
+            </div>
+
+            {/* Botões */}
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setShowWhatsAppModal(false);
+                  setWhatsappMessage("");
+                  setSelectedUser(null);
+                }}
+                disabled={isSending}
+                className="flex-1 border-purple-700 text-purple-300"
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                onClick={handleSendWhatsApp}
+                disabled={isSending || !selectedUser || !selectedUser.phone || !whatsappMessage.trim()}
+                className="flex-1 bg-gradient-to-r from-green-500 to-green-600"
+              >
+                {isSending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Abrindo...
+                  </>
+                ) : (
+                  <>
+                    <MessageCircle className="w-4 h-4 mr-2" />
+                    💬 Abrir WhatsApp
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
+}
+
+function formatPlanName(plan) {
+  const plans = {
+    monthly: 'Mensal',
+    semester: 'Semestral',
+    annual: 'Anual',
+    lifetime: 'Vitalício'
+  };
+  return plans[plan] || plan || 'Premium';
 }

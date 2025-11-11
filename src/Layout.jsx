@@ -45,6 +45,7 @@ import ReceivablesNotification from "./components/ReceivablesNotification";
 import { Button } from "@/components/ui/button";
 
 import PerformanceMonitor from "./components/PerformanceMonitor";
+import PhoneVerificationModal from "./components/PhoneVerificationModal";
 
 const navigationItems = [
   {
@@ -214,7 +215,6 @@ function LayoutContent({ children }) {
   const { setOpenMobile, setOpen } = useSidebar();
   const [user, setUser] = React.useState(null);
   const [userPlan, setUserPlan] = React.useState(null);
-  // Removed: const [hoveredItem, setHoveredItem] = React.useState(null);
   const [theme, setTheme] = React.useState("dark");
   const [appName, setAppName] = React.useState("FINEX");
   const [appLogo, setAppLogo] = React.useState("");
@@ -240,7 +240,6 @@ function LayoutContent({ children }) {
 
   React.useEffect(() => {
     if (previousPath !== location.pathname && window.innerWidth < 768) {
-      // Removed: console.log("📱 Rota mudou no mobile, fechando sidebar");
       setOpenMobile(false);
       setOpen(false);
     }
@@ -272,9 +271,6 @@ function LayoutContent({ children }) {
     } catch (error) {
       console.error("❌ Erro ao carregar dados:", error);
       setHasLayoutError(true);
-      // Removed: setAppName("FINEX");
-      // Removed: setAppLogo("");
-      // Removed: document.title = "FINEX - Inteligência Financeira";
       setIsLoadingLayout(false);
     }
   };
@@ -324,7 +320,11 @@ function LayoutContent({ children }) {
     }
   };
 
-  // Removed: const updateFavicon = (faviconUrl) => { ... }
+  const handlePhoneUpdated = (newPhone) => {
+    console.log("📞 Telefone atualizado:", newPhone);
+    // Atualizar estado do usuário
+    setUser(prev => ({ ...prev, phone: newPhone, phone_verified: true }));
+  };
 
   if (isLoadingLayout) {
     return (
@@ -763,6 +763,7 @@ function LayoutContent({ children }) {
       `}</style>
       
       <WelcomeEmailSender />
+      <PhoneVerificationModal user={user} onPhoneUpdated={handlePhoneUpdated} />
       
       <div className={`min-h-screen flex w-full bg-gradient-to-br ${themeColors.bg}`}>
         <Sidebar>
