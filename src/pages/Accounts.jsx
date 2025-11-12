@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Account } from "@/entities/all";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,118 +22,134 @@ import { Wallet, Plus, Edit, Trash2, TrendingUp, TrendingDown, Check, Loader2, B
 import { motion, AnimatePresence } from "framer-motion";
 import FeatureGuard from "../components/FeatureGuard";
 
-// 🏦 BANCOS BRASILEIROS COM LOGOS E EMOJIS
+// ✨ Ícones alternativos (emojis como fallback)
+const PRESET_ICONS = [
+  { emoji: "💳", label: "Cartão" },
+  { emoji: "🏦", label: "Banco" },
+  { emoji: "💰", label: "Dinheiro" },
+  { emoji: "💵", label: "Dólar" },
+  { emoji: "🪙", label: "Moeda" },
+  { emoji: "💎", label: "Investimento" },
+  { emoji: "🏠", label: "Casa" },
+  { emoji: "🚗", label: "Veículo" },
+  { emoji: "📱", label: "Digital" },
+  { emoji: "🎯", label: "Meta" },
+  { emoji: "💼", label: "Negócio" },
+  { emoji: "🌟", label: "Especial" }
+];
+
+// 🏦 BANCOS BRASILEIROS COM LOGOS FUNCIONAIS
 const BRAZILIAN_BANKS = [
   { 
     code: "nubank", 
     name: "Nubank", 
     emoji: "💜",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/f/f7/Nubank_logo_2021.svg",
+    logo: "https://logowik.com/content/uploads/images/nubank8424.logowik.com.webp",
     color: "#8A05BE" 
   },
   { 
     code: "inter", 
     name: "Banco Inter", 
     emoji: "🧡",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/7/7c/Banco_Inter_logo.svg",
+    logo: "https://logowik.com/content/uploads/images/banco-inter5109.logowik.com.webp",
     color: "#FF7A00" 
   },
   { 
     code: "bb", 
     name: "Banco do Brasil", 
     emoji: "💛",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/2/29/Banco_do_Brasil_logo.svg",
+    logo: "https://logowik.com/content/uploads/images/banco-do-brasil5640.logowik.com.webp",
     color: "#FDB913" 
   },
   { 
     code: "caixa", 
     name: "Caixa Econômica", 
     emoji: "🔵",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/4/4b/Caixa_Econ%C3%B4mica_Federal_logo.svg",
+    logo: "https://logowik.com/content/uploads/images/caixa-economica-federal3430.logowik.com.webp",
     color: "#0057A0" 
   },
   { 
     code: "itau", 
     name: "Itaú", 
     emoji: "🔶",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/8/86/Ita%C3%BA_Unibanco_logo.svg",
+    logo: "https://logowik.com/content/uploads/images/itau-unibanco7105.logowik.com.webp",
     color: "#EC7000" 
   },
   { 
     code: "bradesco", 
     name: "Bradesco", 
     emoji: "🔴",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/5/51/Bradesco_logo.svg",
+    logo: "https://logowik.com/content/uploads/images/bradesco3895.logowik.com.webp",
     color: "#CC092F" 
   },
   { 
     code: "santander", 
     name: "Santander", 
     emoji: "❤️",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/b/b8/Banco_Santander_Logotipo.svg",
+    logo: "https://logowik.com/content/uploads/images/santander8911.logowik.com.webp",
     color: "#EC0000" 
   },
   { 
     code: "safra", 
     name: "Banco Safra", 
     emoji: "💙",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/a/a3/Banco_Safra_logo.svg",
+    logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQy5hqYH3kKp8gJ8L2LjXvW5JhR3_jFPL0Y7A&s",
     color: "#0066B3" 
   },
   { 
     code: "original", 
     name: "Banco Original", 
     emoji: "💚",
-    logo: "https://seeklogo.com/images/B/banco-original-logo-3944247FC5-seeklogo.com.png",
+    logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR6VW5X5tGHr7w5KLs7b8YjXJB8vN_5wqY6Yw&s",
     color: "#00A868" 
   },
   { 
     code: "c6", 
     name: "C6 Bank", 
     emoji: "⚫",
-    logo: "https://seeklogo.com/images/C/c6-bank-logo-B66343FC16-seeklogo.com.png",
+    logo: "https://logowik.com/content/uploads/images/c6-bank8763.logowik.com.webp",
     color: "#1A1A1A" 
   },
   { 
     code: "btg", 
     name: "BTG Pactual", 
     emoji: "🟦",
-    logo: "https://seeklogo.com/images/B/btg-pactual-logo-B263A74D17-seeklogo.com.png",
+    logo: "https://logowik.com/content/uploads/images/btg-pactual1054.logowik.com.webp",
     color: "#000080" 
   },
   { 
     code: "pan", 
     name: "Banco Pan", 
     emoji: "💙",
-    logo: "https://seeklogo.com/images/B/banco-pan-logo-1E48456C0E-seeklogo.com.png",
+    logo: "https://logowik.com/content/uploads/images/banco-pan9868.logowik.com.webp",
     color: "#0077C8" 
   },
   { 
     code: "next", 
     name: "Next", 
     emoji: "💚",
-    logo: "https://seeklogo.com/images/N/next-bank-logo-049457154C-seeklogo.com.png",
+    logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS9k5VkqFZPJ8u8BQR6xY0FJB0xGqLWQhL9Tw&s",
     color: "#00AB63" 
   },
   { 
     code: "picpay", 
     name: "PicPay", 
     emoji: "💚",
-    logo: "https://seeklogo.com/images/P/picpay-logo-1F0C60AECF-seeklogo.com.png",
+    logo: "https://logowik.com/content/uploads/images/picpay8847.logowik.com.webp",
     color: "#21C25E" 
   },
   { 
     code: "mercadopago", 
     name: "Mercado Pago", 
     emoji: "💙",
-    logo: "https://seeklogo.com/images/M/mercado-pago-logo-9852AA4379-seeklogo.com.png",
+    logo: "https://logowik.com/content/uploads/images/mercado-pago8144.logowik.com.webp",
     color: "#009EE3" 
   },
   { 
     code: "neon", 
     name: "Neon", 
     emoji: "💙",
-    logo: "https://seeklogo.com/images/N/neon-logo-73671B011F-seeklogo.com.png",
+    logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_FYf5WqW5NqF5s5fK5Z5vL6Z0r5h5P5g5g&s",
     color: "#00D1FF" 
   },
   { 
@@ -146,7 +163,7 @@ const BRAZILIAN_BANKS = [
     code: "xp", 
     name: "XP Investimentos", 
     emoji: "⚫",
-    logo: "https://seeklogo.com/images/X/xp-investimentos-logo-01D91A7BDB-seeklogo.com.png",
+    logo: "https://logowik.com/content/uploads/images/xp-investimentos6725.logowik.com.webp",
     color: "#000000" 
   },
   { 
@@ -177,22 +194,6 @@ const BRAZILIAN_BANKS = [
     logo: "",
     color: "#f97316" 
   }
-];
-
-// ✨ Ícones alternativos (emojis como fallback)
-const PRESET_ICONS = [
-  { emoji: "💳", label: "Cartão" },
-  { emoji: "🏦", label: "Banco" },
-  { emoji: "💰", label: "Dinheiro" },
-  { emoji: "💵", label: "Dólar" },
-  { emoji: "🪙", label: "Moeda" },
-  { emoji: "💎", label: "Investimento" },
-  { emoji: "🏠", label: "Casa" },
-  { emoji: "🚗", label: "Veículo" },
-  { emoji: "📱", label: "Digital" },
-  { emoji: "🎯", label: "Meta" },
-  { emoji: "💼", label: "Negócio" },
-  { emoji: "🌟", label: "Especial" }
 ];
 
 export default function Accounts() {
