@@ -38,8 +38,6 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { User as UserEntity } from "@/entities/User";
-import { SystemPlan } from "@/entities/SystemPlan";
-import { SystemSettings } from "@/entities/SystemSettings";
 import { motion, AnimatePresence } from "framer-motion";
 import SubscriptionGuard from "./components/SubscriptionGuard";
 import WelcomeEmailSender from "./components/WelcomeEmailSender";
@@ -253,10 +251,7 @@ function LayoutContent({ children }) {
     setIsLoadingLayout(true);
     setHasLayoutError(false);
     try {
-      console.log("🔄 Layout - Carregando dados do usuário...");
       const userData = await UserEntity.me();
-      console.log("✅ Layout - Usuário carregado:", userData.email);
-      
       setUser(userData);
       setTheme(userData.theme || "dark");
 
@@ -275,7 +270,7 @@ function LayoutContent({ children }) {
       loadAdditionalDataInBackground(userData);
       
     } catch (error) {
-      console.error("❌ Layout - Erro ao carregar dados:", error);
+      console.error("❌ Erro ao carregar dados:", error);
       setHasLayoutError(true);
       setIsLoadingLayout(false);
     }
@@ -283,21 +278,15 @@ function LayoutContent({ children }) {
 
   const loadAdditionalDataInBackground = async (userData) => {
     try {
-      console.log("🔄 Layout - Carregando dados secundários...");
-      
       if (userData.subscription_plan && userData.role !== 'admin' && hasActiveAccess(userData)) {
-        console.log("📋 Layout - Buscando plano do usuário...");
+        const { SystemPlan } = await import("@/entities/SystemPlan");
         const plans = await SystemPlan.list();
         const plan = plans.find(p => p.plan_type === userData.subscription_plan);
-        if (plan) {
-          console.log("✅ Layout - Plano encontrado:", plan.name);
-          setUserPlan(plan);
-        }
+        setUserPlan(plan);
       }
 
-      console.log("⚙️ Layout - Buscando configurações do sistema...");
+      const { SystemSettings } = await import("@/entities/SystemSettings");
       const allSettings = await SystemSettings.list();
-      console.log(`✅ Layout - ${allSettings.length} configurações carregadas`);
       
       const appNameSetting = allSettings.find(s => s.key === "app_name");
       const appLogoSetting = allSettings.find(s => s.key === "app_logo_url");
@@ -327,10 +316,8 @@ function LayoutContent({ children }) {
         link.href = faviconSetting.value;
         document.head.appendChild(link);
       }
-      
-      console.log("✅ Layout - Dados secundários carregados com sucesso");
     } catch (error) {
-      console.error("⚠️ Layout - Erro ao carregar dados secundários:", error);
+      console.warn("⚠️ Erro ao carregar dados secundários (não crítico):", error);
     }
   };
 
@@ -430,6 +417,8 @@ function LayoutContent({ children }) {
     return themes[theme] || themes.dark;
   };
 
+  const themeColors = getThemeColors();
+
   const getFilteredMenuItems = () => {
     if (!user) return [];
     
@@ -463,8 +452,6 @@ function LayoutContent({ children }) {
   const handleMenuItemClick = () => {
     console.log("🔗 Item do menu clicado");
   };
-
-  const themeColors = getThemeColors();
 
   return (
     <>

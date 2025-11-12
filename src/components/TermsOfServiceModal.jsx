@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
+import { User } from "@/entities/User";
+import { base44 } from "@/api/base44Client";
 import {
   Dialog,
   DialogContent,
@@ -8,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { FileText, AlertTriangle, Shield, CheckCircle, Loader2, Printer } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -16,7 +19,6 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
   const [accepted, setAccepted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [hasError, setHasError] = useState(false);
   const contentRef = useRef(null);
 
   useEffect(() => {
@@ -25,217 +27,136 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
 
   const loadTerms = async () => {
     try {
-      console.log("📋 [TermsModal] Tentando carregar termos...");
-      
-      // ✅ IMPORTAÇÃO DINÂMICA COM TRATAMENTO DE ERRO
-      const { TermsOfService } = await import("@/entities/TermsOfService").catch(err => {
-        console.error("❌ [TermsModal] Erro ao importar TermsOfService:", err);
-        return { TermsOfService: null };
-      });
-      
-      if (!TermsOfService) {
-        console.warn("⚠️ [TermsModal] TermsOfService não disponível - modal não será exibido");
-        setHasError(true);
-        setIsLoading(false);
-        return;
-      }
-      
-      console.log("✅ [TermsModal] TermsOfService importado com sucesso");
-      
-      const allTerms = await TermsOfService.list("-created_date", 1).catch(err => {
-        console.error("❌ [TermsModal] Erro ao listar termos:", err);
-        return [];
-      });
-      
-      console.log("📋 [TermsModal] Termos retornados:", allTerms?.length || 0);
-      
-      if (!allTerms || allTerms.length === 0) {
-        console.warn("⚠️ [TermsModal] Nenhum termo encontrado no banco");
-        setHasError(true);
-        setIsLoading(false);
-        return;
-      }
-      
+      const { TermsOfService } = await import("@/entities/TermsOfService");
+      const allTerms = await TermsOfService.list("-created_date", 1);
       const activeTerms = allTerms.find(t => t.is_active);
       
-      if (activeTerms) {
-        console.log("✅ [TermsModal] Termos ativos encontrados:", activeTerms.version);
-        setTerms(activeTerms);
-      } else {
-        console.warn("⚠️ [TermsModal] Nenhum termo ativo (is_active=true) encontrado");
-        setHasError(true);
-      }
-      
+      setTerms(activeTerms);
     } catch (error) {
-      console.error("❌ [TermsModal] Erro ao carregar termos:", error);
-      console.error("   Name:", error?.name);
-      console.error("   Message:", error?.message);
-      setHasError(true);
+      console.error("Erro ao carregar termos:", error);
     } finally {
       setIsLoading(false);
-      console.log("📋 [TermsModal] Carregamento finalizado");
     }
   };
 
   const needsToAcceptTerms = () => {
-    if (!user) {
-      console.log("⏭️ [TermsModal] Sem usuário");
-      return false;
-    }
+    if (!user || !terms) return false;
     
-    if (!terms) {
-      console.log("⏭️ [TermsModal] Sem termos carregados");
-      return false;
-    }
+    // Nunca aceitou os termos
+    if (!user.terms_accepted) return true;
     
-    if (hasError) {
-      console.log("⏭️ [TermsModal] Erro ao carregar - não mostrar modal");
-      return false;
-    }
+    // Aceitou uma versão antiga (versão mudou)
+    if (user.terms_version_accepted !== terms.version) return true;
     
-    console.log("🔍 [TermsModal] Verificando aceitação para:", user.email);
-    console.log("   terms_accepted:", user.terms_accepted);
-    console.log("   terms_version_accepted:", user.terms_version_accepted);
-    console.log("   Versão atual:", terms.version);
-    
-    // Nunca aceitou
-    if (!user.terms_accepted) {
-      console.log("✅ [TermsModal] NUNCA aceitou - MOSTRAR");
-      return true;
-    }
-    
-    // Sem versão registrada
-    if (!user.terms_version_accepted) {
-      console.log("✅ [TermsModal] Sem versão registrada - MOSTRAR");
-      return true;
-    }
-    
-    // Versão mudou
-    if (user.terms_version_accepted !== terms.version) {
-      console.log("✅ [TermsModal] Versão mudou - MOSTRAR");
-      return true;
-    }
-    
-    console.log("⏭️ [TermsModal] Já aceitou versão atual - NÃO MOSTRAR");
     return false;
   };
 
   const isOpen = needsToAcceptTerms();
 
-  useEffect(() => {
-    if (isOpen) {
-      console.log("🚨 [TermsModal] MODAL ABERTO para:", user?.email);
-    }
-  }, [isOpen, user]);
-
   const handlePrint = () => {
-    if (!contentRef.current || !terms) return;
+    if (!contentRef.current) return;
 
-    try {
-      const printWindow = window.open('', '_blank');
-      if (!printWindow) {
-        alert('Por favor, permita pop-ups para imprimir');
-        return;
-      }
-
-      const printContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="UTF-8">
-          <title>Termos de Uso - FINEX - Versão ${terms.version}</title>
-          <style>
-            body {
-              font-family: Arial, sans-serif;
-              max-width: 800px;
-              margin: 40px auto;
-              padding: 20px;
-              color: #333;
-              line-height: 1.6;
-            }
-            h1 {
-              color: #1a1a2e;
-              border-bottom: 3px solid #8b5cf6;
-              padding-bottom: 10px;
-              margin-bottom: 30px;
-            }
-            h2 {
-              color: #8b5cf6;
-              margin-top: 30px;
-              margin-bottom: 15px;
-              font-size: 1.5em;
-            }
-            h3 {
-              color: #555;
-              margin-top: 20px;
-              margin-bottom: 10px;
-            }
-            p {
-              margin-bottom: 15px;
-            }
-            ul, ol {
-              margin-bottom: 15px;
-              padding-left: 30px;
-            }
-            li {
-              margin-bottom: 8px;
-            }
-            strong {
-              color: #1a1a2e;
-            }
-            .header-info {
-              background: #f0f0f0;
-              padding: 15px;
-              border-radius: 5px;
-              margin-bottom: 30px;
-            }
-            .footer {
-              margin-top: 50px;
-              padding-top: 20px;
-              border-top: 2px solid #ddd;
-              text-align: center;
-              font-size: 0.9em;
-              color: #666;
-            }
-            hr {
-              border: none;
-              border-top: 2px solid #ddd;
-              margin: 30px 0;
-            }
-            @media print {
-              body {
-                margin: 0;
-                padding: 20px;
-              }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header-info">
-            <h1>${terms.title}</h1>
-            <p><strong>Versão:</strong> ${terms.version}</p>
-            <p><strong>Data de Vigência:</strong> ${new Date(terms.effective_date).toLocaleDateString('pt-BR')}</p>
-            <p><strong>Impresso em:</strong> ${new Date().toLocaleString('pt-BR')}</p>
-          </div>
-          ${terms.content}
-          <div class="footer">
-            <p>FINEX - Inteligência Financeira</p>
-            <p>Este documento foi impresso para fins de consulta e referência.</p>
-          </div>
-        </body>
-        </html>
-      `;
-
-      printWindow.document.write(printContent);
-      printWindow.document.close();
-      
-      printWindow.onload = () => {
-        printWindow.print();
-      };
-    } catch (error) {
-      console.error("❌ [TermsModal] Erro ao imprimir:", error);
-      alert("Erro ao imprimir. Tente novamente.");
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('Por favor, permita pop-ups para imprimir');
+      return;
     }
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Termos de Uso - FINEX - Versão ${terms.version}</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            color: #333;
+            line-height: 1.6;
+          }
+          h1 {
+            color: #1a1a2e;
+            border-bottom: 3px solid #8b5cf6;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+          }
+          h2 {
+            color: #8b5cf6;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+          }
+          h3 {
+            color: #555;
+            margin-top: 20px;
+            margin-bottom: 10px;
+          }
+          p {
+            margin-bottom: 15px;
+          }
+          ul, ol {
+            margin-bottom: 15px;
+            padding-left: 30px;
+          }
+          li {
+            margin-bottom: 8px;
+          }
+          strong {
+            color: #1a1a2e;
+          }
+          .header-info {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 30px;
+          }
+          .footer {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 2px solid #ddd;
+            text-align: center;
+            font-size: 0.9em;
+            color: #666;
+          }
+          hr {
+            border: none;
+            border-top: 2px solid #ddd;
+            margin: 30px 0;
+          }
+          @media print {
+            body {
+              margin: 0;
+              padding: 20px;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header-info">
+          <h1>${terms.title}</h1>
+          <p><strong>Versão:</strong> ${terms.version}</p>
+          <p><strong>Data de Vigência:</strong> ${new Date(terms.effective_date).toLocaleDateString('pt-BR')}</p>
+          <p><strong>Impresso em:</strong> ${new Date().toLocaleString('pt-BR')}</p>
+        </div>
+        ${terms.content}
+        <div class="footer">
+          <p>FINEX - Inteligência Financeira</p>
+          <p>Este documento foi impresso para fins de consulta e referência.</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    
+    // Aguardar carregar e imprimir
+    printWindow.onload = () => {
+      printWindow.print();
+    };
   };
 
   const handleAccept = async () => {
@@ -247,19 +168,14 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
     setIsSubmitting(true);
 
     try {
-      // ✅ IMPORTAÇÃO DINÂMICA SEGURA
-      const { User } = await import("@/entities/User").catch(err => {
-        console.error("❌ [TermsModal] Erro ao importar User:", err);
-        throw new Error("Erro ao carregar módulo User");
-      });
-
+      // Capturar IP (aproximado do lado do cliente)
       let userIP = "N/A";
       try {
         const ipResponse = await fetch('https://api.ipify.org?format=json');
         const ipData = await ipResponse.json();
         userIP = ipData.ip;
       } catch (error) {
-        console.log("⚠️ [TermsModal] Não foi possível capturar IP:", error);
+        console.log("Não foi possível capturar IP:", error);
       }
 
       const updateData = {
@@ -269,12 +185,11 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
         terms_ip_address: userIP
       };
 
-      console.log("📋 [TermsModal] Registrando aceitação para:", user.email);
-      console.log("   Dados:", updateData);
+      console.log("📋 Registrando aceitação dos termos:", updateData);
 
       await User.updateMyUserData(updateData);
 
-      console.log("✅ [TermsModal] Termos aceitos com sucesso!");
+      console.log("✅ Termos aceitos com sucesso!");
 
       if (onAccepted) {
         onAccepted();
@@ -283,45 +198,35 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
       window.location.reload();
 
     } catch (error) {
-      console.error("❌ [TermsModal] Erro ao aceitar termos:", error);
+      console.error("❌ Erro ao aceitar termos:", error);
       alert("Erro ao registrar aceitação. Tente novamente.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // ✅ NUNCA QUEBRAR O APP - Se der erro, simplesmente não renderiza
   if (isLoading) {
-    console.log("⏳ [TermsModal] Ainda carregando...");
-    return null;
-  }
-
-  if (hasError) {
-    console.log("⚠️ [TermsModal] Erro detectado - não renderizar modal");
-    return null;
+    return null; // Não mostra nada enquanto carrega
   }
 
   if (!isOpen || !terms) {
-    console.log("⏭️ [TermsModal] Modal não deve ser exibido");
-    return null;
+    return null; // Não mostra modal se não precisa aceitar
   }
-
-  console.log("✅ [TermsModal] Renderizando modal");
 
   return (
     <Dialog open={isOpen} onOpenChange={() => {}}>
       <DialogContent 
-        className="glass-card border-purple-700/50 text-white w-[95vw] max-w-5xl h-[95vh] flex flex-col p-0"
+        className="glass-card border-purple-700/50 text-white w-[95vw] max-w-4xl max-h-[95vh] flex flex-col p-4 sm:p-6"
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
-        <DialogHeader className="p-4 sm:p-6 border-b border-purple-700/30 flex-shrink-0">
-          <div className="flex items-start justify-between gap-4">
+        <DialogHeader>
+          <div className="flex items-center justify-between">
             <div className="flex-1">
-              <DialogTitle className="text-xl sm:text-2xl bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+              <DialogTitle className="text-xl sm:text-2xl bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent text-center">
                 📋 Termos de Uso e Política de Privacidade
               </DialogTitle>
-              <p className="text-purple-300 text-sm mt-2">
+              <p className="text-purple-300 text-sm text-center mt-2">
                 Versão {terms.version} • Vigência: {new Date(terms.effective_date).toLocaleDateString('pt-BR')}
               </p>
             </div>
@@ -329,7 +234,7 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
               onClick={handlePrint}
               variant="outline"
               size="sm"
-              className="border-cyan-700 text-cyan-300 hover:bg-cyan-900/20 flex-shrink-0"
+              className="border-cyan-700 text-cyan-300 hover:bg-cyan-900/20 flex-shrink-0 ml-2"
               title="Imprimir termos"
             >
               <Printer className="w-4 h-4" />
@@ -337,7 +242,7 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
           </div>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+        <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
           {/* Ilustração */}
           <motion.div
             initial={{ scale: 0 }}
@@ -346,8 +251,8 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
           >
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-full blur-2xl"></div>
-              <div className="relative p-3 sm:p-4 rounded-full bg-gradient-to-br from-blue-600 to-cyan-600">
-                <FileText className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
+              <div className="relative p-4 rounded-full bg-gradient-to-br from-blue-600 to-cyan-600">
+                <FileText className="w-10 h-10 sm:w-12 sm:h-12 text-white" />
               </div>
             </div>
           </motion.div>
@@ -367,11 +272,11 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
             </div>
           </div>
 
-          {/* Conteúdo dos Termos - COM SCROLL INDEPENDENTE */}
-          <div className="border border-purple-700/30 rounded-lg bg-purple-900/10 max-h-[400px] overflow-y-auto">
+          {/* Conteúdo dos Termos */}
+          <ScrollArea className="flex-1 border border-purple-700/30 rounded-lg p-4 bg-purple-900/10">
             <div 
               ref={contentRef}
-              className="p-4 prose prose-sm prose-invert max-w-none text-purple-100
+              className="prose prose-sm prose-invert max-w-none text-purple-100
                          prose-headings:text-white prose-headings:font-bold
                          prose-h2:text-xl prose-h2:mt-6 prose-h2:mb-3
                          prose-h3:text-lg prose-h3:mt-4 prose-h3:mb-2
@@ -381,7 +286,7 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
                          prose-a:text-cyan-400"
               dangerouslySetInnerHTML={{ __html: terms.content }}
             />
-          </div>
+          </ScrollArea>
 
           {/* Dica de Impressão */}
           <div className="bg-cyan-900/20 border border-cyan-700/30 p-3 rounded-lg">
@@ -422,7 +327,7 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
           </div>
         </div>
 
-        <DialogFooter className="p-4 sm:p-6 border-t border-purple-700/30 flex-shrink-0">
+        <DialogFooter className="flex-col sm:flex-row gap-3">
           <Button
             onClick={handleAccept}
             disabled={!accepted || isSubmitting}
