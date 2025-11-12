@@ -34,7 +34,9 @@ import {
   Globe,
   Printer,
   Eye,
-  Shield
+  Shield,
+  XCircle,
+  AlertTriangle
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -59,6 +61,12 @@ export default function Profile() {
   const loadUser = async () => {
     try {
       const userData = await User.me();
+      console.log("👤 Usuário carregado:", {
+        email: userData.email,
+        terms_accepted: userData.terms_accepted,
+        terms_version: userData.terms_version_accepted
+      });
+      
       setUser(userData);
       setFormData({
         full_name: userData.full_name || "",
@@ -66,10 +74,9 @@ export default function Profile() {
         theme: userData.theme || "dark"
       });
       
-      // Carregar termos se usuário aceitou
-      if (userData.terms_accepted) {
-        loadTerms(userData.terms_version_accepted);
-      }
+      // Sempre carregar termos (tanto para quem aceitou quanto para quem não)
+      await loadActiveTerms();
+      
     } catch (error) {
       console.error("Erro ao carregar usuário:", error);
     } finally {
@@ -77,12 +84,14 @@ export default function Profile() {
     }
   };
 
-  const loadTerms = async (version) => {
+  const loadActiveTerms = async () => {
     try {
       const { TermsOfService } = await import("@/entities/TermsOfService");
       const allTerms = await TermsOfService.list("-created_date", 10);
-      const userTerms = allTerms.find(t => t.version === version);
-      setTerms(userTerms);
+      const activeTerms = allTerms.find(t => t.is_active);
+      
+      console.log("📋 Termos ativos carregados:", activeTerms ? `Versão ${activeTerms.version}` : "Nenhum");
+      setTerms(activeTerms);
     } catch (error) {
       console.error("Erro ao carregar termos:", error);
     }
@@ -144,7 +153,7 @@ export default function Profile() {
   };
 
   const handlePrintTerms = () => {
-    if (!terms || !user) return;
+    if (!terms || !user || !user.terms_accepted) return;
 
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
@@ -342,6 +351,11 @@ export default function Profile() {
     setShowTermsModal(true);
   };
 
+  const handleAcceptTermsNow = () => {
+    alert("Por favor, faça logout e login novamente para aceitar os termos de uso.");
+    window.location.reload();
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#0a0a0f] via-[#1a1a2e] to-[#0a0a0f] flex items-center justify-center">
@@ -444,22 +458,24 @@ export default function Profile() {
           </CardContent>
         </Card>
 
-        {/* Termos Aceitos */}
-        {user.terms_accepted && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <Card className="glass-card border-0 border-l-4 border-green-500">
-              <CardHeader className="border-b border-purple-900/30">
-                <CardTitle className="text-white flex items-center gap-2">
-                  <Shield className="w-5 h-5 text-green-400" />
-                  Termos de Uso Aceitos
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
+        {/* Status dos Termos - SEMPRE VISÍVEL */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <Card className={`glass-card border-0 border-l-4 ${
+            user.terms_accepted ? 'border-green-500' : 'border-yellow-500'
+          }`}>
+            <CardHeader className="border-b border-purple-900/30">
+              <CardTitle className="text-white flex items-center gap-2">
+                <Shield className={`w-5 h-5 ${user.terms_accepted ? 'text-green-400' : 'text-yellow-400'}`} />
+                Termos de Uso
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              {user.terms_accepted ? (
+                /* USUÁRIO JÁ ACEITOU */
                 <div className="space-y-4">
-                  {/* Status */}
                   <div className="flex items-center gap-3 p-4 rounded-lg bg-green-900/20 border border-green-700/30">
                     <CheckCircle className="w-8 h-8 text-green-400 flex-shrink-0" />
                     <div>
@@ -470,7 +486,6 @@ export default function Profile() {
                     </div>
                   </div>
 
-                  {/* Informações */}
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="p-4 rounded-lg bg-purple-900/20 border border-purple-700/30">
                       <div className="flex items-center gap-2 mb-2">
@@ -514,7 +529,6 @@ export default function Profile() {
                     </div>
                   </div>
 
-                  {/* Ações */}
                   <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-purple-900/30">
                     <Button
                       onClick={handleViewTerms}
@@ -534,7 +548,6 @@ export default function Profile() {
                     </Button>
                   </div>
 
-                  {/* Info adicional */}
                   <div className="bg-blue-900/20 border border-blue-700/30 p-4 rounded-lg">
                     <p className="text-blue-200 text-sm">
                       <strong className="text-blue-300">💡 Sobre este registro:</strong> Sua aceitação dos termos foi registrada 
@@ -543,10 +556,76 @@ export default function Profile() {
                     </p>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
+              ) : (
+                /* USUÁRIO NÃO ACEITOU AINDA */
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 p-4 rounded-lg bg-yellow-900/20 border border-yellow-700/30">
+                    <AlertTriangle className="w-8 h-8 text-yellow-400 flex-shrink-0" />
+                    <div>
+                      <p className="text-white font-bold">⚠️ Termos Pendentes de Aceitação</p>
+                      <p className="text-yellow-300 text-sm">
+                        Você ainda não aceitou os termos de uso do FINEX
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="bg-red-900/20 border border-red-700/30 p-4 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <XCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-red-300 font-bold mb-2">🚫 ATENÇÃO: Aceite Obrigatório</p>
+                        <p className="text-red-200 text-sm mb-3">
+                          Para usar o sistema FINEX, você precisa ler e aceitar nossos Termos de Uso 
+                          e Política de Privacidade. Este é um requisito legal obrigatório.
+                        </p>
+                        <ul className="text-red-200 text-sm space-y-1 list-disc list-inside">
+                          <li>Aceitação registrada legalmente</li>
+                          <li>Documento com valor jurídico</li>
+                          <li>Conformidade com LGPD</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
+                  {terms ? (
+                    <div className="bg-cyan-900/20 border border-cyan-700/30 p-4 rounded-lg">
+                      <p className="text-cyan-200 text-sm mb-3">
+                        <strong className="text-cyan-300">📋 Termos Disponíveis:</strong> Versão {terms.version} 
+                        • Vigente desde {new Date(terms.effective_date).toLocaleDateString('pt-BR')}
+                      </p>
+                      <Button
+                        onClick={handleViewTerms}
+                        variant="outline"
+                        className="w-full border-cyan-700 text-cyan-300 hover:bg-cyan-900/30"
+                      >
+                        <Eye className="w-4 h-4 mr-2" />
+                        Ler Termos Antes de Aceitar
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="bg-red-900/20 border border-red-700/30 p-4 rounded-lg">
+                      <p className="text-red-300 text-sm">
+                        ⚠️ Nenhum termo cadastrado no sistema. Entre em contato com o administrador.
+                      </p>
+                    </div>
+                  )}
+
+                  <Button
+                    onClick={handleAcceptTermsNow}
+                    className="w-full bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 text-lg py-6"
+                  >
+                    <FileText className="w-5 h-5 mr-2" />
+                    Aceitar Termos Agora
+                  </Button>
+
+                  <p className="text-purple-400 text-xs text-center">
+                    Ao clicar acima, você será redirecionado para aceitar os termos oficialmente
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
 
         {/* Tema */}
         <Card className="glass-card border-0 neon-glow">
@@ -601,28 +680,56 @@ export default function Profile() {
         <DialogContent className="glass-card border-purple-700/50 text-white max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-2xl bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-              📋 {terms?.title}
+              📋 {terms?.title || "Termos de Uso"}
             </DialogTitle>
-            <p className="text-purple-300 text-sm mt-2">
-              Versão {user.terms_version_accepted} • Aceita em {new Date(user.terms_accepted_at).toLocaleDateString('pt-BR')}
-            </p>
+            {user.terms_accepted && (
+              <p className="text-purple-300 text-sm mt-2">
+                Versão {user.terms_version_accepted} • Aceita em {new Date(user.terms_accepted_at).toLocaleDateString('pt-BR')}
+              </p>
+            )}
+            {!user.terms_accepted && terms && (
+              <p className="text-yellow-300 text-sm mt-2">
+                Versão {terms.version} • Vigente desde {new Date(terms.effective_date).toLocaleDateString('pt-BR')}
+              </p>
+            )}
           </DialogHeader>
 
           {terms && (
             <div className="space-y-6">
-              <div className="bg-green-900/20 border border-green-700/30 p-4 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-400" />
-                  <p className="text-green-200 text-sm">
-                    Você aceitou estes termos em <strong>{new Date(user.terms_accepted_at).toLocaleString('pt-BR')}</strong>
-                  </p>
+              {user.terms_accepted && (
+                <div className="bg-green-900/20 border border-green-700/30 p-4 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-400" />
+                    <p className="text-green-200 text-sm">
+                      Você aceitou estes termos em <strong>{new Date(user.terms_accepted_at).toLocaleString('pt-BR')}</strong>
+                    </p>
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {!user.terms_accepted && (
+                <div className="bg-yellow-900/20 border border-yellow-700/30 p-4 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <AlertTriangle className="w-5 h-5 text-yellow-400" />
+                    <p className="text-yellow-200 text-sm">
+                      <strong>Pré-visualização:</strong> Você ainda não aceitou estes termos. 
+                      Para aceitar oficialmente, feche esta janela e clique em "Aceitar Termos Agora".
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <div 
                 className="prose prose-sm prose-invert max-w-none text-purple-100"
                 dangerouslySetInnerHTML={{ __html: terms.content }}
               />
+            </div>
+          )}
+
+          {!terms && (
+            <div className="text-center py-12">
+              <XCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
+              <p className="text-red-300">Nenhum termo cadastrado no sistema.</p>
             </div>
           )}
         </DialogContent>

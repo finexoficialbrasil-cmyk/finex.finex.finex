@@ -27,31 +27,57 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
 
   const loadTerms = async () => {
     try {
+      console.log("📋 TermsModal: Carregando termos...");
       const { TermsOfService } = await import("@/entities/TermsOfService");
-      const allTerms = await TermsOfService.list("-created_date", 1);
+      const allTerms = await TermsOfService.list("-created_date", 10);
+      console.log("📋 TermsModal: Total de termos encontrados:", allTerms.length);
+      
       const activeTerms = allTerms.find(t => t.is_active);
+      console.log("📋 TermsModal: Termos ativos:", activeTerms ? `Versão ${activeTerms.version}` : "NENHUM");
       
       setTerms(activeTerms);
     } catch (error) {
-      console.error("Erro ao carregar termos:", error);
+      console.error("❌ TermsModal: Erro ao carregar termos:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
   const needsToAcceptTerms = () => {
-    if (!user || !terms) return false;
+    if (!user || !terms) {
+      console.log("📋 TermsModal: Verificação negativa:", {
+        hasUser: !!user,
+        hasTerms: !!terms
+      });
+      return false;
+    }
+    
+    console.log("📋 TermsModal: Verificando necessidade de aceitar:", {
+      email: user.email,
+      terms_accepted: user.terms_accepted,
+      terms_version_user: user.terms_version_accepted,
+      terms_version_active: terms.version
+    });
     
     // Nunca aceitou os termos
-    if (!user.terms_accepted) return true;
+    if (!user.terms_accepted) {
+      console.log("⚠️ TermsModal: Usuário NUNCA aceitou os termos!");
+      return true;
+    }
     
     // Aceitou uma versão antiga (versão mudou)
-    if (user.terms_version_accepted !== terms.version) return true;
+    if (user.terms_version_accepted !== terms.version) {
+      console.log("⚠️ TermsModal: Versão DESATUALIZADA! User:", user.terms_version_accepted, "Ativo:", terms.version);
+      return true;
+    }
     
+    console.log("✅ TermsModal: Termos já aceitos e atualizados");
     return false;
   };
 
   const isOpen = needsToAcceptTerms();
+
+  console.log("📋 TermsModal: Modal aberto?", isOpen);
 
   const handlePrint = () => {
     if (!contentRef.current) return;
@@ -153,7 +179,6 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
     printWindow.document.write(printContent);
     printWindow.document.close();
     
-    // Aguardar carregar e imprimir
     printWindow.onload = () => {
       printWindow.print();
     };
@@ -168,14 +193,14 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
     setIsSubmitting(true);
 
     try {
-      // Capturar IP (aproximado do lado do cliente)
+      // Capturar IP
       let userIP = "N/A";
       try {
         const ipResponse = await fetch('https://api.ipify.org?format=json');
         const ipData = await ipResponse.json();
         userIP = ipData.ip;
       } catch (error) {
-        console.log("Não foi possível capturar IP:", error);
+        console.log("⚠️ Não foi possível capturar IP:", error);
       }
 
       const updateData = {
@@ -206,12 +231,16 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
   };
 
   if (isLoading) {
-    return null; // Não mostra nada enquanto carrega
+    console.log("⏳ TermsModal: Ainda carregando...");
+    return null;
   }
 
   if (!isOpen || !terms) {
-    return null; // Não mostra modal se não precisa aceitar
+    console.log("🚫 TermsModal: Não deve mostrar modal");
+    return null;
   }
+
+  console.log("✅ TermsModal: RENDERIZANDO MODAL!");
 
   return (
     <Dialog open={isOpen} onOpenChange={() => {}}>
