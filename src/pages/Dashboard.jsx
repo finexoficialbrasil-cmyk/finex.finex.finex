@@ -387,40 +387,15 @@ export default function Dashboard() {
           </React.Suspense>
         </div>
 
-        {/* ✅ CARTEIRAS COM LOGOS OFICIAIS DOS BANCOS */}
+        {/* ✅ CARTEIRAS COM EMOJIS DOS BANCOS - COMPACTO */}
         <Card className="glass-card border-0 neon-glow overflow-hidden">
-          <CardHeader className="border-b border-purple-900/30 bg-gradient-to-r from-purple-900/30 to-pink-900/20">
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-3 text-white">
-                <div className="p-3 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 shadow-lg">
-                  <Wallet className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold">Minhas Carteiras</h3>
-                  <p className="text-purple-300 text-sm font-normal">
-                    {accounts.length} {accounts.length === 1 ? 'conta ativa' : 'contas ativas'}
-                  </p>
-                </div>
-              </CardTitle>
-              <Link to={createPageUrl("Accounts")}>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="border-purple-700 text-purple-300 hover:bg-purple-900/30"
-                >
-                  Gerenciar
-                  <ChevronRight className="w-4 h-4 ml-1" />
-                </Button>
-              </Link>
-            </div>
-          </CardHeader>
-          <CardContent className="p-6">
+          <CardContent className="p-4">
             {accounts.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-purple-900/30 flex items-center justify-center">
-                  <Wallet className="w-10 h-10 text-purple-400" />
+              <div className="text-center py-8">
+                <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-purple-900/30 flex items-center justify-center">
+                  <Wallet className="w-8 h-8 text-purple-400" />
                 </div>
-                <p className="text-purple-300 text-lg mb-2">Nenhuma carteira cadastrada</p>
+                <p className="text-purple-300 text-base mb-1">Nenhuma carteira cadastrada</p>
                 <p className="text-purple-400 text-sm mb-4">Crie sua primeira carteira para começar!</p>
                 <Link to={createPageUrl("Accounts")}>
                   <Button className="bg-gradient-to-r from-purple-600 to-pink-600">
@@ -430,7 +405,7 @@ export default function Dashboard() {
                 </Link>
               </div>
             ) : (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                 {accounts.map((acc, index) => {
                   const isPositive = acc.balance >= 0;
                   
@@ -439,118 +414,86 @@ export default function Dashboard() {
                       <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: index * 0.05 }}
-                        whileHover={{ scale: 1.03, y: -4 }}
+                        transition={{ delay: index * 0.03 }}
+                        whileHover={{ scale: 1.05, y: -2 }}
                         className="group relative overflow-hidden cursor-pointer"
                       >
-                        {/* Fundo com cor do banco */}
                         <div 
                           className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-300"
                           style={{ background: `linear-gradient(135deg, ${acc.color || '#a855f7'}40, ${acc.color || '#a855f7'}10)` }}
                         />
                         
-                        {/* Brilho no hover */}
-                        <div 
-                          className="absolute -inset-1 rounded-2xl opacity-0 group-hover:opacity-30 blur-xl transition-opacity duration-300"
-                          style={{ background: `linear-gradient(90deg, ${acc.color || '#a855f7'}, transparent)` }}
-                        />
-                        
-                        <div className="relative p-5 rounded-xl glass-card border border-purple-700/30 group-hover:border-purple-600/60 transition-all duration-300">
-                          {/* Header com logo do banco */}
-                          <div className="flex items-center justify-between mb-4">
+                        <div className="relative p-4 rounded-xl glass-card border border-purple-700/30 group-hover:border-purple-600/60 transition-all duration-300">
+                          <div className="flex items-start justify-between mb-3">
                             <div 
-                              className="w-20 h-20 rounded-2xl flex items-center justify-center text-5xl shadow-2xl group-hover:scale-110 transition-transform duration-300"
+                              className="w-12 h-12 rounded-xl flex items-center justify-center text-3xl shadow-lg group-hover:scale-110 transition-transform duration-300"
                               style={{ 
                                 backgroundColor: (acc.color || '#a855f7') + '20',
-                                border: `3px solid ${acc.color || '#a855f7'}60`
+                                border: `2px solid ${acc.color || '#a855f7'}60`
                               }}
                             >
                               {acc.icon || '🏦'}
                             </div>
                             
-                            <div className="flex items-center gap-2">
+                            <div className="p-1.5 rounded-lg bg-green-600/20">
                               {isPositive ? (
-                                <div className="p-2 rounded-lg bg-green-600/20">
-                                  <TrendingUp className="w-5 h-5 text-green-400" />
-                                </div>
+                                <TrendingUp className="w-3.5 h-3.5 text-green-400" />
                               ) : (
-                                <div className="p-2 rounded-lg bg-red-600/20">
-                                  <TrendingDown className="w-5 h-5 text-red-400" />
-                                </div>
+                                <TrendingDown className="w-3.5 h-3.5 text-red-400" />
                               )}
                             </div>
                           </div>
 
-                          {/* Nome da conta */}
-                          <h4 className="text-white font-bold text-lg mb-1 truncate group-hover:text-purple-200 transition-colors">
+                          <h4 className="text-white font-bold text-sm mb-0.5 truncate group-hover:text-purple-200 transition-colors">
                             {acc.name}
                           </h4>
                           
                           {acc.bank_name && (
-                            <p className="text-purple-400 text-xs mb-2">
-                              🏦 {acc.bank_name}
+                            <p className="text-purple-400 text-xs mb-2 truncate">
+                              {acc.bank_name}
                             </p>
                           )}
 
-                          {/* Saldo com destaque */}
-                          <div className="mb-3">
-                            <p className={`text-3xl font-bold ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+                          <div className="mb-2">
+                            <p className={`text-xl font-bold ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
                               R$ {Math.abs(acc.balance).toFixed(2)}
                             </p>
-                            {!isPositive && (
-                              <span className="text-red-400 text-xs">saldo negativo</span>
-                            )}
                           </div>
 
-                          {/* Barra de status inferior */}
-                          <div className="flex items-center justify-between pt-3 border-t border-purple-700/30">
-                            <div className="flex items-center gap-2">
-                              {isPositive ? (
-                                <>
-                                  <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                                  <span className="text-green-400 text-xs font-medium">Saudável</span>
-                                </>
-                              ) : (
-                                <>
-                                  <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
-                                  <span className="text-red-400 text-xs font-medium">Atenção</span>
-                                </>
-                              )}
+                          <div className="flex items-center justify-between pt-2 border-t border-purple-700/30">
+                            <div className="flex items-center gap-1.5">
+                              <div className={`w-1.5 h-1.5 rounded-full ${isPositive ? 'bg-green-400' : 'bg-red-400'} animate-pulse`} />
+                              <span className={`${isPositive ? 'text-green-400' : 'text-red-400'} text-xs font-medium`}>
+                                {isPositive ? 'Saudável' : 'Atenção'}
+                              </span>
                             </div>
-                            <ChevronRight className="w-5 h-5 text-purple-400 group-hover:text-purple-300 group-hover:translate-x-1 transition-all" />
+                            <ChevronRight className="w-4 h-4 text-purple-400 group-hover:text-purple-300 group-hover:translate-x-1 transition-all" />
                           </div>
-
-                          {/* Efeito de brilho no canto */}
-                          <div 
-                            className="absolute -top-8 -right-8 w-24 h-24 rounded-full blur-2xl opacity-10 group-hover:opacity-30 transition-opacity duration-300"
-                            style={{ background: `linear-gradient(135deg, ${acc.color || '#a855f7'}, transparent)` }}
-                          />
                         </div>
                       </motion.div>
                     </Link>
                   );
                 })}
 
-                {/* Card para adicionar nova conta */}
+                {/* Card para adicionar nova conta - COMPACTO */}
                 <Link to={createPageUrl("Accounts")}>
                   <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: accounts.length * 0.05 }}
-                    whileHover={{ scale: 1.03, y: -4 }}
-                    className="group relative overflow-hidden cursor-pointer h-full min-h-[220px]"
+                    transition={{ delay: accounts.length * 0.03 }}
+                    whileHover={{ scale: 1.05, y: -2 }}
+                    className="group relative overflow-hidden cursor-pointer h-full min-h-[140px]"
                   >
                     <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 to-pink-600/10 group-hover:from-purple-600/20 group-hover:to-pink-600/20 transition-all duration-300" />
                     
-                    <div className="relative h-full p-5 rounded-xl glass-card border-2 border-dashed border-purple-700/40 group-hover:border-purple-600/70 transition-all duration-300 flex flex-col items-center justify-center gap-4">
-                      <div className="p-5 rounded-2xl bg-gradient-to-br from-purple-600/20 to-pink-600/20 group-hover:from-purple-600/30 group-hover:to-pink-600/30 transition-all">
-                        <Plus className="w-10 h-10 text-purple-400 group-hover:text-purple-300 transition-colors" />
+                    <div className="relative h-full p-4 rounded-xl glass-card border-2 border-dashed border-purple-700/40 group-hover:border-purple-600/70 transition-all duration-300 flex flex-col items-center justify-center gap-2">
+                      <div className="p-3 rounded-xl bg-gradient-to-br from-purple-600/20 to-pink-600/20 group-hover:from-purple-600/30 group-hover:to-pink-600/30 transition-all">
+                        <Plus className="w-6 h-6 text-purple-400 group-hover:text-purple-300 transition-colors" />
                       </div>
                       <div className="text-center">
-                        <p className="text-white font-bold text-lg mb-1">Adicionar Carteira</p>
-                        <p className="text-purple-400 text-sm">Crie uma nova conta bancária</p>
+                        <p className="text-white font-bold text-sm mb-0.5">Adicionar</p>
+                        <p className="text-purple-400 text-xs">Nova carteira</p>
                       </div>
-                      <ChevronRight className="w-6 h-6 text-purple-400 group-hover:text-purple-300 group-hover:translate-x-1 transition-all" />
                     </div>
                   </motion.div>
                 </Link>
