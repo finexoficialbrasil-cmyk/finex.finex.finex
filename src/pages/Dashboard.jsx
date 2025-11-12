@@ -387,7 +387,7 @@ export default function Dashboard() {
           </React.Suspense>
         </div>
 
-        {/* ✅ CARTEIRAS COM EMOJIS DOS BANCOS - COMPACTO */}
+        {/* ✅ CARTEIRAS COMPACTAS */}
         <Card className="glass-card border-0 neon-glow overflow-hidden">
           <CardContent className="p-4">
             {accounts.length === 0 ? (
@@ -426,13 +426,26 @@ export default function Dashboard() {
                         <div className="relative p-4 rounded-xl glass-card border border-purple-700/30 group-hover:border-purple-600/60 transition-all duration-300">
                           <div className="flex items-start justify-between mb-3">
                             <div 
-                              className="w-12 h-12 rounded-xl flex items-center justify-center text-3xl shadow-lg group-hover:scale-110 transition-transform duration-300"
+                              className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300 overflow-hidden"
                               style={{ 
                                 backgroundColor: (acc.color || '#a855f7') + '20',
                                 border: `2px solid ${acc.color || '#a855f7'}60`
                               }}
                             >
-                              {acc.icon || '🏦'}
+                              {acc.logo_url ? (
+                                <img 
+                                  src={acc.logo_url} 
+                                  alt={acc.name}
+                                  className="w-full h-full object-contain p-1"
+                                  onError={(e) => {
+                                    if (e.target && e.target.parentElement) {
+                                      e.target.parentElement.innerHTML = `<span class="text-3xl">${acc.icon || '🏦'}</span>`;
+                                    }
+                                  }}
+                                />
+                              ) : (
+                                <span className="text-3xl">{acc.icon || '🏦'}</span>
+                              )}
                             </div>
                             
                             <div className="p-1.5 rounded-lg bg-green-600/20">
