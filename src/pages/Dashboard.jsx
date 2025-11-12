@@ -449,13 +449,13 @@ export default function Dashboard() {
                         {/* Fundo com cor do banco */}
                         <div 
                           className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-300"
-                          style={{ background: `linear-gradient(135deg, ${acc.color}40, ${acc.color}10)` }}
+                          style={{ background: `linear-gradient(135deg, ${acc.color || '#a855f7'}40, ${acc.color || '#a855f7'}10)` }}
                         />
                         
                         {/* Brilho no hover */}
                         <div 
                           className="absolute -inset-1 rounded-2xl opacity-0 group-hover:opacity-30 blur-xl transition-opacity duration-300"
-                          style={{ background: `linear-gradient(90deg, ${acc.color}, transparent)` }}
+                          style={{ background: `linear-gradient(90deg, ${acc.color || '#a855f7'}, transparent)` }}
                         />
                         
                         <div className="relative p-5 rounded-xl glass-card border border-purple-700/30 group-hover:border-purple-600/60 transition-all duration-300">
@@ -464,7 +464,7 @@ export default function Dashboard() {
                             <div 
                               className="w-20 h-20 rounded-2xl flex items-center justify-center p-3 bg-white/95 shadow-2xl relative overflow-hidden group-hover:scale-110 transition-transform duration-300"
                               style={{ 
-                                border: `3px solid ${acc.color}60`
+                                border: `3px solid ${acc.color || '#a855f7'}60`
                               }}
                             >
                               {/* Brilho interno sutil */}
@@ -476,20 +476,13 @@ export default function Dashboard() {
                                   alt={acc.name}
                                   className="w-full h-full object-contain relative z-10"
                                   onError={(e) => {
-                                    if (e.target) {
-                                      const parent = e.target.parentElement;
-                                      if (parent) {
-                                        e.target.remove();
-                                        const fallback = document.createElement('span');
-                                        fallback.textContent = '🏦';
-                                        fallback.className = 'text-4xl relative z-10';
-                                        parent.appendChild(fallback);
-                                      }
+                                    if (e.target && e.target.parentElement) {
+                                      e.target.parentElement.innerHTML = `<span class="text-4xl relative z-10">🏦</span>`;
                                     }
                                   }}
                                 />
                               ) : (
-                                <span className="text-4xl relative z-10">{acc.icon}</span>
+                                <span className="text-4xl relative z-10">{acc.icon || '🏦'}</span>
                               )}
                             </div>
                             
@@ -542,7 +535,7 @@ export default function Dashboard() {
                           {/* Efeito de brilho no canto */}
                           <div 
                             className="absolute -top-8 -right-8 w-24 h-24 rounded-full blur-2xl opacity-10 group-hover:opacity-30 transition-opacity duration-300"
-                            style={{ background: `linear-gradient(135deg, ${acc.color}, transparent)` }}
+                            style={{ background: `linear-gradient(135deg, ${acc.color || '#a855f7'}, transparent)` }}
                           />
                         </div>
                       </motion.div>

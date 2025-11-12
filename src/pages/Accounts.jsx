@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Account } from "@/entities/all";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,138 +21,160 @@ import { Wallet, Plus, Edit, Trash2, TrendingUp, TrendingDown, Check, Loader2, B
 import { motion, AnimatePresence } from "framer-motion";
 import FeatureGuard from "../components/FeatureGuard";
 
-// 🏦 LOGOS OFICIAIS DOS BANCOS BRASILEIROS
+// 🏦 BANCOS BRASILEIROS COM LOGOS E EMOJIS
 const BRAZILIAN_BANKS = [
   { 
     code: "nubank", 
     name: "Nubank", 
-    logo: "https://logodownload.org/wp-content/uploads/2020/02/nubank-logo-3.png",
+    emoji: "💜",
+    logo: "https://upload.wikimedia.org/wikipedia/commons/f/f7/Nubank_logo_2021.svg",
     color: "#8A05BE" 
   },
   { 
     code: "inter", 
     name: "Banco Inter", 
-    logo: "https://logodownload.org/wp-content/uploads/2019/08/banco-inter-logo.png",
+    emoji: "🧡",
+    logo: "https://upload.wikimedia.org/wikipedia/commons/7/7c/Banco_Inter_logo.svg",
     color: "#FF7A00" 
   },
   { 
     code: "bb", 
     name: "Banco do Brasil", 
-    logo: "https://logodownload.org/wp-content/uploads/2015/02/banco-do-brasil-logo.png",
+    emoji: "💛",
+    logo: "https://upload.wikimedia.org/wikipedia/commons/2/29/Banco_do_Brasil_logo.svg",
     color: "#FDB913" 
   },
   { 
     code: "caixa", 
     name: "Caixa Econômica", 
-    logo: "https://logodownload.org/wp-content/uploads/2014/05/caixa-economica-federal-logo.png",
+    emoji: "🔵",
+    logo: "https://upload.wikimedia.org/wikipedia/commons/4/4b/Caixa_Econ%C3%B4mica_Federal_logo.svg",
     color: "#0057A0" 
   },
   { 
     code: "itau", 
     name: "Itaú", 
-    logo: "https://logodownload.org/wp-content/uploads/2014/04/itau-logo.png",
+    emoji: "🔶",
+    logo: "https://upload.wikimedia.org/wikipedia/commons/8/86/Ita%C3%BA_Unibanco_logo.svg",
     color: "#EC7000" 
   },
   { 
     code: "bradesco", 
     name: "Bradesco", 
-    logo: "https://logodownload.org/wp-content/uploads/2014/05/bradesco-logo.png",
+    emoji: "🔴",
+    logo: "https://upload.wikimedia.org/wikipedia/commons/5/51/Bradesco_logo.svg",
     color: "#CC092F" 
   },
   { 
     code: "santander", 
     name: "Santander", 
-    logo: "https://logodownload.org/wp-content/uploads/2014/05/santander-logo.png",
+    emoji: "❤️",
+    logo: "https://upload.wikimedia.org/wikipedia/commons/b/b8/Banco_Santander_Logotipo.svg",
     color: "#EC0000" 
   },
   { 
     code: "safra", 
     name: "Banco Safra", 
-    logo: "https://logodownload.org/wp-content/uploads/2020/04/banco-safra-logo.png",
+    emoji: "💙",
+    logo: "https://upload.wikimedia.org/wikipedia/commons/a/a3/Banco_Safra_logo.svg",
     color: "#0066B3" 
   },
   { 
     code: "original", 
     name: "Banco Original", 
-    logo: "https://logodownload.org/wp-content/uploads/2020/04/banco-original-logo.png",
+    emoji: "💚",
+    logo: "https://seeklogo.com/images/B/banco-original-logo-3944247FC5-seeklogo.com.png",
     color: "#00A868" 
   },
   { 
     code: "c6", 
     name: "C6 Bank", 
-    logo: "https://logodownload.org/wp-content/uploads/2020/04/c6-bank-logo.png",
+    emoji: "⚫",
+    logo: "https://seeklogo.com/images/C/c6-bank-logo-B66343FC16-seeklogo.com.png",
     color: "#1A1A1A" 
   },
   { 
     code: "btg", 
     name: "BTG Pactual", 
-    logo: "https://logodownload.org/wp-content/uploads/2020/04/btg-pactual-logo.png",
+    emoji: "🟦",
+    logo: "https://seeklogo.com/images/B/btg-pactual-logo-B263A74D17-seeklogo.com.png",
     color: "#000080" 
   },
   { 
     code: "pan", 
     name: "Banco Pan", 
-    logo: "https://logodownload.org/wp-content/uploads/2020/04/banco-pan-logo-0.png",
+    emoji: "💙",
+    logo: "https://seeklogo.com/images/B/banco-pan-logo-1E48456C0E-seeklogo.com.png",
     color: "#0077C8" 
   },
   { 
     code: "next", 
     name: "Next", 
-    logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/Banco_Next_logo.svg/512px-Banco_Next_logo.svg.png",
+    emoji: "💚",
+    logo: "https://seeklogo.com/images/N/next-bank-logo-049457154C-seeklogo.com.png",
     color: "#00AB63" 
   },
   { 
     code: "picpay", 
     name: "PicPay", 
-    logo: "https://logodownload.org/wp-content/uploads/2018/05/picpay-logo.png",
+    emoji: "💚",
+    logo: "https://seeklogo.com/images/P/picpay-logo-1F0C60AECF-seeklogo.com.png",
     color: "#21C25E" 
   },
   { 
     code: "mercadopago", 
     name: "Mercado Pago", 
-    logo: "https://logodownload.org/wp-content/uploads/2021/05/mercado-pago-logo.png",
+    emoji: "💙",
+    logo: "https://seeklogo.com/images/M/mercado-pago-logo-9852AA4379-seeklogo.com.png",
     color: "#009EE3" 
   },
   { 
     code: "neon", 
     name: "Neon", 
-    logo: "https://logodownload.org/wp-content/uploads/2020/04/neon-logo.png",
+    emoji: "💙",
+    logo: "https://seeklogo.com/images/N/neon-logo-73671B011F-seeklogo.com.png",
     color: "#00D1FF" 
   },
   { 
     code: "will", 
     name: "Will Bank", 
-    logo: "https://images.crunchbase.com/image/upload/c_lpad,f_auto,q_auto:eco,dpr_1/v1510848906/zgoosnhbchqfqevqihtk.png",
+    emoji: "🟣",
+    logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT5YLHs9xQPdKLRGPq5q5hfJ3DhGqN5Qk5VfQ&s",
     color: "#6B4FBB" 
   },
   { 
     code: "xp", 
     name: "XP Investimentos", 
-    logo: "https://logodownload.org/wp-content/uploads/2021/06/xp-investimentos-logo.png",
+    emoji: "⚫",
+    logo: "https://seeklogo.com/images/X/xp-investimentos-logo-01D91A7BDB-seeklogo.com.png",
     color: "#000000" 
   },
   { 
     code: "generic", 
     name: "Outro Banco", 
-    logo: "https://cdn-icons-png.flaticon.com/512/2830/2830284.png",
+    emoji: "🏦",
+    logo: "",
     color: "#6366f1" 
   },
   { 
     code: "wallet", 
     name: "Carteira/Dinheiro", 
-    logo: "https://cdn-icons-png.flaticon.com/512/3163/3163679.png",
+    emoji: "💵",
+    logo: "",
     color: "#10b981" 
   },
   { 
     code: "investment", 
     name: "Corretora", 
-    logo: "https://cdn-icons-png.flaticon.com/512/2936/2936730.png",
+    emoji: "📈",
+    logo: "",
     color: "#f59e0b" 
   },
   { 
     code: "crypto", 
     name: "Cripto", 
-    logo: "https://cdn-icons-png.flaticon.com/512/5968/5968260.png",
+    emoji: "₿",
+    logo: "",
     color: "#f97316" 
   }
 ];
@@ -280,10 +301,13 @@ export default function Accounts() {
   };
 
   const handleSelectBank = (bank) => {
+    // ✅ Salvar logo OU emoji (se logo não existir)
+    const iconToUse = bank.logo || bank.emoji;
+    
     setFormData({
       ...formData,
       bank_code: bank.code,
-      icon: bank.logo, // ✅ AGORA SALVA A URL DA LOGO
+      icon: iconToUse,
       color: bank.color,
       name: formData.name || bank.name
     });
@@ -387,11 +411,8 @@ export default function Accounts() {
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3">
                           <div
-                            className="w-14 h-14 rounded-xl flex items-center justify-center p-2"
-                            style={{ 
-                              backgroundColor: acc.color + '20',
-                              border: `2px solid ${acc.color}40`
-                            }}
+                            className="w-14 h-14 rounded-xl flex items-center justify-center p-2 bg-white/95"
+                            style={{ border: `2px solid ${acc.color}40` }}
                           >
                             {isImage ? (
                               <img 
@@ -399,15 +420,8 @@ export default function Accounts() {
                                 alt={acc.name}
                                 className="w-full h-full object-contain"
                                 onError={(e) => {
-                                  if (e.target) {
-                                    const parent = e.target.parentElement;
-                                    if (parent) {
-                                      e.target.remove();
-                                      const fallback = document.createElement('span');
-                                      fallback.textContent = '🏦';
-                                      fallback.className = 'text-3xl';
-                                      parent.appendChild(fallback);
-                                    }
+                                  if (e.target && e.target.parentElement) {
+                                    e.target.parentElement.innerHTML = `<span class="text-3xl">🏦</span>`;
                                   }
                                 }}
                               />
@@ -499,11 +513,8 @@ export default function Accounts() {
                 </p>
                 <div className="flex items-center gap-4">
                   <div
-                    className="w-24 h-24 rounded-2xl flex items-center justify-center p-3 shadow-xl"
-                    style={{ 
-                      backgroundColor: formData.color + '20', 
-                      border: `3px solid ${formData.color}60` 
-                    }}
+                    className="w-24 h-24 rounded-2xl flex items-center justify-center p-3 shadow-xl bg-white/95"
+                    style={{ border: `3px solid ${formData.color}60` }}
                   >
                     {isUrlImage(formData.icon) ? (
                       <img 
@@ -511,15 +522,8 @@ export default function Accounts() {
                         alt="Logo"
                         className="w-full h-full object-contain"
                         onError={(e) => {
-                          if (e.target) {
-                            const parent = e.target.parentElement;
-                            if (parent) {
-                              e.target.remove();
-                              const fallback = document.createElement('span');
-                              fallback.textContent = '🏦';
-                              fallback.className = 'text-5xl';
-                              parent.appendChild(fallback);
-                            }
+                          if (e.target && e.target.parentElement) {
+                            e.target.parentElement.innerHTML = `<span class="text-5xl">🏦</span>`;
                           }
                         }}
                       />
@@ -545,44 +549,45 @@ export default function Accounts() {
                   🏦 Selecione seu Banco ou Instituição
                 </Label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-[400px] overflow-y-auto p-3 bg-purple-900/10 rounded-xl">
-                  {BRAZILIAN_BANKS.map((bank) => (
-                    <button
-                      key={bank.code}
-                      type="button"
-                      onClick={() => handleSelectBank(bank)}
-                      className={`relative p-4 rounded-xl text-center transition-all group ${
-                        formData.bank_code === bank.code
-                          ? 'bg-gradient-to-br from-purple-600 to-pink-600 shadow-xl scale-105 ring-2 ring-purple-400'
-                          : 'bg-purple-900/30 hover:bg-purple-900/50 hover:scale-105'
-                      }`}
-                    >
-                      <div className="w-full h-16 mb-2 flex items-center justify-center p-2">
-                        <img 
-                          src={bank.logo} 
-                          alt={bank.name}
-                          className="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform"
-                          onError={(e) => {
-                            if (e.target) {
-                              const parent = e.target.parentElement;
-                              if (parent) {
-                                e.target.remove();
-                                const fallback = document.createElement('span');
-                                fallback.textContent = '🏦';
-                                fallback.className = 'text-4xl';
-                                parent.appendChild(fallback);
-                              }
-                            }
-                          }}
-                        />
-                      </div>
-                      <p className="text-white text-xs font-semibold truncate">{bank.name}</p>
-                      {formData.bank_code === bank.code && (
-                        <div className="absolute -top-2 -right-2 w-7 h-7 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
-                          <Check className="w-4 h-4 text-white" />
+                  {BRAZILIAN_BANKS.map((bank) => {
+                    const hasLogo = bank.logo && bank.logo.length > 0;
+                    
+                    return (
+                      <button
+                        key={bank.code}
+                        type="button"
+                        onClick={() => handleSelectBank(bank)}
+                        className={`relative p-4 rounded-xl text-center transition-all group ${
+                          formData.bank_code === bank.code
+                            ? 'bg-gradient-to-br from-purple-600 to-pink-600 shadow-xl scale-105 ring-2 ring-purple-400'
+                            : 'bg-purple-900/30 hover:bg-purple-900/50 hover:scale-105'
+                        }`}
+                      >
+                        <div className="w-full h-16 mb-2 flex items-center justify-center p-2 bg-white/90 rounded-lg">
+                          {hasLogo ? (
+                            <img 
+                              src={bank.logo} 
+                              alt={bank.name}
+                              className="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform"
+                              onError={(e) => {
+                                if (e.target && e.target.parentElement) {
+                                  e.target.parentElement.innerHTML = `<span class="text-4xl">${bank.emoji}</span>`;
+                                }
+                              }}
+                            />
+                          ) : (
+                            <span className="text-4xl">{bank.emoji}</span>
+                          )}
                         </div>
-                      )}
-                    </button>
-                  ))}
+                        <p className="text-white text-xs font-semibold truncate">{bank.name}</p>
+                        {formData.bank_code === bank.code && (
+                          <div className="absolute -top-2 -right-2 w-7 h-7 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
+                            <Check className="w-4 h-4 text-white" />
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
                 <p className="text-purple-400 text-xs mt-2">
                   💡 Clique no seu banco para aplicar logo e cor automaticamente
