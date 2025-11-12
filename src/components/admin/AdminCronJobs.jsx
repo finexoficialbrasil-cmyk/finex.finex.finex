@@ -14,7 +14,12 @@ import {
   Calendar,
   Zap,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  Copy,
+  ExternalLink,
+  HelpCircle,
+  ArrowRight,
+  Check
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -23,6 +28,16 @@ export default function AdminCronJobs() {
   const [isRunningExpiry, setIsRunningExpiry] = useState(false);
   const [lastResultReminders, setLastResultReminders] = useState(null);
   const [lastResultExpiry, setLastResultExpiry] = useState(null);
+  const [copiedUrl, setCopiedUrl] = useState(null);
+
+  const functionUrl1 = `${window.location.origin}/api/functions/sendSubscriptionReminders`;
+  const functionUrl2 = `${window.location.origin}/api/functions/checkSubscriptionExpiry`;
+
+  const handleCopy = (url, id) => {
+    navigator.clipboard.writeText(url);
+    setCopiedUrl(id);
+    setTimeout(() => setCopiedUrl(null), 2000);
+  };
 
   const handleRunReminders = async () => {
     if (isRunningReminders) return;
@@ -82,95 +97,385 @@ export default function AdminCronJobs() {
 
   return (
     <div className="space-y-6">
-      {/* Aviso Importante */}
-      <div className="bg-yellow-900/20 border-2 border-yellow-500/50 rounded-xl p-6">
-        <div className="flex items-start gap-4">
-          <AlertCircle className="w-8 h-8 text-yellow-400 flex-shrink-0 mt-1" />
-          <div>
-            <h3 className="text-yellow-300 font-bold text-lg mb-2">
-              ⚠️ IMPORTANTE: Configure um Agendador Externo
-            </h3>
-            <p className="text-yellow-200 text-sm mb-3">
-              Para os emails automáticos funcionarem, você precisa configurar um serviço de agendamento (cron job) 
-              que execute essas funções diariamente.
-            </p>
-            <div className="bg-yellow-800/30 p-4 rounded-lg">
-              <p className="text-yellow-100 text-sm font-semibold mb-2">
-                📋 Opções Recomendadas:
-              </p>
-              <ul className="text-yellow-200 text-sm space-y-2 list-disc list-inside">
-                <li><strong>EasyCron</strong> - https://www.easycron.com (Gratuito)</li>
-                <li><strong>Cron-Job.org</strong> - https://cron-job.org (Gratuito)</li>
-                <li><strong>Zapier</strong> - Agendar chamadas HTTP</li>
-              </ul>
-            </div>
-            <div className="mt-4 bg-cyan-900/30 p-4 rounded-lg">
-              <p className="text-cyan-200 text-sm font-semibold mb-2">
-                ⚙️ Como Configurar:
-              </p>
-              <ol className="text-cyan-200 text-sm space-y-2 list-decimal list-inside">
-                <li>Crie uma conta em um dos serviços acima</li>
-                <li>Configure para executar <strong>todos os dias às 9h</strong></li>
-                <li>Use as URLs das funções que aparecem abaixo</li>
-                <li>Pronto! Os emails serão enviados automaticamente 🎉</li>
-              </ol>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Job 1: Lembretes de Assinatura */}
-      <Card className="glass-card border-purple-700/50">
+      {/* Header Explicativo */}
+      <Card className="glass-card border-cyan-700/50">
         <CardHeader className="border-b border-purple-900/30">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-3 rounded-xl bg-purple-600/20">
-                <Mail className="w-6 h-6 text-purple-400" />
-              </div>
-              <div>
-                <CardTitle className="text-white text-lg">
-                  📧 Lembretes de Vencimento
-                </CardTitle>
-                <p className="text-purple-300 text-sm mt-1">
-                  Envia emails 3, 2 e 1 dia antes, no dia, e após vencimento
-                </p>
-              </div>
+          <CardTitle className="text-white flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-cyan-600/20">
+              <HelpCircle className="w-6 h-6 text-cyan-400" />
             </div>
-            <Button
-              onClick={handleRunReminders}
-              disabled={isRunningReminders}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-            >
-              {isRunningReminders ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Executando...
-                </>
-              ) : (
-                <>
-                  <Play className="w-4 h-4 mr-2" />
-                  Executar Agora
-                </>
-              )}
-            </Button>
-          </div>
+            <div>
+              <p className="text-xl">💡 Como Funciona a Automação de Emails</p>
+              <p className="text-purple-300 text-sm font-normal mt-1">
+                Entenda o processo e configure em 5 minutos
+              </p>
+            </div>
+          </CardTitle>
         </CardHeader>
         <CardContent className="p-6">
           <div className="space-y-4">
-            <div className="bg-purple-900/20 p-4 rounded-lg">
-              <p className="text-purple-200 text-sm font-semibold mb-2">
-                📅 Quando envia:
-              </p>
-              <ul className="text-purple-300 text-sm space-y-1">
-                <li>• 3 dias antes do vencimento</li>
-                <li>• 2 dias antes do vencimento</li>
-                <li>• 1 dia antes do vencimento</li>
-                <li>• No dia do vencimento</li>
-                <li>• 1, 5, 15 e 30 dias após vencimento</li>
-                <li>• Mensalmente após 30 dias</li>
-              </ul>
+            <div className="bg-purple-900/20 p-5 rounded-xl border border-purple-700/30">
+              <p className="text-white font-bold mb-3 text-lg">📚 O que você precisa saber:</p>
+              <div className="space-y-3 text-purple-200 text-sm">
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl flex-shrink-0">1️⃣</span>
+                  <div>
+                    <p className="font-semibold text-white mb-1">O sistema FINEX já está pronto</p>
+                    <p>As funções de email já estão criadas e funcionando perfeitamente!</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl flex-shrink-0">2️⃣</span>
+                  <div>
+                    <p className="font-semibold text-white mb-1">Mas elas precisam ser "acionadas"</p>
+                    <p>Como um despertador que toca todo dia, você precisa de um serviço que "chame" essas funções automaticamente.</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl flex-shrink-0">3️⃣</span>
+                  <div>
+                    <p className="font-semibold text-white mb-1">Usamos um serviço GRATUITO</p>
+                    <p>O <strong className="text-cyan-300">EasyCron</strong> é um site que faz isso de graça! Ele vai "tocar o despertador" todo dia.</p>
+                  </div>
+                </div>
+              </div>
             </div>
 
+            <div className="bg-green-900/20 border-2 border-green-500/50 p-5 rounded-xl">
+              <p className="text-green-300 font-bold mb-2 flex items-center gap-2">
+                <CheckCircle className="w-5 h-5" />
+                ✅ Quando Configurado, o Sistema Faz Tudo Sozinho:
+              </p>
+              <ul className="text-green-200 text-sm space-y-2 list-disc list-inside">
+                <li>Envia emails 3, 2, 1 dia ANTES do vencimento ⏰</li>
+                <li>Envia no DIA do vencimento 📅</li>
+                <li>Envia DEPOIS que vence (1, 5, 15, 30 dias) 📧</li>
+                <li>Tudo AUTOMÁTICO, sem você precisar fazer NADA! 🎉</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* TUTORIAL PASSO A PASSO - SUPER DETALHADO */}
+      <Card className="glass-card border-yellow-700/50">
+        <CardHeader className="bg-gradient-to-r from-yellow-900/30 to-orange-900/30 border-b border-yellow-700/30">
+          <CardTitle className="text-white flex items-center gap-3">
+            <div className="p-3 rounded-xl bg-yellow-600/20">
+              <Zap className="w-7 h-7 text-yellow-400" />
+            </div>
+            <div>
+              <p className="text-2xl">🚀 TUTORIAL COMPLETO - Configure em 5 Minutos</p>
+              <p className="text-yellow-300 text-sm font-normal mt-1">
+                Siga EXATAMENTE estes passos (é mais fácil do que parece!)
+              </p>
+            </div>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="space-y-6">
+            {/* PASSO 1 */}
+            <div className="bg-gradient-to-r from-blue-900/30 to-cyan-900/30 border-2 border-blue-500/50 p-6 rounded-xl">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-lg">
+                  1
+                </div>
+                <h3 className="text-white font-bold text-xl">🌐 Criar Conta no EasyCron</h3>
+              </div>
+              
+              <div className="space-y-3 ml-13">
+                <div className="bg-black/30 p-4 rounded-lg">
+                  <p className="text-blue-200 mb-3">
+                    <ArrowRight className="w-4 h-4 inline mr-2" />
+                    Abra uma nova aba e acesse:
+                  </p>
+                  <a 
+                    href="https://www.easycron.com/user/signup" 
+                    target="_blank"
+                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
+                  >
+                    <ExternalLink className="w-5 h-5" />
+                    Abrir EasyCron (Nova Aba)
+                  </a>
+                </div>
+
+                <div className="bg-blue-900/40 p-4 rounded-lg border border-blue-600/30">
+                  <p className="text-blue-100 text-sm mb-2 font-semibold">📝 Na página do EasyCron:</p>
+                  <ol className="text-blue-200 text-sm space-y-2 list-decimal list-inside">
+                    <li>Clique em <strong className="text-white">"Sign Up"</strong> (Cadastrar)</li>
+                    <li>Preencha seu email</li>
+                    <li>Escolha uma senha</li>
+                    <li>Clique em <strong className="text-white">"Create Account"</strong></li>
+                    <li>Confirme seu email (cheque a caixa de entrada)</li>
+                    <li>Faça login</li>
+                  </ol>
+                </div>
+
+                <div className="bg-green-900/20 border border-green-600/30 p-3 rounded-lg">
+                  <p className="text-green-200 text-xs">
+                    ✅ <strong>Dica:</strong> É grátis e leva 2 minutos! Use o mesmo email que usa no FINEX.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* PASSO 2 */}
+            <div className="bg-gradient-to-r from-purple-900/30 to-pink-900/30 border-2 border-purple-500/50 p-6 rounded-xl">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold text-lg">
+                  2
+                </div>
+                <h3 className="text-white font-bold text-xl">⏰ Criar Primeiro Cron Job (Lembretes)</h3>
+              </div>
+              
+              <div className="space-y-3 ml-13">
+                <div className="bg-purple-900/40 p-4 rounded-lg border border-purple-600/30">
+                  <p className="text-purple-100 text-sm mb-3 font-semibold">📝 No painel do EasyCron:</p>
+                  <ol className="text-purple-200 text-sm space-y-3 list-decimal list-inside">
+                    <li className="font-semibold">
+                      Clique no botão <span className="bg-green-600 text-white px-3 py-1 rounded text-xs">+ New Cron Job</span>
+                    </li>
+                    <li>Preencha o formulário EXATAMENTE assim:</li>
+                  </ol>
+                </div>
+
+                {/* Formulário Visual */}
+                <div className="bg-black/40 p-5 rounded-lg border-2 border-cyan-500/50 space-y-4">
+                  <div>
+                    <Label className="text-cyan-300 text-sm font-bold mb-2 block">
+                      📝 Cron Job Name (Nome):
+                    </Label>
+                    <div className="bg-white/10 p-3 rounded border border-cyan-600/50">
+                      <code className="text-cyan-200 font-mono">FINEX - Lembretes de Vencimento</code>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label className="text-cyan-300 text-sm font-bold mb-2 block">
+                      🔗 URL to Call (URL para chamar):
+                    </Label>
+                    <div className="flex gap-2">
+                      <div className="flex-1 bg-white/10 p-3 rounded border border-cyan-600/50 overflow-x-auto">
+                        <code className="text-cyan-200 font-mono text-xs">{functionUrl1}</code>
+                      </div>
+                      <Button
+                        onClick={() => handleCopy(functionUrl1, 'url1')}
+                        className="bg-cyan-600 hover:bg-cyan-700"
+                      >
+                        {copiedUrl === 'url1' ? (
+                          <Check className="w-4 h-4" />
+                        ) : (
+                          <Copy className="w-4 h-4" />
+                        )}
+                      </Button>
+                    </div>
+                    <p className="text-cyan-400 text-xs mt-2">
+                      👆 Clique no botão para COPIAR e depois COLE no campo do EasyCron
+                    </p>
+                  </div>
+
+                  <div>
+                    <Label className="text-cyan-300 text-sm font-bold mb-2 block">
+                      ⏰ When to Execute (Quando executar):
+                    </Label>
+                    <div className="bg-yellow-900/30 p-4 rounded border border-yellow-600/50">
+                      <p className="text-yellow-200 text-sm mb-2">
+                        Selecione: <strong className="text-white">Every Day</strong> (Todo Dia)
+                      </p>
+                      <p className="text-yellow-200 text-sm mb-2">
+                        Hora: <strong className="text-white">09:00</strong> (9 da manhã)
+                      </p>
+                      <p className="text-yellow-200 text-sm">
+                        Timezone: <strong className="text-white">America/Sao_Paulo</strong> (Brasília)
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label className="text-cyan-300 text-sm font-bold mb-2 block">
+                      📊 HTTP Method:
+                    </Label>
+                    <div className="bg-white/10 p-3 rounded border border-cyan-600/50">
+                      <code className="text-cyan-200">GET</code>
+                    </div>
+                    <p className="text-cyan-400 text-xs mt-1">
+                      (Deixe como GET - é o padrão)
+                    </p>
+                  </div>
+
+                  <div className="bg-green-900/30 border border-green-600/50 p-4 rounded-lg">
+                    <p className="text-green-200 text-sm">
+                      ✅ Depois de preencher tudo, clique em <strong className="text-white">"Create Cron Job"</strong>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-green-900/20 border border-green-600/30 p-3 rounded-lg">
+                  <p className="text-green-200 text-xs flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4" />
+                    <strong>Pronto!</strong> Agora o EasyCron vai executar essa função TODO DIA às 9h!
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* PASSO 3 */}
+            <div className="bg-gradient-to-r from-green-900/30 to-emerald-900/30 border-2 border-green-500/50 p-6 rounded-xl">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-green-600 flex items-center justify-center text-white font-bold text-lg">
+                  3
+                </div>
+                <h3 className="text-white font-bold text-xl">🔔 Criar Segundo Cron Job (Verificação)</h3>
+              </div>
+              
+              <div className="space-y-3 ml-13">
+                <p className="text-green-200 text-sm mb-3">
+                  Agora repita o mesmo processo, mas com outra URL:
+                </p>
+
+                <div className="bg-black/40 p-5 rounded-lg border-2 border-cyan-500/50 space-y-4">
+                  <div>
+                    <Label className="text-cyan-300 text-sm font-bold mb-2 block">
+                      📝 Nome:
+                    </Label>
+                    <div className="bg-white/10 p-3 rounded border border-cyan-600/50">
+                      <code className="text-cyan-200 font-mono">FINEX - Verificação de Vencimentos</code>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label className="text-cyan-300 text-sm font-bold mb-2 block">
+                      🔗 URL:
+                    </Label>
+                    <div className="flex gap-2">
+                      <div className="flex-1 bg-white/10 p-3 rounded border border-cyan-600/50 overflow-x-auto">
+                        <code className="text-cyan-200 font-mono text-xs">{functionUrl2}</code>
+                      </div>
+                      <Button
+                        onClick={() => handleCopy(functionUrl2, 'url2')}
+                        className="bg-cyan-600 hover:bg-cyan-700"
+                      >
+                        {copiedUrl === 'url2' ? (
+                          <Check className="w-4 h-4" />
+                        ) : (
+                          <Copy className="w-4 h-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label className="text-cyan-300 text-sm font-bold mb-2 block">
+                      ⏰ Quando:
+                    </Label>
+                    <div className="bg-yellow-900/30 p-4 rounded border border-yellow-600/50">
+                      <p className="text-yellow-200 text-sm">
+                        <strong className="text-white">Every Day às 10:00</strong> (uma hora depois do primeiro)
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-green-900/20 border border-green-600/30 p-3 rounded-lg">
+                  <p className="text-green-200 text-xs flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4" />
+                    <strong>Feito!</strong> Agora você tem 2 cron jobs configurados!
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* PASSO 4 - VERIFICAR */}
+            <div className="bg-gradient-to-r from-cyan-900/30 to-blue-900/30 border-2 border-cyan-500/50 p-6 rounded-xl">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-cyan-600 flex items-center justify-center text-white font-bold text-lg">
+                  4
+                </div>
+                <h3 className="text-white font-bold text-xl">✅ Verificar se Funcionou</h3>
+              </div>
+              
+              <div className="space-y-3 ml-13">
+                <div className="bg-cyan-900/40 p-4 rounded-lg border border-cyan-600/30">
+                  <p className="text-cyan-100 text-sm mb-3 font-semibold">No painel do EasyCron:</p>
+                  <ul className="text-cyan-200 text-sm space-y-2 list-disc list-inside">
+                    <li>Você verá seus 2 cron jobs listados</li>
+                    <li>Status: <span className="bg-green-600 text-white px-2 py-0.5 rounded text-xs">Enabled</span> (Ativado)</li>
+                    <li>Next Run: mostra quando vai executar (amanhã 9h e 10h)</li>
+                    <li>Você pode clicar em "Run Now" para testar imediatamente!</li>
+                  </ul>
+                </div>
+
+                <div className="bg-green-900/30 border-2 border-green-500/50 p-4 rounded-lg">
+                  <p className="text-green-200 text-sm font-bold mb-2">
+                    🎉 PARABÉNS! Está configurado!
+                  </p>
+                  <p className="text-green-300 text-sm">
+                    A partir de agora, TODO DIA às 9h e 10h, o sistema vai verificar automaticamente 
+                    e enviar emails para usuários que precisam renovar!
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Teste Manual Enquanto Configura */}
+            <div className="bg-orange-900/20 border-2 border-orange-500/50 p-5 rounded-xl">
+              <div className="flex items-center gap-3 mb-3">
+                <AlertCircle className="w-6 h-6 text-orange-400" />
+                <h3 className="text-orange-300 font-bold text-lg">
+                  ⚠️ ENQUANTO NÃO CONFIGURAR:
+                </h3>
+              </div>
+              <p className="text-orange-200 text-sm mb-4">
+                Use os botões abaixo para executar MANUALMENTE (pelo menos 1x por dia):
+              </p>
+              <div className="grid md:grid-cols-2 gap-3">
+                <Button
+                  onClick={handleRunReminders}
+                  disabled={isRunningReminders}
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 h-14"
+                >
+                  {isRunningReminders ? (
+                    <>
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      Executando...
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-5 h-5 mr-2" />
+                      📧 Executar Lembretes AGORA
+                    </>
+                  )}
+                </Button>
+                <Button
+                  onClick={handleRunExpiry}
+                  disabled={isRunningExpiry}
+                  className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 h-14"
+                >
+                  {isRunningExpiry ? (
+                    <>
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      Executando...
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-5 h-5 mr-2" />
+                      🔔 Executar Verificação AGORA
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Resultados dos Testes */}
+      {(lastResultReminders || lastResultExpiry) && (
+        <Card className="glass-card border-purple-700/50">
+          <CardHeader>
+            <CardTitle className="text-white">📊 Últimos Resultados</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
             {lastResultReminders && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
@@ -191,7 +496,7 @@ export default function AdminCronJobs() {
                     <p className={`font-bold mb-2 ${
                       lastResultReminders.success ? 'text-green-300' : 'text-red-300'
                     }`}>
-                      {lastResultReminders.success ? '✅ Executado com Sucesso!' : '❌ Erro na Execução'}
+                      📧 Lembretes: {lastResultReminders.success ? 'Executado com Sucesso!' : 'Erro'}
                     </p>
                     {lastResultReminders.success && lastResultReminders.results && (
                       <div className="grid grid-cols-3 gap-3 text-sm">
@@ -209,81 +514,10 @@ export default function AdminCronJobs() {
                         </div>
                       </div>
                     )}
-                    {!lastResultReminders.success && (
-                      <p className="text-red-200 text-sm">
-                        {lastResultReminders.error}
-                      </p>
-                    )}
                   </div>
                 </div>
               </motion.div>
             )}
-
-            <div className="bg-cyan-900/20 border border-cyan-700/30 p-4 rounded-lg">
-              <p className="text-cyan-300 text-sm font-semibold mb-2">
-                🔗 URL para Agendador (Cron):
-              </p>
-              <code className="block bg-black/30 p-3 rounded text-cyan-200 text-xs break-all">
-                {window.location.origin}/api/functions/sendSubscriptionReminders
-              </code>
-              <p className="text-cyan-400 text-xs mt-2">
-                Configure para executar todos os dias às 9h da manhã
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Job 2: Verificação de Vencimentos */}
-      <Card className="glass-card border-purple-700/50">
-        <CardHeader className="border-b border-purple-900/30">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-3 rounded-xl bg-blue-600/20">
-                <Calendar className="w-6 h-6 text-blue-400" />
-              </div>
-              <div>
-                <CardTitle className="text-white text-lg">
-                  🔔 Verificação de Vencimentos
-                </CardTitle>
-                <p className="text-purple-300 text-sm mt-1">
-                  Verifica vencimentos e envia notificações por email e WhatsApp
-                </p>
-              </div>
-            </div>
-            <Button
-              onClick={handleRunExpiry}
-              disabled={isRunningExpiry}
-              className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700"
-            >
-              {isRunningExpiry ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Executando...
-                </>
-              ) : (
-                <>
-                  <Play className="w-4 h-4 mr-2" />
-                  Executar Agora
-                </>
-              )}
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="p-6">
-          <div className="space-y-4">
-            <div className="bg-blue-900/20 p-4 rounded-lg">
-              <p className="text-blue-200 text-sm font-semibold mb-2">
-                📅 Notificações enviadas:
-              </p>
-              <ul className="text-blue-300 text-sm space-y-1">
-                <li>• 7 dias antes (email + WhatsApp)</li>
-                <li>• 3 dias antes (email + WhatsApp)</li>
-                <li>• 1 dia antes (email + WhatsApp)</li>
-                <li>• No dia do vencimento (email + WhatsApp)</li>
-                <li>• 1, 3 e 7 dias após (email + WhatsApp)</li>
-              </ul>
-            </div>
 
             {lastResultExpiry && (
               <motion.div
@@ -305,7 +539,7 @@ export default function AdminCronJobs() {
                     <p className={`font-bold mb-2 ${
                       lastResultExpiry.success ? 'text-green-300' : 'text-red-300'
                     }`}>
-                      {lastResultExpiry.success ? '✅ Verificação Concluída!' : '❌ Erro na Verificação'}
+                      🔔 Verificação: {lastResultExpiry.success ? 'Concluída!' : 'Erro'}
                     </p>
                     {lastResultExpiry.success && lastResultExpiry.report && (
                       <div className="grid grid-cols-4 gap-2 text-sm">
@@ -331,129 +565,123 @@ export default function AdminCronJobs() {
                 </div>
               </motion.div>
             )}
+          </CardContent>
+        </Card>
+      )}
 
-            <div className="bg-cyan-900/20 border border-cyan-700/30 p-4 rounded-lg">
-              <p className="text-cyan-300 text-sm font-semibold mb-2">
-                🔗 URL para Agendador (Cron):
+      {/* FAQ */}
+      <Card className="glass-card border-purple-700/50">
+        <CardHeader className="border-b border-purple-900/30">
+          <CardTitle className="text-white flex items-center gap-2">
+            <HelpCircle className="w-5 h-5 text-purple-400" />
+            ❓ Perguntas Frequentes
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="space-y-4">
+            <div className="bg-purple-900/20 p-4 rounded-lg">
+              <p className="text-white font-semibold mb-2">
+                ❓ Preciso pagar algo?
               </p>
-              <code className="block bg-black/30 p-3 rounded text-cyan-200 text-xs break-all">
-                {window.location.origin}/api/functions/checkSubscriptionExpiry
-              </code>
-              <p className="text-cyan-400 text-xs mt-2">
-                Configure para executar todos os dias às 10h da manhã
+              <p className="text-purple-200 text-sm">
+                ✅ <strong>NÃO!</strong> O plano gratuito do EasyCron permite até 100 cron jobs. 
+                Você só precisa de 2, então está perfeito!
+              </p>
+            </div>
+
+            <div className="bg-purple-900/20 p-4 rounded-lg">
+              <p className="text-white font-semibold mb-2">
+                ❓ É seguro dar minha URL para o EasyCron?
+              </p>
+              <p className="text-purple-200 text-sm">
+                ✅ <strong>SIM!</strong> A URL é pública e segura. O EasyCron só chama a função, 
+                e a função verifica se quem está chamando é admin antes de executar.
+              </p>
+            </div>
+
+            <div className="bg-purple-900/20 p-4 rounded-lg">
+              <p className="text-white font-semibold mb-2">
+                ❓ E se eu esquecer de configurar?
+              </p>
+              <p className="text-purple-200 text-sm">
+                ⚠️ Os emails não serão enviados automaticamente. Você terá que clicar nos botões 
+                "Executar Agora" manualmente todo dia.
+              </p>
+            </div>
+
+            <div className="bg-purple-900/20 p-4 rounded-lg">
+              <p className="text-white font-semibold mb-2">
+                ❓ Quanto tempo leva para configurar?
+              </p>
+              <p className="text-purple-200 text-sm">
+                ⏱️ <strong>5 minutos!</strong> É bem rápido: criar conta (2min) + criar 2 cron jobs (3min).
+              </p>
+            </div>
+
+            <div className="bg-purple-900/20 p-4 rounded-lg">
+              <p className="text-white font-semibold mb-2">
+                ❓ Como sei se está funcionando?
+              </p>
+              <p className="text-purple-200 text-sm">
+                🔍 Vá na aba <strong className="text-white">"Emails"</strong> aqui no painel admin. 
+                Lá você vê TODOS os emails enviados automaticamente!
               </p>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Guia de Configuração */}
-      <Card className="glass-card border-green-700/50">
+      {/* Alternativas */}
+      <Card className="glass-card border-blue-700/50">
         <CardHeader className="border-b border-purple-900/30">
           <CardTitle className="text-white flex items-center gap-2">
-            <Zap className="w-5 h-5 text-green-400" />
-            📚 Guia: Como Configurar Agendador Automático
+            <RefreshCw className="w-5 h-5 text-blue-400" />
+            🔄 Outras Opções (se EasyCron não funcionar)
           </CardTitle>
         </CardHeader>
         <CardContent className="p-6">
-          <div className="space-y-6">
-            {/* Opção 1: EasyCron */}
-            <div className="bg-green-900/20 border border-green-700/30 p-5 rounded-lg">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-2xl">1️⃣</span>
-                <h3 className="text-green-300 font-bold text-base">
-                  EasyCron (Recomendado - Gratuito)
-                </h3>
-              </div>
-              <ol className="text-green-200 text-sm space-y-2 list-decimal list-inside">
-                <li>Acesse: <a href="https://www.easycron.com" target="_blank" className="text-cyan-300 underline">https://www.easycron.com</a></li>
-                <li>Crie uma conta gratuita</li>
-                <li>Clique em "Add Cron Job"</li>
-                <li>
-                  <strong>URL:</strong> Cole a URL da função acima
-                  <code className="block bg-black/30 p-2 rounded text-xs mt-1 break-all">
-                    {window.location.origin}/api/functions/sendSubscriptionReminders
-                  </code>
-                </li>
-                <li><strong>Frequência:</strong> Escolha "Once a day" às 9:00 AM (GMT-3)</li>
-                <li>Salve e ative!</li>
-              </ol>
-            </div>
-
-            {/* Opção 2: Cron-Job.org */}
-            <div className="bg-blue-900/20 border border-blue-700/30 p-5 rounded-lg">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-2xl">2️⃣</span>
-                <h3 className="text-blue-300 font-bold text-base">
-                  Cron-Job.org (Gratuito)
-                </h3>
-              </div>
-              <ol className="text-blue-200 text-sm space-y-2 list-decimal list-inside">
-                <li>Acesse: <a href="https://cron-job.org" target="_blank" className="text-cyan-300 underline">https://cron-job.org</a></li>
-                <li>Crie uma conta</li>
-                <li>Vá em "Cronjobs" → "Create Cronjob"</li>
-                <li>
-                  <strong>URL:</strong> Cole a URL da função
-                  <code className="block bg-black/30 p-2 rounded text-xs mt-1 break-all">
-                    {window.location.origin}/api/functions/checkSubscriptionExpiry
-                  </code>
-                </li>
-                <li><strong>Schedule:</strong> Every day at 10:00</li>
-                <li>Salve!</li>
-              </ol>
-            </div>
-
-            {/* Status Visual */}
-            <div className="bg-yellow-900/20 border border-yellow-700/30 p-5 rounded-lg">
-              <div className="flex items-center gap-3 mb-3">
-                <RefreshCw className="w-5 h-5 text-yellow-400" />
-                <h3 className="text-yellow-300 font-bold">
-                  ⚙️ Status do Sistema
-                </h3>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-black/20 p-3 rounded-lg">
-                  <p className="text-purple-400 text-xs mb-1">Lembretes</p>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
-                    <p className="text-white text-sm font-semibold">Manual</p>
-                  </div>
-                  <p className="text-purple-300 text-xs mt-1">Configure agendador</p>
-                </div>
-                <div className="bg-black/20 p-3 rounded-lg">
-                  <p className="text-blue-400 text-xs mb-1">Verificação</p>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
-                    <p className="text-white text-sm font-semibold">Manual</p>
-                  </div>
-                  <p className="text-blue-300 text-xs mt-1">Configure agendador</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Teste Manual */}
-            <div className="bg-purple-900/20 border border-purple-700/30 p-5 rounded-lg">
-              <div className="flex items-center gap-3 mb-3">
-                <Play className="w-5 h-5 text-purple-400" />
-                <h3 className="text-purple-300 font-bold">
-                  🧪 Teste Manual
-                </h3>
-              </div>
-              <p className="text-purple-200 text-sm mb-3">
-                Enquanto você não configura o agendador automático, use os botões acima para executar manualmente:
+          <div className="space-y-3">
+            <div className="bg-blue-900/20 p-4 rounded-lg border border-blue-600/30">
+              <p className="text-blue-200 font-semibold mb-2">
+                2️⃣ Cron-Job.org
               </p>
-              <ul className="text-purple-300 text-sm space-y-2">
-                <li>
-                  <strong className="text-purple-200">📧 Lembretes:</strong> Execute uma vez por dia (manhã)
-                </li>
-                <li>
-                  <strong className="text-purple-200">🔔 Verificação:</strong> Execute uma vez por dia (tarde)
-                </li>
-              </ul>
+              <p className="text-blue-300 text-sm mb-2">
+                Funciona igual ao EasyCron. Use as mesmas URLs.
+              </p>
+              <a 
+                href="https://cron-job.org" 
+                target="_blank"
+                className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Abrir Cron-Job.org
+              </a>
+            </div>
+
+            <div className="bg-purple-900/20 p-4 rounded-lg border border-purple-600/30">
+              <p className="text-purple-200 font-semibold mb-2">
+                3️⃣ UptimeRobot
+              </p>
+              <p className="text-purple-300 text-sm mb-2">
+                Monitora URLs e pode "chamar" elas periodicamente.
+              </p>
+              <a 
+                href="https://uptimerobot.com" 
+                target="_blank"
+                className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-sm"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Abrir UptimeRobot
+              </a>
             </div>
           </div>
         </CardContent>
       </Card>
     </div>
   );
+}
+
+// Helper component
+function Label({ children, className = "" }) {
+  return <label className={`block font-medium ${className}`}>{children}</label>;
 }
