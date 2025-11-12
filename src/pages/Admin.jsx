@@ -169,58 +169,61 @@ export default function Admin() {
 
         <Card className="glass-card border-0 neon-glow">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="bg-purple-900/20 w-full grid grid-cols-2 md:grid-cols-4 lg:grid-cols-11 gap-2 p-2">
-              <TabsTrigger value="dashboard" className="flex items-center gap-2">
-                <Shield className="w-4 h-4" />
-                <span className="hidden md:inline">Dashboard</span>
-              </TabsTrigger>
-              <TabsTrigger value="users" className="flex items-center gap-2">
-                <Users className="w-4 h-4" />
-                <span className="hidden md:inline">Usuários</span>
-              </TabsTrigger>
-              <TabsTrigger value="report" className="flex items-center gap-2">
-                <FileText className="w-4 h-4" />
-                <span className="hidden md:inline">Relatório</span>
-              </TabsTrigger>
-              <TabsTrigger value="plans" className="flex items-center gap-2">
-                <Crown className="w-4 h-4" />
-                <span className="hidden md:inline">Planos</span>
-              </TabsTrigger>
-              <TabsTrigger value="subscriptions" className="flex items-center gap-2">
-                <DollarSign className="w-4 h-4" />
-                <span className="hidden md:inline">Assinaturas</span>
-              </TabsTrigger>
-              <TabsTrigger value="cron" className="flex items-center gap-2">
-                <Clock className="w-4 h-4" />
-                <span className="hidden md:inline">Automação</span>
-              </TabsTrigger>
-              <TabsTrigger value="emails" className="flex items-center gap-2">
-                <Mail className="w-4 h-4" />
-                <span className="hidden md:inline">Emails</span>
-              </TabsTrigger>
-              <TabsTrigger value="backup" className="flex items-center gap-2">
-                <Database className="w-4 h-4" />
-                <span className="hidden md:inline">Backup</span>
-              </TabsTrigger>
-              <TabsTrigger value="tutorials" className="flex items-center gap-2">
-                <Video className="w-4 h-4" />
-                <span className="hidden md:inline">Tutoriais</span>
-              </TabsTrigger>
-              <TabsTrigger value="categories" className="flex items-center gap-2">
-                <Tags className="w-4 h-4" />
-                <span className="hidden md:inline">Categorias</span>
-              </TabsTrigger>
-              <TabsTrigger value="notifications" className="flex items-center gap-2">
-                <Bell className="w-4 h-4" />
-                <span className="hidden md:inline">Notificações</span>
-              </TabsTrigger>
-              <TabsTrigger value="settings" className="flex items-center gap-2">
-                <Settings className="w-4 h-4" />
-                <span className="hidden md:inline">Config</span>
-              </TabsTrigger>
-            </TabsList>
+            {/* ✅ MOBILE: Scroll horizontal + Abas compactas */}
+            <div className="overflow-x-auto pb-2 -mx-2 px-2">
+              <TabsList className="bg-purple-900/20 w-max min-w-full inline-flex gap-1 p-2">
+                <TabsTrigger value="dashboard" className="flex items-center gap-2 whitespace-nowrap px-3 py-2 text-xs md:text-sm">
+                  <Shield className="w-4 h-4 flex-shrink-0" />
+                  <span>Dashboard</span>
+                </TabsTrigger>
+                <TabsTrigger value="users" className="flex items-center gap-2 whitespace-nowrap px-3 py-2 text-xs md:text-sm">
+                  <Users className="w-4 h-4 flex-shrink-0" />
+                  <span>Usuários</span>
+                </TabsTrigger>
+                <TabsTrigger value="report" className="flex items-center gap-2 whitespace-nowrap px-3 py-2 text-xs md:text-sm">
+                  <FileText className="w-4 h-4 flex-shrink-0" />
+                  <span>Relatório</span>
+                </TabsTrigger>
+                <TabsTrigger value="plans" className="flex items-center gap-2 whitespace-nowrap px-3 py-2 text-xs md:text-sm">
+                  <Crown className="w-4 h-4 flex-shrink-0" />
+                  <span>Planos</span>
+                </TabsTrigger>
+                <TabsTrigger value="subscriptions" className="flex items-center gap-2 whitespace-nowrap px-3 py-2 text-xs md:text-sm">
+                  <DollarSign className="w-4 h-4 flex-shrink-0" />
+                  <span>Assinaturas</span>
+                </TabsTrigger>
+                <TabsTrigger value="cron" className="flex items-center gap-2 whitespace-nowrap px-3 py-2 text-xs md:text-sm">
+                  <Clock className="w-4 h-4 flex-shrink-0" />
+                  <span>Automação</span>
+                </TabsTrigger>
+                <TabsTrigger value="emails" className="flex items-center gap-2 whitespace-nowrap px-3 py-2 text-xs md:text-sm">
+                  <Mail className="w-4 h-4 flex-shrink-0" />
+                  <span>Emails</span>
+                </TabsTrigger>
+                <TabsTrigger value="backup" className="flex items-center gap-2 whitespace-nowrap px-3 py-2 text-xs md:text-sm">
+                  <Database className="w-4 h-4 flex-shrink-0" />
+                  <span>Backup</span>
+                </TabsTrigger>
+                <TabsTrigger value="tutorials" className="flex items-center gap-2 whitespace-nowrap px-3 py-2 text-xs md:text-sm">
+                  <Video className="w-4 h-4 flex-shrink-0" />
+                  <span>Tutoriais</span>
+                </TabsTrigger>
+                <TabsTrigger value="categories" className="flex items-center gap-2 whitespace-nowrap px-3 py-2 text-xs md:text-sm">
+                  <Tags className="w-4 h-4 flex-shrink-0" />
+                  <span>Categorias</span>
+                </TabsTrigger>
+                <TabsTrigger value="notifications" className="flex items-center gap-2 whitespace-nowrap px-3 py-2 text-xs md:text-sm">
+                  <Bell className="w-4 h-4 flex-shrink-0" />
+                  <span>Notificações</span>
+                </TabsTrigger>
+                <TabsTrigger value="settings" className="flex items-center gap-2 whitespace-nowrap px-3 py-2 text-xs md:text-sm">
+                  <Settings className="w-4 h-4 flex-shrink-0" />
+                  <span>Config</span>
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
-            <div className="p-6">
+            <div className="p-3 md:p-6">
               <React.Suspense fallback={<TabLoading />}>
                 <TabsContent value="dashboard">
                   <AdminDashboard />
@@ -257,30 +260,33 @@ export default function Admin() {
                 </TabsContent>
                 <TabsContent value="settings">
                   <Tabs defaultValue="branding">
-                    <TabsList className="bg-purple-900/20 mb-6 w-full grid grid-cols-2 md:grid-cols-5 lg:grid-cols-5 gap-2 p-2">
-                      <TabsTrigger value="branding" className="flex items-center gap-2">
-                        <Settings className="w-4 h-4" />
-                        <span className="hidden md:inline">Branding</span>
-                      </TabsTrigger>
-                      <TabsTrigger value="payments" className="flex items-center gap-2">
-                        <DollarSign className="w-4 h-4" />
-                        <span className="hidden md:inline">Pagamentos</span>
-                      </TabsTrigger>
-                      <TabsTrigger value="webhooks" className="flex items-center gap-2">
-                        <Zap className="w-4 h-4" />
-                        <span className="hidden md:inline">Webhooks</span>
-                      </TabsTrigger>
-                      <TabsTrigger value="mobile" className="flex items-center gap-2">
-                        <Smartphone className="w-4 h-4" />
-                        <span className="hidden md:inline">App Mobile</span>
-                      </TabsTrigger>
-                      <TabsTrigger value="cleanup" className="flex items-center gap-2">
-                        <Database className="w-4 h-4" />
-                        <span className="hidden md:inline">Limpeza</span>
-                      </TabsTrigger>
-                    </TabsList>
+                    {/* ✅ SUB-TABS: Também com scroll horizontal */}
+                    <div className="overflow-x-auto pb-2 -mx-2 px-2 mb-4">
+                      <TabsList className="bg-purple-900/20 w-max min-w-full inline-flex gap-1 p-2">
+                        <TabsTrigger value="branding" className="flex items-center gap-2 whitespace-nowrap px-3 py-2 text-xs md:text-sm">
+                          <Settings className="w-4 h-4 flex-shrink-0" />
+                          <span>Branding</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="payments" className="flex items-center gap-2 whitespace-nowrap px-3 py-2 text-xs md:text-sm">
+                          <DollarSign className="w-4 h-4 flex-shrink-0" />
+                          <span>Pagamentos</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="webhooks" className="flex items-center gap-2 whitespace-nowrap px-3 py-2 text-xs md:text-sm">
+                          <Zap className="w-4 h-4 flex-shrink-0" />
+                          <span>Webhooks</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="mobile" className="flex items-center gap-2 whitespace-nowrap px-3 py-2 text-xs md:text-sm">
+                          <Smartphone className="w-4 h-4 flex-shrink-0" />
+                          <span>App Mobile</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="cleanup" className="flex items-center gap-2 whitespace-nowrap px-3 py-2 text-xs md:text-sm">
+                          <Database className="w-4 h-4 flex-shrink-0" />
+                          <span>Limpeza</span>
+                        </TabsTrigger>
+                      </TabsList>
+                    </div>
 
-                    <div className="p-6">
+                    <div className="p-0 md:p-4">
                       <React.Suspense fallback={<TabLoading />}>
                         <TabsContent value="branding">
                           <AdminSettings />
