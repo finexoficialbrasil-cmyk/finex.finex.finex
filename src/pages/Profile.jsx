@@ -1,10 +1,11 @@
-
 import React, { useState, useEffect } from "react";
+import { User } from "@/entities/User";
 import { base44 } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -12,28 +13,43 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { User as UserIcon, Mail, Phone, Shield, Palette, Camera, Save, Loader2, LogOut } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { 
+  User as UserIcon, 
+  Mail, 
+  Phone, 
+  Upload, 
+  Save, 
+  LogOut, 
+  Palette,
+  Settings,
+  FileText,
+  CheckCircle,
+  Calendar,
+  Globe,
+  Printer,
+  Eye,
+  Shield
+} from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function Profile() {
   const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [terms, setTerms] = useState(null);
   const [formData, setFormData] = useState({
     full_name: "",
     phone: "",
-    avatar_url: "",
-    theme: "dark",
-    theme_particles: true,
-    theme_scan_line: true,
-    theme_text_gradient: true,
-    theme_neon_border: true,
-    theme_grid_bg: true,
-    theme_glow_effects: true,
-    theme_pulse_dots: true,
-    theme_animation_speed: "normal"
+    theme: "dark"
   });
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
   useEffect(() => {
     loadUser();
@@ -42,28 +58,33 @@ export default function Profile() {
 
   const loadUser = async () => {
     try {
-      const userData = await base44.auth.me();
-      console.log("👤 Usuário carregado:", userData);
+      const userData = await User.me();
       setUser(userData);
       setFormData({
         full_name: userData.full_name || "",
         phone: userData.phone || "",
-        avatar_url: userData.avatar_url || "",
-        theme: userData.theme || "dark",
-        theme_particles: userData.theme_particles !== false,
-        theme_scan_line: userData.theme_scan_line !== false,
-        theme_text_gradient: userData.theme_text_gradient !== false,
-        theme_neon_border: userData.theme_neon_border !== false,
-        theme_grid_bg: userData.theme_grid_bg !== false,
-        theme_glow_effects: userData.theme_glow_effects !== false,
-        theme_pulse_dots: userData.theme_pulse_dots !== false,
-        theme_animation_speed: userData.theme_animation_speed || "normal"
+        theme: userData.theme || "dark"
       });
+      
+      // Carregar termos se usuário aceitou
+      if (userData.terms_accepted) {
+        loadTerms(userData.terms_version_accepted);
+      }
     } catch (error) {
       console.error("Erro ao carregar usuário:", error);
-      alert("❌ Erro ao carregar perfil. Recarregue a página.");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadTerms = async (version) => {
+    try {
+      const { TermsOfService } = await import("@/entities/TermsOfService");
+      const allTerms = await TermsOfService.list("-created_date", 10);
+      const userTerms = allTerms.find(t => t.version === version);
+      setTerms(userTerms);
+    } catch (error) {
+      console.error("Erro ao carregar termos:", error);
     }
   };
 
@@ -71,383 +92,541 @@ export default function Profile() {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
-      alert("Por favor, selecione uma imagem válida!");
-      return;
-    }
-
     if (file.size > 5 * 1024 * 1024) {
-      alert("A imagem deve ter no máximo 5MB!");
+      alert("Arquivo muito grande! Máximo 5MB.");
       return;
     }
 
-    setIsUploadingPhoto(true);
+    setIsUploading(true);
     try {
-      console.log("📤 Fazendo upload da foto...");
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      console.log("✅ Foto enviada:", file_url);
-      setFormData({ ...formData, avatar_url: file_url });
-      alert("✅ Foto carregada! Clique em 'Salvar Alterações' para confirmar.");
+      const { UploadFile } = await import("@/integrations/Core");
+      const { file_url } = await UploadFile({ file });
+      
+      await User.updateMyUserData({ avatar_url: file_url });
+      await loadUser();
+      alert("Foto atualizada com sucesso!");
     } catch (error) {
-      console.error("❌ Erro ao fazer upload:", error);
-      alert("❌ Erro ao fazer upload da foto. Tente novamente.");
+      console.error("Erro ao fazer upload:", error);
+      alert("Erro ao atualizar foto. Tente novamente.");
     } finally {
-      setIsUploadingPhoto(false);
+      setIsUploading(false);
     }
   };
 
-  const handleSave = async (e) => {
-    e.preventDefault();
-    
-    if (!formData.full_name || formData.full_name.trim() === "") {
-      alert("❌ Por favor, preencha seu nome completo!");
+  const handleSave = async () => {
+    if (!formData.full_name.trim()) {
+      alert("Nome completo é obrigatório!");
       return;
     }
 
     setIsSaving(true);
-
     try {
-      console.log("💾 Iniciando salvamento do perfil...");
-      console.log("📝 Nome atual:", user.full_name);
-      console.log("📝 Novo nome:", formData.full_name);
+      await User.updateMyUserData({
+        full_name: formData.full_name,
+        phone: formData.phone,
+        theme: formData.theme
+      });
       
-      const dataToUpdate = {
-        full_name: formData.full_name.trim(),
-        phone: formData.phone || "",
-        avatar_url: formData.avatar_url || "",
-        theme: formData.theme,
-        theme_particles: formData.theme_particles,
-        theme_scan_line: formData.theme_scan_line,
-        theme_text_gradient: formData.theme_text_gradient,
-        theme_neon_border: formData.theme_neon_border,
-        theme_grid_bg: formData.theme_grid_bg,
-        theme_glow_effects: formData.theme_glow_effects,
-        theme_pulse_dots: formData.theme_pulse_dots,
-        theme_animation_speed: formData.theme_animation_speed
-      };
-
-      console.log("📤 Dados que serão enviados:", JSON.stringify(dataToUpdate, null, 2));
-      
-      // ✅ Usar updateMe do SDK
-      const result = await base44.auth.updateMe(dataToUpdate);
-      
-      console.log("✅ Resposta do servidor:", result);
-      console.log("✅ Perfil atualizado com sucesso!");
-      
-      alert("✅ Perfil atualizado com sucesso!\n\n🔄 A página será recarregada para aplicar as mudanças.");
-      
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
+      alert("Perfil atualizado com sucesso!");
+      await loadUser();
     } catch (error) {
-      console.error("❌ ERRO COMPLETO:", error);
-      console.error("❌ Mensagem:", error.message);
-      console.error("❌ Stack:", error.stack);
-      alert(`❌ Erro ao salvar perfil.\n\nDetalhes: ${error.message}\n\nTente novamente ou contate o suporte.`);
+      console.error("Erro ao salvar:", error);
+      alert("Erro ao atualizar perfil. Tente novamente.");
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleLogout = () => {
-    if (confirm("🚪 Tem certeza que deseja sair do sistema?")) {
+    if (confirm("Deseja realmente sair?")) {
       base44.auth.logout();
     }
+  };
+
+  const handlePrintTerms = () => {
+    if (!terms || !user) return;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('Por favor, permita pop-ups para imprimir');
+      return;
+    }
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Termos de Uso Aceitos - FINEX</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            color: #333;
+            line-height: 1.6;
+          }
+          .certificate-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 30px;
+          }
+          .certificate-header h1 {
+            margin: 0;
+            font-size: 2em;
+          }
+          .acceptance-info {
+            background: #f0f0f0;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 30px;
+            border-left: 5px solid #667eea;
+          }
+          .acceptance-info h2 {
+            margin-top: 0;
+            color: #667eea;
+          }
+          .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+          }
+          .info-item {
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+          }
+          .info-label {
+            font-weight: bold;
+            color: #555;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+          }
+          .info-value {
+            color: #333;
+          }
+          h1, h2 {
+            color: #1a1a2e;
+          }
+          h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+          }
+          h3 {
+            color: #555;
+            margin-top: 20px;
+            margin-bottom: 10px;
+          }
+          p {
+            margin-bottom: 15px;
+          }
+          ul, ol {
+            margin-bottom: 15px;
+            padding-left: 30px;
+          }
+          li {
+            margin-bottom: 8px;
+          }
+          strong {
+            color: #1a1a2e;
+          }
+          .footer {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 2px solid #ddd;
+            text-align: center;
+            font-size: 0.9em;
+            color: #666;
+          }
+          .signature-box {
+            background: #f9f9f9;
+            border: 2px solid #667eea;
+            padding: 20px;
+            margin: 30px 0;
+            border-radius: 5px;
+          }
+          .signature-box p {
+            margin: 5px 0;
+          }
+          @media print {
+            body {
+              margin: 0;
+              padding: 20px;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="certificate-header">
+          <h1>🔒 CERTIFICADO DE ACEITAÇÃO</h1>
+          <p style="margin: 10px 0 0 0; font-size: 1.1em;">Termos de Uso e Política de Privacidade - FINEX</p>
+        </div>
+
+        <div class="acceptance-info">
+          <h2>📋 Informações da Aceitação</h2>
+          <div class="info-grid">
+            <div class="info-item">
+              <div class="info-label">👤 Nome Completo</div>
+              <div class="info-value">${user.full_name}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">📧 Email</div>
+              <div class="info-value">${user.email}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">📋 Versão dos Termos</div>
+              <div class="info-value">${user.terms_version_accepted}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">📅 Data de Aceitação</div>
+              <div class="info-value">${new Date(user.terms_accepted_at).toLocaleString('pt-BR')}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">🌐 Endereço IP</div>
+              <div class="info-value">${user.terms_ip_address || 'N/A'}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">✅ Status</div>
+              <div class="info-value">ACEITO E REGISTRADO</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="signature-box">
+          <p><strong>DECLARAÇÃO:</strong></p>
+          <p>
+            Eu, <strong>${user.full_name}</strong>, portador do email <strong>${user.email}</strong>, 
+            declaro que li, compreendi e aceito integralmente os Termos de Uso e a Política de Privacidade 
+            do sistema FINEX em sua versão <strong>${user.terms_version_accepted}</strong>, 
+            conforme registrado em <strong>${new Date(user.terms_accepted_at).toLocaleDateString('pt-BR')}</strong> 
+            às <strong>${new Date(user.terms_accepted_at).toLocaleTimeString('pt-BR')}</strong>.
+          </p>
+          <p>
+            Este documento constitui prova legal de aceitação dos termos e pode ser utilizado 
+            para fins de conformidade e auditoria.
+          </p>
+        </div>
+
+        <h2>📄 Conteúdo dos Termos Aceitos</h2>
+        <p><strong>Título:</strong> ${terms.title}</p>
+        <p><strong>Data de Vigência:</strong> ${new Date(terms.effective_date).toLocaleDateString('pt-BR')}</p>
+        <hr style="margin: 30px 0; border: none; border-top: 2px solid #ddd;">
+        ${terms.content}
+
+        <div class="footer">
+          <p><strong>FINEX - Inteligência Financeira</strong></p>
+          <p>Este documento foi gerado automaticamente em ${new Date().toLocaleString('pt-BR')}</p>
+          <p>Documento oficial válido como comprovante de aceitação de termos</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    
+    printWindow.onload = () => {
+      printWindow.print();
+    };
+  };
+
+  const handleViewTerms = () => {
+    setShowTermsModal(true);
   };
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#0a0a0f] via-[#1a1a2e] to-[#0a0a0f] flex items-center justify-center">
-        <div className="text-purple-300 flex items-center gap-3">
-          <Loader2 className="w-6 h-6 animate-spin" />
-          Carregando perfil...
-        </div>
+        <div className="text-purple-300">Carregando perfil...</div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0a0a0f] via-[#1a1a2e] to-[#0a0a0f] p-4 md:p-8">
-      <div className="max-w-4xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="text-center">
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            className="inline-block p-4 rounded-2xl bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30 mb-4"
-          >
-            <UserIcon className="w-12 h-12 text-purple-400 mx-auto mb-2" />
-            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent">
-              Meu Perfil
-            </h1>
-          </motion.div>
-          <p className="text-purple-300 text-lg">
-            Gerencie suas informações pessoais e preferências
-          </p>
+      <div className="max-w-4xl mx-auto space-y-6">
+        <div>
+          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+            Meu Perfil
+          </h1>
+          <p className="text-purple-300 mt-2">Gerencie suas informações pessoais e preferências</p>
         </div>
 
-        <form onSubmit={handleSave} className="space-y-6">
-          {/* Foto de Perfil */}
-          <Card className="glass-card border-0 neon-glow">
-            <CardHeader className="border-b border-purple-900/30">
-              <CardTitle className="text-white flex items-center gap-2">
-                <Camera className="w-5 h-5 text-purple-400" />
-                Foto de Perfil
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="flex flex-col md:flex-row items-center gap-6">
-                <div className="relative">
-                  {formData.avatar_url ? (
-                    <img
-                      src={formData.avatar_url}
-                      alt="Avatar"
-                      className="w-32 h-32 rounded-full object-cover border-4 border-purple-500"
-                    />
-                  ) : (
-                    <div className="w-32 h-32 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center border-4 border-purple-500">
-                      <span className="text-white font-bold text-5xl">
-                        {formData.full_name?.charAt(0) || user?.email?.charAt(0) || "U"}
+        {/* Avatar e Info Básica */}
+        <Card className="glass-card border-0 neon-glow">
+          <CardHeader className="border-b border-purple-900/30">
+            <CardTitle className="text-white flex items-center gap-2">
+              <UserIcon className="w-5 h-5 text-purple-400" />
+              Informações Pessoais
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
+              <div className="flex flex-col items-center gap-3">
+                <div className="relative group">
+                  <div className="w-32 h-32 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center overflow-hidden">
+                    {user.avatar_url ? (
+                      <img src={user.avatar_url} alt={user.full_name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-white text-4xl font-bold">
+                        {user.full_name?.charAt(0) || user.email?.charAt(0).toUpperCase()}
                       </span>
-                    </div>
-                  )}
-                  {isUploadingPhoto && (
-                    <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
-                      <Loader2 className="w-8 h-8 text-white animate-spin" />
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex-1">
-                  <label className="block">
+                    )}
+                  </div>
+                  <label className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-full">
+                    <Upload className="w-8 h-8 text-white" />
                     <input
                       type="file"
                       accept="image/*"
                       onChange={handlePhotoUpload}
                       className="hidden"
-                      disabled={isUploadingPhoto || isSaving}
+                      disabled={isUploading}
                     />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      disabled={isUploadingPhoto || isSaving}
-                      className="w-full md:w-auto border-purple-700 text-purple-300 hover:bg-purple-900/20"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.target.previousElementSibling.click();
-                      }}
-                    >
-                      {isUploadingPhoto ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Enviando...
-                        </>
-                      ) : (
-                        <>
-                          <Camera className="w-4 h-4 mr-2" />
-                          {formData.avatar_url ? "Alterar Foto" : "Enviar Foto"}
-                        </>
-                      )}
-                    </Button>
                   </label>
-                  <p className="text-xs text-purple-400 mt-2">
-                    Formatos: JPG, PNG • Tamanho máximo: 5MB
+                </div>
+                {isUploading && (
+                  <p className="text-purple-400 text-sm">Enviando...</p>
+                )}
+                <p className="text-purple-300 text-sm text-center">
+                  Clique na foto para alterar
+                </p>
+              </div>
+
+              <div className="flex-1 w-full space-y-4">
+                <div>
+                  <Label className="text-purple-200 mb-2 block">
+                    <UserIcon className="w-4 h-4 inline mr-2" />
+                    Nome Completo *
+                  </Label>
+                  <Input
+                    value={formData.full_name}
+                    onChange={(e) => setFormData({...formData, full_name: e.target.value})}
+                    className="bg-purple-900/20 border-purple-700/50 text-white"
+                    placeholder="Seu nome completo"
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-purple-200 mb-2 block">
+                    <Mail className="w-4 h-4 inline mr-2" />
+                    Email
+                  </Label>
+                  <Input
+                    value={user.email}
+                    disabled
+                    className="bg-purple-900/20 border-purple-700/50 text-purple-400"
+                  />
+                  <p className="text-purple-400 text-xs mt-1">Email não pode ser alterado</p>
+                </div>
+
+                <div>
+                  <Label className="text-purple-200 mb-2 block">
+                    <Phone className="w-4 h-4 inline mr-2" />
+                    Telefone
+                  </Label>
+                  <Input
+                    value={formData.phone}
+                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                    className="bg-purple-900/20 border-purple-700/50 text-white"
+                    placeholder="(00) 00000-0000"
+                  />
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Termos Aceitos */}
+        {user.terms_accepted && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <Card className="glass-card border-0 border-l-4 border-green-500">
+              <CardHeader className="border-b border-purple-900/30">
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-green-400" />
+                  Termos de Uso Aceitos
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  {/* Status */}
+                  <div className="flex items-center gap-3 p-4 rounded-lg bg-green-900/20 border border-green-700/30">
+                    <CheckCircle className="w-8 h-8 text-green-400 flex-shrink-0" />
+                    <div>
+                      <p className="text-white font-bold">✅ Termos Aceitos e Registrados</p>
+                      <p className="text-green-300 text-sm">
+                        Você aceitou os termos de uso do sistema FINEX
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Informações */}
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="p-4 rounded-lg bg-purple-900/20 border border-purple-700/30">
+                      <div className="flex items-center gap-2 mb-2">
+                        <FileText className="w-4 h-4 text-purple-400" />
+                        <p className="text-purple-300 text-sm">Versão Aceita</p>
+                      </div>
+                      <p className="text-white font-bold">{user.terms_version_accepted}</p>
+                    </div>
+
+                    <div className="p-4 rounded-lg bg-purple-900/20 border border-purple-700/30">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Calendar className="w-4 h-4 text-purple-400" />
+                        <p className="text-purple-300 text-sm">Data de Aceitação</p>
+                      </div>
+                      <p className="text-white font-bold">
+                        {new Date(user.terms_accepted_at).toLocaleDateString('pt-BR')}
+                      </p>
+                      <p className="text-purple-400 text-xs mt-1">
+                        {new Date(user.terms_accepted_at).toLocaleTimeString('pt-BR')}
+                      </p>
+                    </div>
+
+                    {user.terms_ip_address && (
+                      <div className="p-4 rounded-lg bg-purple-900/20 border border-purple-700/30">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Globe className="w-4 h-4 text-purple-400" />
+                          <p className="text-purple-300 text-sm">IP Registrado</p>
+                        </div>
+                        <p className="text-white font-mono text-sm">{user.terms_ip_address}</p>
+                      </div>
+                    )}
+
+                    <div className="p-4 rounded-lg bg-cyan-900/20 border border-cyan-700/30">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Shield className="w-4 h-4 text-cyan-400" />
+                        <p className="text-cyan-300 text-sm">Registro Legal</p>
+                      </div>
+                      <p className="text-cyan-200 text-xs">
+                        Documento válido como comprovante
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Ações */}
+                  <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-purple-900/30">
+                    <Button
+                      onClick={handleViewTerms}
+                      variant="outline"
+                      className="flex-1 border-purple-700 text-purple-300 hover:bg-purple-900/30"
+                    >
+                      <Eye className="w-4 h-4 mr-2" />
+                      Ver Termos Completos
+                    </Button>
+                    <Button
+                      onClick={handlePrintTerms}
+                      className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                      disabled={!terms}
+                    >
+                      <Printer className="w-4 h-4 mr-2" />
+                      Imprimir Certificado
+                    </Button>
+                  </div>
+
+                  {/* Info adicional */}
+                  <div className="bg-blue-900/20 border border-blue-700/30 p-4 rounded-lg">
+                    <p className="text-blue-200 text-sm">
+                      <strong className="text-blue-300">💡 Sobre este registro:</strong> Sua aceitação dos termos foi registrada 
+                      legalmente com data, hora e endereço IP. Este documento serve como comprovante oficial 
+                      de que você leu e aceitou os Termos de Uso e Política de Privacidade do FINEX.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* Tema */}
+        <Card className="glass-card border-0 neon-glow">
+          <CardHeader className="border-b border-purple-900/30">
+            <CardTitle className="text-white flex items-center gap-2">
+              <Palette className="w-5 h-5 text-purple-400" />
+              Personalização
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div>
+              <Label className="text-purple-200 mb-2 block">Tema</Label>
+              <Select value={formData.theme} onValueChange={(value) => setFormData({...formData, theme: value})}>
+                <SelectTrigger className="bg-purple-900/20 border-purple-700/50 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="dark">🌙 Escuro (Padrão)</SelectItem>
+                  <SelectItem value="light">☀️ Claro</SelectItem>
+                  <SelectItem value="purple">💜 Roxo</SelectItem>
+                  <SelectItem value="blue">💙 Azul</SelectItem>
+                  <SelectItem value="green">💚 Verde</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Ações */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+          >
+            <Save className="w-4 h-4 mr-2" />
+            {isSaving ? "Salvando..." : "Salvar Alterações"}
+          </Button>
+          <Button
+            onClick={handleLogout}
+            variant="outline"
+            className="flex-1 border-red-700 text-red-400 hover:bg-red-900/30"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Sair
+          </Button>
+        </div>
+      </div>
+
+      {/* Modal de Termos Completos */}
+      <Dialog open={showTermsModal} onOpenChange={setShowTermsModal}>
+        <DialogContent className="glass-card border-purple-700/50 text-white max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+              📋 {terms?.title}
+            </DialogTitle>
+            <p className="text-purple-300 text-sm mt-2">
+              Versão {user.terms_version_accepted} • Aceita em {new Date(user.terms_accepted_at).toLocaleDateString('pt-BR')}
+            </p>
+          </DialogHeader>
+
+          {terms && (
+            <div className="space-y-6">
+              <div className="bg-green-900/20 border border-green-700/30 p-4 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-400" />
+                  <p className="text-green-200 text-sm">
+                    Você aceitou estes termos em <strong>{new Date(user.terms_accepted_at).toLocaleString('pt-BR')}</strong>
                   </p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
 
-          {/* Informações Pessoais */}
-          <Card className="glass-card border-0 neon-glow">
-            <CardHeader className="border-b border-purple-900/30">
-              <CardTitle className="text-white flex items-center gap-2">
-                <UserIcon className="w-5 h-5 text-purple-400" />
-                Informações Pessoais
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 space-y-4">
-              {/* Nome Completo */}
-              <div>
-                <Label className="text-purple-200 flex items-center gap-2 font-semibold">
-                  <UserIcon className="w-4 h-4" />
-                  Nome Completo *
-                </Label>
-                <Input
-                  value={formData.full_name}
-                  onChange={(e) => {
-                    console.log("✏️ Nome sendo digitado:", e.target.value);
-                    setFormData({ ...formData, full_name: e.target.value });
-                  }}
-                  placeholder="Digite seu nome completo"
-                  className="bg-purple-900/20 border-purple-700/50 text-white mt-2 font-medium text-lg"
-                  disabled={isSaving}
-                  required
-                />
-                <p className="text-xs text-cyan-400 mt-1">
-                  ✏️ Este nome aparecerá em todo o sistema
-                </p>
-              </div>
-
-              {/* Email */}
-              <div>
-                <Label className="text-purple-200 flex items-center gap-2">
-                  <Mail className="w-4 h-4" />
-                  Email
-                </Label>
-                <Input
-                  value={user?.email || ""}
-                  disabled
-                  className="bg-purple-900/20 border-purple-700/50 text-purple-400 mt-2"
-                />
-                <p className="text-xs text-purple-400 mt-1">
-                  🔒 Email do Google não pode ser alterado
-                </p>
-              </div>
-
-              {/* Telefone */}
-              <div>
-                <Label className="text-purple-200 flex items-center gap-2">
-                  <Phone className="w-4 h-4" />
-                  Telefone
-                </Label>
-                <Input
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="(00) 00000-0000"
-                  className="bg-purple-900/20 border-purple-700/50 text-white mt-2"
-                  disabled={isSaving}
-                />
-              </div>
-
-              {user?.role === 'admin' && (
-                <div className="bg-yellow-900/20 p-4 rounded-lg border border-yellow-700/30">
-                  <div className="flex items-center gap-2 text-yellow-300">
-                    <Shield className="w-5 h-5" />
-                    <span className="font-semibold">Administrador do Sistema</span>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Tema e Aparência */}
-          <Card className="glass-card border-0 neon-glow">
-            <CardHeader className="border-b border-purple-900/30">
-              <CardTitle className="text-white flex items-center gap-2">
-                <Palette className="w-5 h-5 text-purple-400" />
-                Tema e Aparência
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 space-y-4">
-              <div>
-                <Label className="text-purple-200">Tema de Cor</Label>
-                <Select
-                  value={formData.theme}
-                  onValueChange={(value) => setFormData({ ...formData, theme: value })}
-                  disabled={isSaving}
-                >
-                  <SelectTrigger className="bg-purple-900/20 border-purple-700/50 text-white mt-2">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="dark">🌙 Escuro (Padrão)</SelectItem>
-                    <SelectItem value="light">☀️ Claro</SelectItem>
-                    <SelectItem value="purple">💜 Roxo</SelectItem>
-                    <SelectItem value="blue">💙 Azul</SelectItem>
-                    <SelectItem value="green">💚 Verde</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label className="text-purple-200">Velocidade das Animações</Label>
-                <Select
-                  value={formData.theme_animation_speed}
-                  onValueChange={(value) => setFormData({ ...formData, theme_animation_speed: value })}
-                  disabled={isSaving}
-                >
-                  <SelectTrigger className="bg-purple-900/20 border-purple-700/50 text-white mt-2">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="slow">🐌 Lenta</SelectItem>
-                    <SelectItem value="normal">⚡ Normal</SelectItem>
-                    <SelectItem value="fast">🚀 Rápida</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label className="text-purple-200 mb-3 block">Efeitos Visuais</Label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {[
-                    { key: 'theme_particles', label: '✨ Partículas Flutuantes' },
-                    { key: 'theme_scan_line', label: '📡 Linha de Scan' },
-                    { key: 'theme_text_gradient', label: '🌈 Gradiente no Texto' },
-                    { key: 'theme_neon_border', label: '💫 Borda Neon' },
-                    { key: 'theme_grid_bg', label: '🔲 Grid de Fundo' },
-                    { key: 'theme_glow_effects', label: '✨ Brilhos de Fundo' },
-                    { key: 'theme_pulse_dots', label: '🔵 Pontos Pulsantes' }
-                  ].map(effect => (
-                    <button
-                      key={effect.key}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, [effect.key]: !formData[effect.key] })}
-                      disabled={isSaving}
-                      className={`p-3 rounded-lg border-2 transition-all text-left ${
-                        formData[effect.key]
-                          ? 'bg-purple-600/30 border-purple-500 text-white'
-                          : 'bg-purple-900/20 border-purple-700/50 text-purple-300 hover:border-purple-500'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                          formData[effect.key] ? 'bg-purple-500 border-purple-500' : 'border-purple-500'
-                        }`}>
-                          {formData[effect.key] && <span className="text-white text-xs">✓</span>}
-                        </div>
-                        <span className="text-sm">{effect.label}</span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Botões de Ação */}
-          <div className="flex flex-col md:flex-row gap-4">
-            <Button
-              type="submit"
-              disabled={isSaving || isUploadingPhoto}
-              className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-lg py-6"
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  Salvando...
-                </>
-              ) : (
-                <>
-                  <Save className="w-5 h-5 mr-2" />
-                  Salvar Alterações
-                </>
-              )}
-            </Button>
-
-            <Button
-              type="button"
-              onClick={handleLogout}
-              variant="outline"
-              className="md:w-48 border-red-700 text-red-400 hover:bg-red-900/20 py-6"
-            >
-              <LogOut className="w-5 h-5 mr-2" />
-              Sair do Sistema
-            </Button>
-          </div>
-        </form>
-      </div>
+              <div 
+                className="prose prose-sm prose-invert max-w-none text-purple-100"
+                dangerouslySetInnerHTML={{ __html: terms.content }}
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
