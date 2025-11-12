@@ -31,7 +31,10 @@ import {
   User as UserIcon,
   Filter,
   RefreshCw,
-  MessageCircle
+  MessageCircle,
+  AlertTriangle,
+  Clock,
+  CheckSquare
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -52,6 +55,12 @@ export default function AdminEmailLogs() {
   // ✅ NOVO: Estado para busca de usuário nos modais
   const [userSearchEmail, setUserSearchEmail] = useState("");
   const [userSearchWhatsApp, setUserSearchWhatsApp] = useState("");
+  
+  // ✅ NOVO: Estado para envio em massa
+  const [showBulkEmailModal, setShowBulkEmailModal] = useState(false);
+  const [selectedUsers, setSelectedUsers] = useState([]);
+  const [bulkSearchTerm, setBulkSearchTerm] = useState("");
+  const [isSendingBulk, setIsSendingBulk] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -66,7 +75,26 @@ export default function AdminEmailLogs() {
       ]);
       
       setLogs(logsData);
-      setUsers(usersData.filter(u => u.role !== 'admin' && u.subscription_end_date));
+      
+      // ✅ Filtrar e calcular dias restantes
+      const usersWithPlans = usersData.filter(u => u.role !== 'admin' && u.subscription_end_date);
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const enrichedUsers = usersWithPlans.map(u => {
+        const [year, month, day] = u.subscription_end_date.split('-').map(Number);
+        const expiryDate = new Date(year, month - 1, day);
+        expiryDate.setHours(0, 0, 0, 0);
+        const diffDays = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+        
+        return {
+          ...u,
+          daysUntilExpiry: diffDays
+        };
+      });
+      
+      setUsers(enrichedUsers);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
       alert("Erro ao carregar logs de email.");
@@ -143,6 +171,105 @@ export default function AdminEmailLogs() {
     } finally {
       setIsSending(false);
     }
+  };
+
+  // ✅ NOVO: Função para enviar emails em massa
+  const handleSendBulkEmails = async () => {
+    if (selectedUsers.length === 0) {
+      alert("❌ Selecione pelo menos um usuário!");
+      return;
+    }
+
+    if (!confirm(`📧 Confirmar Envio em Massa\n\n✅ Enviar email de cobrança para ${selectedUsers.length} usuário(s)?\n\nTipo: ${formatEmailType(selectedEmailType)}`)) {
+      return;
+    }
+
+    setIsSendingBulk(true);
+
+    let successCount = 0;
+    let errorCount = 0;
+    const errors = [];
+
+    try {
+      for (const userId of selectedUsers) {
+        const user = users.find(u => u.id === userId);
+        if (!user) continue;
+
+        try {
+          console.log(`📧 Enviando para: ${user.email}`);
+          
+          const response = await base44.functions.invoke('sendManualReminderEmail', {
+            user_email: user.email,
+            email_type: selectedEmailType
+          });
+
+          if (response.data.success) {
+            successCount++;
+            console.log(`   ✅ Enviado!`);
+          } else {
+            errorCount++;
+            errors.push({ email: user.email, error: response.data.error });
+            console.error(`   ❌ Erro:`, response.data.error);
+          }
+
+          // ✅ Pequeno delay para não sobrecarregar
+          await new Promise(resolve => setTimeout(resolve, 500));
+
+        } catch (error) {
+          errorCount++;
+          errors.push({ email: user.email, error: error.message });
+          console.error(`   ❌ Erro ao enviar para ${user.email}:`, error);
+        }
+      }
+
+      let message = `✅ ENVIO CONCLUÍDO!\n\n📊 Resultado:\n\n✅ Enviados: ${successCount}\n❌ Erros: ${errorCount}\n📧 Total: ${selectedUsers.length}`;
+      
+      if (errors.length > 0) {
+        message += `\n\n❌ Erros:\n${errors.map(e => `• ${e.email}: ${e.error}`).join('\n')}`;
+      }
+
+      alert(message);
+      
+      setShowBulkEmailModal(false);
+      setSelectedUsers([]);
+      setBulkSearchTerm("");
+      loadData();
+
+    } catch (error) {
+      console.error("❌ Erro no envio em massa:", error);
+      alert(`❌ Erro: ${error.message}`);
+    } finally {
+      setIsSendingBulk(false);
+    }
+  };
+
+  const toggleUserSelection = (userId) => {
+    setSelectedUsers(prev => {
+      if (prev.includes(userId)) {
+        return prev.filter(id => id !== userId);
+      } else {
+        return [...prev, userId];
+      }
+    });
+  };
+
+  const selectAll = () => {
+    const filtered = getFilteredUsersForBulk();
+    setSelectedUsers(filtered.map(u => u.id));
+  };
+
+  const deselectAll = () => {
+    setSelectedUsers([]);
+  };
+
+  const getFilteredUsersForBulk = () => {
+    return users.filter(u => {
+      const matchesSearch = !bulkSearchTerm || 
+        u.email.toLowerCase().includes(bulkSearchTerm.toLowerCase()) ||
+        u.full_name?.toLowerCase().includes(bulkSearchTerm.toLowerCase());
+      
+      return matchesSearch;
+    }).sort((a, b) => a.daysUntilExpiry - b.daysUntilExpiry);
   };
 
   const whatsappTemplates = {
@@ -380,11 +507,19 @@ Vamos juntos rumo ao sucesso financeiro! 💰✨`
               </Select>
 
               <Button
+                onClick={() => setShowBulkEmailModal(true)}
+                className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 whitespace-nowrap"
+              >
+                <CheckSquare className="w-4 h-4 mr-2" />
+                📧 Envio em Massa
+              </Button>
+
+              <Button
                 onClick={() => setShowManualModal(true)}
                 className="bg-gradient-to-r from-blue-600 to-indigo-600 whitespace-nowrap"
               >
                 <Send className="w-4 h-4 mr-2" />
-                📧 Email
+                📧 Email Individual
               </Button>
 
               <Button
@@ -632,6 +767,208 @@ Vamos juntos rumo ao sucesso financeiro! 💰✨`
                   </>
                 )}
               </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Email Modal */}
+      <Dialog open={showBulkEmailModal} onOpenChange={setShowBulkEmailModal}>
+        <DialogContent className="glass-card border-orange-700/50 text-white max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader className="flex-shrink-0">
+            <DialogTitle className="text-2xl bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">
+              📧 Envio em Massa - Selecione Usuários
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
+            {/* Info Card */}
+            <div className="bg-orange-900/20 border border-orange-700/30 p-4 rounded-lg flex-shrink-0">
+              <p className="text-orange-200 text-sm">
+                ✅ Selecione os usuários que estão <strong>vencendo ou vencidos</strong> para enviar emails de cobrança.
+              </p>
+            </div>
+
+            {/* Tipo de Email */}
+            <div className="flex-shrink-0">
+              <Label className="text-purple-200 mb-2 block font-semibold">Tipo de Email a Enviar</Label>
+              <Select value={selectedEmailType} onValueChange={setSelectedEmailType}>
+                <SelectTrigger className="bg-purple-900/20 border-purple-700/50 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="3_days_before">⏰ 3 Dias Antes</SelectItem>
+                  <SelectItem value="2_days_before">⚠️ 2 Dias Antes</SelectItem>
+                  <SelectItem value="1_day_before">🔴 1 Dia Antes</SelectItem>
+                  <SelectItem value="expired_today">🔴 Vence Hoje</SelectItem>
+                  <SelectItem value="1_day_after">❌ 1 Dia Vencido</SelectItem>
+                  <SelectItem value="5_days_after">💜 5 Dias Vencido</SelectItem>
+                  <SelectItem value="15_days_after">🎯 15 Dias Vencido</SelectItem>
+                  <SelectItem value="30_days_after">🚨 30 Dias Vencido</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Busca e Seleção */}
+            <div className="flex-shrink-0">
+              <div className="flex items-center justify-between mb-3">
+                <Label className="text-purple-200 font-semibold">
+                  Usuários ({selectedUsers.length} selecionados)
+                </Label>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={selectAll}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    ✅ Todos
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={deselectAll}
+                    variant="outline"
+                    className="border-red-700 text-red-300"
+                  >
+                    ❌ Limpar
+                  </Button>
+                </div>
+              </div>
+
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400 w-4 h-4" />
+                <Input
+                  placeholder="Buscar por nome ou email..."
+                  value={bulkSearchTerm}
+                  onChange={(e) => setBulkSearchTerm(e.target.value)}
+                  className="pl-10 bg-purple-900/20 border-purple-700/50 text-white"
+                />
+              </div>
+            </div>
+
+            {/* Lista de Usuários - Scrollable */}
+            <div className="flex-1 overflow-y-auto border border-purple-700/30 rounded-lg bg-purple-900/10">
+              <div className="p-3 space-y-2">
+                {getFilteredUsersForBulk().map(user => {
+                  const isSelected = selectedUsers.includes(user.id);
+                  const daysUntil = user.daysUntilExpiry;
+                  
+                  let statusColor = 'text-green-400';
+                  let statusText = `✅ ${daysUntil} dias`;
+                  let statusIcon = <Clock className="w-4 h-4" />;
+                  
+                  if (daysUntil <= 0) {
+                    statusColor = 'text-red-400';
+                    statusText = `❌ Vencido há ${Math.abs(daysUntil)} dias`;
+                    statusIcon = <XCircle className="w-4 h-4" />;
+                  } else if (daysUntil <= 3) {
+                    statusColor = 'text-yellow-400';
+                    statusText = `⚠️ ${daysUntil} dias`;
+                    statusIcon = <AlertTriangle className="w-4 h-4" />;
+                  } else if (daysUntil <= 7) {
+                    statusColor = 'text-orange-400';
+                    statusText = `⏰ ${daysUntil} dias`;
+                  }
+
+                  return (
+                    <div
+                      key={user.id}
+                      onClick={() => toggleUserSelection(user.id)}
+                      className={`p-3 rounded-lg cursor-pointer transition-all ${
+                        isSelected
+                          ? 'bg-purple-600/40 border-2 border-purple-500'
+                          : 'bg-purple-900/20 border border-purple-700/30 hover:bg-purple-900/30'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                          isSelected ? 'bg-purple-600 border-purple-400' : 'border-purple-600'
+                        }`}>
+                          {isSelected && <CheckCircle className="w-4 h-4 text-white" />}
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white font-semibold text-sm mb-1 truncate">
+                            {user.full_name || user.email}
+                          </p>
+                          <p className="text-purple-300 text-xs mb-2 truncate">{user.email}</p>
+                          
+                          <div className="flex items-center gap-3 flex-wrap">
+                            <div className={`flex items-center gap-1 ${statusColor} text-xs`}>
+                              {statusIcon}
+                              <span className="font-semibold">{statusText}</span>
+                            </div>
+                            
+                            <Badge className="bg-purple-600/20 text-purple-300 text-xs">
+                              {user.subscription_plan === 'monthly' && '📅 Mensal'}
+                              {user.subscription_plan === 'semester' && '📅 Semestral'}
+                              {user.subscription_plan === 'annual' && '📅 Anual'}
+                            </Badge>
+                            
+                            <span className="text-purple-400 text-xs">
+                              📅 {new Date(user.subscription_end_date).toLocaleDateString('pt-BR')}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {getFilteredUsersForBulk().length === 0 && (
+                  <div className="text-center py-12">
+                    <p className="text-purple-300">Nenhum usuário encontrado</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Resumo e Botões */}
+            <div className="flex-shrink-0 space-y-3 border-t border-purple-700/30 pt-4">
+              {selectedUsers.length > 0 && (
+                <div className="bg-green-900/20 border border-green-700/30 p-3 rounded-lg">
+                  <p className="text-green-200 text-sm font-semibold">
+                    ✅ {selectedUsers.length} usuário(s) selecionado(s)
+                  </p>
+                  <p className="text-green-300 text-xs mt-1">
+                    Tipo: <strong>{formatEmailType(selectedEmailType)}</strong>
+                  </p>
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowBulkEmailModal(false);
+                    setSelectedUsers([]);
+                    setBulkSearchTerm("");
+                  }}
+                  disabled={isSendingBulk}
+                  className="flex-1 border-purple-700 text-purple-300"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={handleSendBulkEmails}
+                  disabled={isSendingBulk || selectedUsers.length === 0}
+                  className="flex-1 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
+                >
+                  {isSendingBulk ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Enviando {selectedUsers.length} emails...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4 mr-2" />
+                      📧 Enviar para {selectedUsers.length} Usuário(s)
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
         </DialogContent>
