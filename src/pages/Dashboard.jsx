@@ -476,8 +476,16 @@ export default function Dashboard() {
                                   alt={acc.name}
                                   className="w-full h-full object-contain relative z-10"
                                   onError={(e) => {
-                                    e.target.style.display = 'none';
-                                    e.target.parentElement.innerHTML = '<span class="text-4xl">🏦</span>'; // Fallback to bank emoji
+                                    if (e.target) {
+                                      const parent = e.target.parentElement;
+                                      if (parent) {
+                                        e.target.remove();
+                                        const fallback = document.createElement('span');
+                                        fallback.textContent = '🏦';
+                                        fallback.className = 'text-4xl relative z-10';
+                                        parent.appendChild(fallback);
+                                      }
+                                    }
                                   }}
                                 />
                               ) : (

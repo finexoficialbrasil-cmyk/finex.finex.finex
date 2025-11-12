@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Account } from "@/entities/all";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -398,9 +399,16 @@ export default function Accounts() {
                                 alt={acc.name}
                                 className="w-full h-full object-contain"
                                 onError={(e) => {
-                                  e.target.style.display = 'none';
-                                  e.target.parentElement.innerHTML = '🏦';
-                                  e.target.parentElement.style.fontSize = '28px';
+                                  if (e.target) {
+                                    const parent = e.target.parentElement;
+                                    if (parent) {
+                                      e.target.remove();
+                                      const fallback = document.createElement('span');
+                                      fallback.textContent = '🏦';
+                                      fallback.className = 'text-3xl';
+                                      parent.appendChild(fallback);
+                                    }
+                                  }
                                 }}
                               />
                             ) : (
@@ -503,9 +511,16 @@ export default function Accounts() {
                         alt="Logo"
                         className="w-full h-full object-contain"
                         onError={(e) => {
-                          e.target.style.display = 'none';
-                          e.target.parentElement.innerHTML = '🏦';
-                          e.target.parentElement.style.fontSize = '48px';
+                          if (e.target) {
+                            const parent = e.target.parentElement;
+                            if (parent) {
+                              e.target.remove();
+                              const fallback = document.createElement('span');
+                              fallback.textContent = '🏦';
+                              fallback.className = 'text-5xl';
+                              parent.appendChild(fallback);
+                            }
+                          }
                         }}
                       />
                     ) : (
@@ -547,9 +562,16 @@ export default function Accounts() {
                           alt={bank.name}
                           className="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform"
                           onError={(e) => {
-                            e.target.style.display = 'none';
-                            e.target.parentElement.innerHTML = '🏦';
-                            e.target.parentElement.style.fontSize = '40px';
+                            if (e.target) {
+                              const parent = e.target.parentElement;
+                              if (parent) {
+                                e.target.remove();
+                                const fallback = document.createElement('span');
+                                fallback.textContent = '🏦';
+                                fallback.className = 'text-4xl';
+                                parent.appendChild(fallback);
+                              }
+                            }
                           }}
                         />
                       </div>
