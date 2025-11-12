@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Account } from "@/entities/all";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,182 +17,86 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Wallet, Plus, Edit, Trash2, TrendingUp, TrendingDown, Check, Loader2, Building2 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { Wallet, Plus, Edit, Trash2, TrendingUp, TrendingDown, Building2, Loader2 } from "lucide-react";
+import { motion } from "framer-motion";
 import FeatureGuard from "../components/FeatureGuard";
 
-// ✨ Ícones alternativos (emojis como fallback)
-const PRESET_ICONS = [
-  { emoji: "💳", label: "Cartão" },
-  { emoji: "🏦", label: "Banco" },
-  { emoji: "💰", label: "Dinheiro" },
-  { emoji: "💵", label: "Dólar" },
-  { emoji: "🪙", label: "Moeda" },
-  { emoji: "💎", label: "Investimento" },
-  { emoji: "🏠", label: "Casa" },
-  { emoji: "🚗", label: "Veículo" },
-  { emoji: "📱", label: "Digital" },
-  { emoji: "🎯", label: "Meta" },
-  { emoji: "💼", label: "Negócio" },
-  { emoji: "🌟", label: "Especial" }
+// 🇧🇷 LISTA COMPLETA DE BANCOS BRASILEIROS
+const BANCOS_BRASIL = [
+  // Bancos Digitais (Mais Populares)
+  { name: "Nubank", emoji: "💜", color: "#8A05BE" },
+  { name: "Banco Inter", emoji: "🧡", color: "#FF7A00" },
+  { name: "C6 Bank", emoji: "⚫", color: "#1A1A1A" },
+  { name: "Next (Bradesco)", emoji: "💚", color: "#00AB63" },
+  { name: "Neon", emoji: "💙", color: "#00D1FF" },
+  { name: "PicPay", emoji: "💚", color: "#21C25E" },
+  { name: "Mercado Pago", emoji: "💙", color: "#009EE3" },
+  { name: "PagBank (PagSeguro)", emoji: "🟢", color: "#00A868" },
+  { name: "Will Bank", emoji: "🟣", color: "#6B4FBB" },
+  { name: "Original", emoji: "💚", color: "#00A868" },
+  { name: "BS2", emoji: "🟡", color: "#FFD700" },
+  { name: "Superdigital", emoji: "🔵", color: "#0066FF" },
+  
+  // Grandes Bancos Tradicionais
+  { name: "Banco do Brasil", emoji: "💛", color: "#FDB913" },
+  { name: "Caixa Econômica Federal", emoji: "🔵", color: "#0057A0" },
+  { name: "Itaú Unibanco", emoji: "🔶", color: "#EC7000" },
+  { name: "Bradesco", emoji: "🔴", color: "#CC092F" },
+  { name: "Santander", emoji: "❤️", color: "#EC0000" },
+  { name: "Banco Safra", emoji: "💙", color: "#0066B3" },
+  { name: "Banco Votorantim", emoji: "🟠", color: "#FF6600" },
+  { name: "Banrisul", emoji: "🔴", color: "#E31E24" },
+  
+  // Bancos de Investimento
+  { name: "BTG Pactual", emoji: "🟦", color: "#000080" },
+  { name: "XP Investimentos", emoji: "⚫", color: "#000000" },
+  { name: "Rico Investimentos", emoji: "🟡", color: "#FFB800" },
+  { name: "Clear Corretora", emoji: "🔵", color: "#0066CC" },
+  { name: "Órama", emoji: "🟢", color: "#00CC66" },
+  { name: "Modalmais", emoji: "🔵", color: "#0066FF" },
+  
+  // Outros Bancos
+  { name: "Banco Pan", emoji: "💙", color: "#0077C8" },
+  { name: "Banco BMG", emoji: "🔴", color: "#D32F2F" },
+  { name: "Banco Daycoval", emoji: "🟢", color: "#00A550" },
+  { name: "Banco Pine", emoji: "🟢", color: "#228B22" },
+  { name: "Banco Sofisa", emoji: "🔵", color: "#0066CC" },
+  { name: "Banco ABC Brasil", emoji: "🔴", color: "#CC0000" },
+  { name: "Banco Fibra", emoji: "🟠", color: "#FF8800" },
+  { name: "Banco Indusval", emoji: "🔵", color: "#003399" },
+  { name: "Banestes", emoji: "🔵", color: "#0055AA" },
+  { name: "Banco Cooperativo Sicredi", emoji: "🟢", color: "#00A651" },
+  { name: "Banco Cooperativo Sicoob", emoji: "🟢", color: "#00923F" },
+  { name: "Banco BRB", emoji: "🔵", color: "#0066CC" },
+  { name: "Banco Mercantil", emoji: "🔴", color: "#CC0033" },
+  { name: "Banco Paraná", emoji: "🔵", color: "#0055AA" },
+  { name: "Banco Alfa", emoji: "🔴", color: "#E31E24" },
+  
+  // Fintechs e Carteiras Digitais
+  { name: "RecargaPay", emoji: "🟣", color: "#7B2CBF" },
+  { name: "Ame Digital", emoji: "💛", color: "#FFD600" },
+  { name: "99Pay", emoji: "🟡", color: "#FFB800" },
+  { name: "Creditas", emoji: "🔵", color: "#0066FF" },
+  { name: "Nuinvest (Nu)", emoji: "💜", color: "#8A05BE" },
+  { name: "Warren", emoji: "🟠", color: "#FF6633" },
+  { name: "Easynvest (Nu)", emoji: "🟢", color: "#00AA50" },
+  
+  // Opções Genéricas
+  { name: "Outro Banco", emoji: "🏦", color: "#6366f1" },
+  { name: "Carteira Física", emoji: "💵", color: "#10b981" },
+  { name: "Dinheiro em Espécie", emoji: "💰", color: "#059669" },
+  { name: "Corretora (Outro)", emoji: "📈", color: "#f59e0b" },
+  { name: "Criptomoedas", emoji: "₿", color: "#f97316" },
+  { name: "Poupança", emoji: "🐷", color: "#ec4899" },
 ];
 
-// 🏦 BANCOS BRASILEIROS COM LOGOS FUNCIONAIS
-const BRAZILIAN_BANKS = [
-  { 
-    code: "nubank", 
-    name: "Nubank", 
-    emoji: "💜",
-    logo: "https://logowik.com/content/uploads/images/nubank8424.logowik.com.webp",
-    color: "#8A05BE" 
-  },
-  { 
-    code: "inter", 
-    name: "Banco Inter", 
-    emoji: "🧡",
-    logo: "https://logowik.com/content/uploads/images/banco-inter5109.logowik.com.webp",
-    color: "#FF7A00" 
-  },
-  { 
-    code: "bb", 
-    name: "Banco do Brasil", 
-    emoji: "💛",
-    logo: "https://logowik.com/content/uploads/images/banco-do-brasil5640.logowik.com.webp",
-    color: "#FDB913" 
-  },
-  { 
-    code: "caixa", 
-    name: "Caixa Econômica", 
-    emoji: "🔵",
-    logo: "https://logowik.com/content/uploads/images/caixa-economica-federal3430.logowik.com.webp",
-    color: "#0057A0" 
-  },
-  { 
-    code: "itau", 
-    name: "Itaú", 
-    emoji: "🔶",
-    logo: "https://logowik.com/content/uploads/images/itau-unibanco7105.logowik.com.webp",
-    color: "#EC7000" 
-  },
-  { 
-    code: "bradesco", 
-    name: "Bradesco", 
-    emoji: "🔴",
-    logo: "https://logowik.com/content/uploads/images/bradesco3895.logowik.com.webp",
-    color: "#CC092F" 
-  },
-  { 
-    code: "santander", 
-    name: "Santander", 
-    emoji: "❤️",
-    logo: "https://logowik.com/content/uploads/images/santander8911.logowik.com.webp",
-    color: "#EC0000" 
-  },
-  { 
-    code: "safra", 
-    name: "Banco Safra", 
-    emoji: "💙",
-    logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQy5hqYH3kKp8gJ8L2LjXvW5JhR3_jFPL0Y7A&s",
-    color: "#0066B3" 
-  },
-  { 
-    code: "original", 
-    name: "Banco Original", 
-    emoji: "💚",
-    logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR6VW5X5tGHr7w5KLs7b8YjXJB8vN_5wqY6Yw&s",
-    color: "#00A868" 
-  },
-  { 
-    code: "c6", 
-    name: "C6 Bank", 
-    emoji: "⚫",
-    logo: "https://logowik.com/content/uploads/images/c6-bank8763.logowik.com.webp",
-    color: "#1A1A1A" 
-  },
-  { 
-    code: "btg", 
-    name: "BTG Pactual", 
-    emoji: "🟦",
-    logo: "https://logowik.com/content/uploads/images/btg-pactual1054.logowik.com.webp",
-    color: "#000080" 
-  },
-  { 
-    code: "pan", 
-    name: "Banco Pan", 
-    emoji: "💙",
-    logo: "https://logowik.com/content/uploads/images/banco-pan9868.logowik.com.webp",
-    color: "#0077C8" 
-  },
-  { 
-    code: "next", 
-    name: "Next", 
-    emoji: "💚",
-    logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS9k5VkqFZPJ8u8BQR6xY0FJB0xGqLWQhL9Tw&s",
-    color: "#00AB63" 
-  },
-  { 
-    code: "picpay", 
-    name: "PicPay", 
-    emoji: "💚",
-    logo: "https://logowik.com/content/uploads/images/picpay8847.logowik.com.webp",
-    color: "#21C25E" 
-  },
-  { 
-    code: "mercadopago", 
-    name: "Mercado Pago", 
-    emoji: "💙",
-    logo: "https://logowik.com/content/uploads/images/mercado-pago8144.logowik.com.webp",
-    color: "#009EE3" 
-  },
-  { 
-    code: "neon", 
-    name: "Neon", 
-    emoji: "💙",
-    logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_FYf5WqW5NqF5s5fK5Z5vL6Z0r5h5P5g5g&s",
-    color: "#00D1FF" 
-  },
-  { 
-    code: "will", 
-    name: "Will Bank", 
-    emoji: "🟣",
-    logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT5YLHs9xQPdKLRGPq5q5hfJ3DhGqN5Qk5VfQ&s",
-    color: "#6B4FBB" 
-  },
-  { 
-    code: "xp", 
-    name: "XP Investimentos", 
-    emoji: "⚫",
-    logo: "https://logowik.com/content/uploads/images/xp-investimentos6725.logowik.com.webp",
-    color: "#000000" 
-  },
-  { 
-    code: "generic", 
-    name: "Outro Banco", 
-    emoji: "🏦",
-    logo: "",
-    color: "#6366f1" 
-  },
-  { 
-    code: "wallet", 
-    name: "Carteira/Dinheiro", 
-    emoji: "💵",
-    logo: "",
-    color: "#10b981" 
-  },
-  { 
-    code: "investment", 
-    name: "Corretora", 
-    emoji: "📈",
-    logo: "",
-    color: "#f59e0b" 
-  },
-  { 
-    code: "crypto", 
-    name: "Cripto", 
-    emoji: "₿",
-    logo: "",
-    color: "#f97316" 
-  }
+const TIPOS_CONTA = [
+  { value: "checking", label: "💳 Conta Corrente", emoji: "💳" },
+  { value: "savings", label: "🐷 Poupança", emoji: "🐷" },
+  { value: "credit_card", label: "💳 Cartão de Crédito", emoji: "💳" },
+  { value: "investment", label: "📈 Investimento", emoji: "📈" },
+  { value: "crypto", label: "₿ Criptomoedas", emoji: "₿" },
+  { value: "wallet", label: "💵 Carteira/Dinheiro", emoji: "💵" },
 ];
 
 export default function Accounts() {
@@ -202,6 +105,7 @@ export default function Accounts() {
   const [editingAccount, setEditingAccount] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showCustomBank, setShowCustomBank] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     type: "checking",
@@ -209,7 +113,7 @@ export default function Accounts() {
     currency: "BRL",
     color: "#a855f7",
     icon: "💳",
-    bank_code: "",
+    bank_name: "",
     is_active: true
   });
 
@@ -222,7 +126,6 @@ export default function Accounts() {
     setIsLoading(true);
     try {
       const accs = await Account.list("-created_date", 100);
-      console.log(`✅ Contas carregadas: ${accs.length}`);
       setAccounts(accs);
     } catch (error) {
       console.error("Erro ao carregar contas:", error);
@@ -231,14 +134,33 @@ export default function Accounts() {
     }
   };
 
+  const handleSelectBank = (bankName) => {
+    const bank = BANCOS_BRASIL.find(b => b.name === bankName);
+    
+    if (bankName === "Outro Banco") {
+      setShowCustomBank(true);
+      setFormData({
+        ...formData,
+        bank_name: "",
+        icon: "🏦",
+        color: "#6366f1"
+      });
+    } else if (bank) {
+      setShowCustomBank(false);
+      setFormData({
+        ...formData,
+        bank_name: bank.name,
+        icon: bank.emoji,
+        color: bank.color,
+        name: formData.name || bank.name
+      });
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (isSubmitting) {
-      console.log("⚠️ Já está processando, ignorando clique duplo");
-      return;
-    }
-    
+    if (isSubmitting) return;
     setIsSubmitting(true);
     
     try {
@@ -255,6 +177,7 @@ export default function Accounts() {
       
       setShowForm(false);
       setEditingAccount(null);
+      setShowCustomBank(false);
       setFormData({
         name: "",
         type: "checking",
@@ -262,7 +185,7 @@ export default function Accounts() {
         currency: "BRL",
         color: "#a855f7",
         icon: "💳",
-        bank_code: "",
+        bank_name: "",
         is_active: true
       });
       loadAccounts();
@@ -283,9 +206,10 @@ export default function Accounts() {
       currency: acc.currency || "BRL",
       color: acc.color || "#a855f7",
       icon: acc.icon || "💳",
-      bank_code: acc.bank_code || "",
+      bank_name: acc.bank_name || "",
       is_active: acc.is_active !== false
     });
+    setShowCustomBank(acc.bank_name === "Outro Banco" || !BANCOS_BRASIL.find(b => b.name === acc.bank_name));
     setShowForm(true);
   };
 
@@ -301,40 +225,13 @@ export default function Accounts() {
     }
   };
 
-  const handleSelectBank = (bank) => {
-    // ✅ Salvar logo OU emoji (se logo não existir)
-    const iconToUse = bank.logo || bank.emoji;
-    
-    setFormData({
-      ...formData,
-      bank_code: bank.code,
-      icon: iconToUse,
-      color: bank.color,
-      name: formData.name || bank.name
-    });
-  };
-
   const accountTypes = {
     checking: "Conta Corrente",
     savings: "Poupança",
     credit_card: "Cartão de Crédito",
     investment: "Investimento",
-    crypto: "Criptomoedas"
-  };
-
-  const getNameSuggestion = (type) => {
-    const suggestions = {
-      checking: "Banco Inter, Nubank, Itaú",
-      savings: "Poupança Banco Inter, Poupança Nubank",
-      credit_card: "Cartão Nubank, Cartão Inter",
-      investment: "Tesouro Direto, Ações, Fundos",
-      crypto: "Bitcoin, Ethereum, Binance"
-    };
-    return suggestions[type] || "";
-  };
-
-  const isUrlImage = (icon) => {
-    return icon && (icon.startsWith('http://') || icon.startsWith('https://'));
+    crypto: "Criptomoedas",
+    wallet: "Carteira/Dinheiro"
   };
 
   const totalBalance = accounts.reduce((sum, acc) => sum + (acc.balance || 0), 0);
@@ -342,7 +239,7 @@ export default function Accounts() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#0a0a0f] via-[#1a1a2e] to-[#0a0a0f] flex items-center justify-center">
-        <div className="text-purple-300">Carregando contas...</div>
+        <Loader2 className="w-12 h-12 text-purple-400 animate-spin" />
       </div>
     );
   }
@@ -361,6 +258,7 @@ export default function Accounts() {
             <Button
               onClick={() => {
                 setEditingAccount(null);
+                setShowCustomBank(false);
                 setFormData({
                   name: "",
                   type: "checking",
@@ -368,7 +266,7 @@ export default function Accounts() {
                   currency: "BRL",
                   color: "#a855f7",
                   icon: "💳",
-                  bank_code: "",
+                  bank_name: "",
                   is_active: true
                 });
                 setShowForm(true);
@@ -397,83 +295,72 @@ export default function Accounts() {
           </Card>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {accounts.map((acc, index) => {
-              const isImage = isUrlImage(acc.icon);
-              
-              return (
-                <motion.div
-                  key={acc.id}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: index * 0.05 }}
-                >
-                  <Card className="glass-card border-0 neon-glow hover:scale-105 transition-transform">
-                    <CardHeader className="border-b border-purple-900/30 pb-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3">
-                          <div
-                            className="w-14 h-14 rounded-xl flex items-center justify-center p-2 bg-white/95"
-                            style={{ border: `2px solid ${acc.color}40` }}
-                          >
-                            {isImage ? (
-                              <img 
-                                src={acc.icon} 
-                                alt={acc.name}
-                                className="w-full h-full object-contain"
-                                onError={(e) => {
-                                  if (e.target && e.target.parentElement) {
-                                    e.target.parentElement.innerHTML = `<span class="text-3xl">🏦</span>`;
-                                  }
-                                }}
-                              />
-                            ) : (
-                              <span className="text-3xl">{acc.icon}</span>
-                            )}
-                          </div>
-                          <div>
-                            <CardTitle className="text-white text-lg">{acc.name}</CardTitle>
-                            <p className="text-purple-400 text-sm">{accountTypes[acc.type]}</p>
-                          </div>
+            {accounts.map((acc, index) => (
+              <motion.div
+                key={acc.id}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: index * 0.05 }}
+              >
+                <Card className="glass-card border-0 neon-glow hover:scale-105 transition-transform">
+                  <CardHeader className="border-b border-purple-900/30 pb-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="w-16 h-16 rounded-2xl flex items-center justify-center text-4xl shadow-lg"
+                          style={{ 
+                            backgroundColor: acc.color + '20',
+                            border: `3px solid ${acc.color}60`
+                          }}
+                        >
+                          {acc.icon || '🏦'}
                         </div>
-                        <div className="flex gap-2">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => handleEdit(acc)}
-                            className="h-8 w-8"
-                          >
-                            <Edit className="w-4 h-4 text-purple-400" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => handleDelete(acc.id)}
-                            className="h-8 w-8"
-                          >
-                            <Trash2 className="w-4 h-4 text-red-400" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-purple-300 text-sm mb-1">Saldo</p>
-                          <p className={`text-2xl font-bold ${acc.balance >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                            R$ {acc.balance.toFixed(2)}
-                          </p>
+                          <CardTitle className="text-white text-lg">{acc.name}</CardTitle>
+                          <p className="text-purple-400 text-sm">{accountTypes[acc.type]}</p>
+                          {acc.bank_name && (
+                            <p className="text-purple-300 text-xs mt-1">{acc.bank_name}</p>
+                          )}
                         </div>
-                        {acc.balance >= 0 ? (
-                          <TrendingUp className="w-6 h-6 text-green-400" />
-                        ) : (
-                          <TrendingDown className="w-6 h-6 text-red-400" />
-                        )}
                       </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              );
-            })}
+                      <div className="flex gap-2">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => handleEdit(acc)}
+                          className="h-8 w-8"
+                        >
+                          <Edit className="w-4 h-4 text-purple-400" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => handleDelete(acc.id)}
+                          className="h-8 w-8"
+                        >
+                          <Trash2 className="w-4 h-4 text-red-400" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-purple-300 text-sm mb-1">Saldo</p>
+                        <p className={`text-2xl font-bold ${acc.balance >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          R$ {acc.balance.toFixed(2)}
+                        </p>
+                      </div>
+                      {acc.balance >= 0 ? (
+                        <TrendingUp className="w-6 h-6 text-green-400" />
+                      ) : (
+                        <TrendingDown className="w-6 h-6 text-red-400" />
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
           </div>
 
           {accounts.length === 0 && (
@@ -495,18 +382,15 @@ export default function Accounts() {
         </div>
 
         <Dialog open={showForm} onOpenChange={setShowForm}>
-          <DialogContent className="glass-card border-purple-700/50 text-white max-w-[95vw] sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="glass-card border-purple-700/50 text-white max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader className="sticky top-0 bg-[#1a1a2e] z-10 pb-4">
               <DialogTitle className="text-2xl bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
                 {editingAccount ? "✏️ Editar Conta" : "✨ Nova Conta"}
               </DialogTitle>
-              <p className="text-purple-300 text-sm mt-1">
-                {editingAccount ? "Atualize os dados da sua conta" : "Escolha seu banco e configure sua carteira"}
-              </p>
             </DialogHeader>
             
             <form onSubmit={handleSubmit} className="space-y-6 pb-4">
-              {/* Preview da Conta */}
+              {/* Prévia */}
               <div className="bg-gradient-to-r from-purple-900/30 to-indigo-900/30 rounded-xl p-6 border border-purple-700/30">
                 <p className="text-purple-300 text-xs mb-3 flex items-center gap-2">
                   <Building2 className="w-3 h-3" />
@@ -514,29 +398,26 @@ export default function Accounts() {
                 </p>
                 <div className="flex items-center gap-4">
                   <div
-                    className="w-24 h-24 rounded-2xl flex items-center justify-center p-3 shadow-xl bg-white/95"
-                    style={{ border: `3px solid ${formData.color}60` }}
+                    className="w-20 h-20 rounded-2xl flex items-center justify-center text-5xl shadow-xl"
+                    style={{ 
+                      backgroundColor: formData.color + '20',
+                      border: `3px solid ${formData.color}60`
+                    }}
                   >
-                    {isUrlImage(formData.icon) ? (
-                      <img 
-                        src={formData.icon} 
-                        alt="Logo"
-                        className="w-full h-full object-contain"
-                        onError={(e) => {
-                          if (e.target && e.target.parentElement) {
-                            e.target.parentElement.innerHTML = `<span class="text-5xl">🏦</span>`;
-                          }
-                        }}
-                      />
-                    ) : (
-                      <span className="text-5xl">{formData.icon}</span>
-                    )}
+                    {formData.icon}
                   </div>
                   <div className="flex-1">
                     <p className="text-white font-bold text-xl mb-1">
                       {formData.name || "Nome da Conta"}
                     </p>
-                    <p className="text-purple-300 text-sm mb-2">{accountTypes[formData.type]}</p>
+                    <p className="text-purple-300 text-sm mb-2">
+                      {accountTypes[formData.type]}
+                    </p>
+                    {formData.bank_name && (
+                      <p className="text-purple-400 text-xs mb-2">
+                        🏦 {formData.bank_name}
+                      </p>
+                    )}
                     <p className="text-3xl font-bold text-green-400">
                       R$ {formData.balance || "0.00"}
                     </p>
@@ -544,56 +425,48 @@ export default function Accounts() {
                 </div>
               </div>
 
-              {/* Seleção de Banco Brasileiro */}
+              {/* Selecionar Banco */}
               <div>
-                <Label className="text-purple-200 text-sm font-semibold mb-3 block">
+                <Label className="text-purple-200 text-sm font-semibold mb-2 block">
                   🏦 Selecione seu Banco ou Instituição
                 </Label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-[400px] overflow-y-auto p-3 bg-purple-900/10 rounded-xl">
-                  {BRAZILIAN_BANKS.map((bank) => {
-                    const hasLogo = bank.logo && bank.logo.length > 0;
-                    
-                    return (
-                      <button
-                        key={bank.code}
-                        type="button"
-                        onClick={() => handleSelectBank(bank)}
-                        className={`relative p-4 rounded-xl text-center transition-all group ${
-                          formData.bank_code === bank.code
-                            ? 'bg-gradient-to-br from-purple-600 to-pink-600 shadow-xl scale-105 ring-2 ring-purple-400'
-                            : 'bg-purple-900/30 hover:bg-purple-900/50 hover:scale-105'
-                        }`}
-                      >
-                        <div className="w-full h-16 mb-2 flex items-center justify-center p-2 bg-white/90 rounded-lg">
-                          {hasLogo ? (
-                            <img 
-                              src={bank.logo} 
-                              alt={bank.name}
-                              className="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform"
-                              onError={(e) => {
-                                if (e.target && e.target.parentElement) {
-                                  e.target.parentElement.innerHTML = `<span class="text-4xl">${bank.emoji}</span>`;
-                                }
-                              }}
-                            />
-                          ) : (
-                            <span className="text-4xl">{bank.emoji}</span>
-                          )}
-                        </div>
-                        <p className="text-white text-xs font-semibold truncate">{bank.name}</p>
-                        {formData.bank_code === bank.code && (
-                          <div className="absolute -top-2 -right-2 w-7 h-7 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
-                            <Check className="w-4 h-4 text-white" />
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
+                <Select
+                  value={formData.bank_name}
+                  onValueChange={handleSelectBank}
+                >
+                  <SelectTrigger className="bg-purple-900/20 border-purple-700/50 text-white h-14 text-base">
+                    <SelectValue placeholder="Escolha seu banco..." />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[300px]">
+                    {BANCOS_BRASIL.map((bank) => (
+                      <SelectItem key={bank.name} value={bank.name}>
+                        <span className="flex items-center gap-2">
+                          <span className="text-xl">{bank.emoji}</span>
+                          <span>{bank.name}</span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <p className="text-purple-400 text-xs mt-2">
-                  💡 Clique no seu banco para aplicar logo e cor automaticamente
+                  💡 Não achou seu banco? Selecione "Outro Banco" para digitar manualmente
                 </p>
               </div>
+
+              {/* Banco Customizado */}
+              {showCustomBank && (
+                <div className="bg-yellow-900/20 border border-yellow-700/30 p-4 rounded-lg">
+                  <Label className="text-yellow-300 text-sm font-semibold mb-2 block">
+                    ✏️ Digite o nome do seu banco
+                  </Label>
+                  <Input
+                    value={formData.bank_name}
+                    onChange={(e) => setFormData({ ...formData, bank_name: e.target.value })}
+                    className="bg-purple-900/20 border-purple-700/50 text-white h-12"
+                    placeholder="Ex: Meu Banco Regional"
+                  />
+                </div>
+              )}
 
               {/* Tipo da Conta */}
               <div>
@@ -602,15 +475,22 @@ export default function Accounts() {
                 </Label>
                 <Select
                   value={formData.type}
-                  onValueChange={(value) => setFormData({ ...formData, type: value })}
+                  onValueChange={(value) => {
+                    const tipo = TIPOS_CONTA.find(t => t.value === value);
+                    setFormData({ 
+                      ...formData, 
+                      type: value,
+                      icon: tipo ? tipo.emoji : formData.icon
+                    });
+                  }}
                 >
                   <SelectTrigger className="bg-purple-900/20 border-purple-700/50 text-white h-12">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.entries(accountTypes).map(([key, label]) => (
-                      <SelectItem key={key} value={key}>
-                        {label}
+                    {TIPOS_CONTA.map((tipo) => (
+                      <SelectItem key={tipo.value} value={tipo.value}>
+                        {tipo.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -627,11 +507,11 @@ export default function Accounts() {
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
                   className="bg-purple-900/20 border-purple-700/50 text-white h-12 text-base"
-                  placeholder="Ex: Nubank Conta Corrente"
+                  placeholder="Ex: Conta Corrente Principal"
                 />
               </div>
 
-              {/* Saldo Inicial */}
+              {/* Saldo */}
               <div>
                 <Label className="text-purple-200 text-sm font-semibold mb-2 block">
                   💰 Saldo Inicial *
@@ -649,64 +529,6 @@ export default function Accounts() {
                     className="bg-purple-900/20 border-purple-700/50 text-white h-12 text-base pl-14"
                     placeholder="0.00"
                   />
-                </div>
-                <p className="text-xs text-purple-400 mt-1">
-                  💡 Digite quanto dinheiro você tem nesta conta agora
-                </p>
-              </div>
-
-              {/* Personalização Manual (opcional) */}
-              <div className="border-t border-purple-700/30 pt-6">
-                <Label className="text-purple-200 text-sm font-semibold mb-3 block">
-                  🎨 Personalização Manual (Opcional)
-                </Label>
-                
-                <div className="space-y-4">
-                  {/* Ícone Manual */}
-                  <div>
-                    <Label className="text-purple-300 text-xs mb-2 block">Ou escolha um ícone emoji:</Label>
-                    <div className="grid grid-cols-6 gap-2">
-                      {PRESET_ICONS.map(({ emoji, label }) => (
-                        <button
-                          key={emoji}
-                          type="button"
-                          onClick={() => setFormData({ ...formData, icon: emoji, bank_code: "" })}
-                          className={`relative p-3 rounded-lg text-2xl hover:scale-110 transition-all ${
-                            formData.icon === emoji
-                              ? 'bg-purple-600 shadow-lg'
-                              : 'bg-purple-900/20 hover:bg-purple-900/40'
-                          }`}
-                          title={label}
-                        >
-                          {emoji}
-                          {formData.icon === emoji && (
-                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full" />
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Cor Manual */}
-                  <div>
-                    <Label className="text-purple-300 text-xs mb-2 block">Personalize a cor:</Label>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="color"
-                        value={formData.color}
-                        onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                        className="w-16 h-12 rounded-lg cursor-pointer bg-purple-900/20 border-2 border-purple-700/50"
-                      />
-                      <div className="flex-1">
-                        <Input
-                          value={formData.color}
-                          onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                          className="bg-purple-900/20 border-purple-700/50 text-white"
-                          placeholder="#a855f7"
-                        />
-                      </div>
-                    </div>
-                  </div>
                 </div>
               </div>
 

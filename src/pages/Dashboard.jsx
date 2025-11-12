@@ -196,9 +196,7 @@ export default function Dashboard() {
     return alertsList;
   }, [bills, goals]);
 
-  const isUrlImage = (icon) => {
-    return icon && (icon.startsWith('http://') || icon.startsWith('https://'));
-  };
+  // isUrlImage function is no longer needed after the update
 
   if (hasError) {
     return (
@@ -435,7 +433,6 @@ export default function Dashboard() {
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {accounts.map((acc, index) => {
                   const isPositive = acc.balance >= 0;
-                  const isImage = isUrlImage(acc.icon);
                   
                   return (
                     <Link key={acc.id} to={createPageUrl("Accounts")}>
@@ -462,28 +459,13 @@ export default function Dashboard() {
                           {/* Header com logo do banco */}
                           <div className="flex items-center justify-between mb-4">
                             <div 
-                              className="w-20 h-20 rounded-2xl flex items-center justify-center p-3 bg-white/95 shadow-2xl relative overflow-hidden group-hover:scale-110 transition-transform duration-300"
+                              className="w-20 h-20 rounded-2xl flex items-center justify-center text-5xl shadow-2xl group-hover:scale-110 transition-transform duration-300"
                               style={{ 
+                                backgroundColor: (acc.color || '#a855f7') + '20',
                                 border: `3px solid ${acc.color || '#a855f7'}60`
                               }}
                             >
-                              {/* Brilho interno sutil */}
-                              <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent" />
-                              
-                              {isImage ? (
-                                <img 
-                                  src={acc.icon} 
-                                  alt={acc.name}
-                                  className="w-full h-full object-contain relative z-10"
-                                  onError={(e) => {
-                                    if (e.target && e.target.parentElement) {
-                                      e.target.parentElement.innerHTML = `<span class="text-4xl relative z-10">🏦</span>`;
-                                    }
-                                  }}
-                                />
-                              ) : (
-                                <span className="text-4xl relative z-10">{acc.icon || '🏦'}</span>
-                              )}
+                              {acc.icon || '🏦'}
                             </div>
                             
                             <div className="flex items-center gap-2">
@@ -503,6 +485,12 @@ export default function Dashboard() {
                           <h4 className="text-white font-bold text-lg mb-1 truncate group-hover:text-purple-200 transition-colors">
                             {acc.name}
                           </h4>
+                          
+                          {acc.bank_name && (
+                            <p className="text-purple-400 text-xs mb-2">
+                              🏦 {acc.bank_name}
+                            </p>
+                          )}
 
                           {/* Saldo com destaque */}
                           <div className="mb-3">
