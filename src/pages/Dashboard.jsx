@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Transaction, Account, Category, Goal, Bill } from "@/entities/all";
 import { User } from "@/entities/User";
@@ -19,7 +20,14 @@ import {
   AlertTriangle,
   Clock,
   CheckCircle,
-  Crown
+  Crown,
+  CreditCard,
+  PiggyBank,
+  Landmark,
+  Bitcoin,
+  ChevronRight,
+  TrendingUpIcon,
+  Building2
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { format, differenceInDays, isBefore } from "date-fns";
@@ -187,6 +195,42 @@ export default function Dashboard() {
 
     return alertsList;
   }, [bills, goals]);
+
+  const getAccountIcon = (type) => {
+    switch(type) {
+      case 'checking': return Landmark;
+      case 'savings': return PiggyBank;
+      case 'credit_card': return CreditCard;
+      case 'investment': return TrendingUpIcon;
+      case 'crypto': return Bitcoin;
+      case 'brokerage': return Building2; // Example for a new type
+      default: return Wallet;
+    }
+  };
+
+  const getAccountTypeLabel = (type) => {
+    const labels = {
+      'checking': 'Conta Corrente',
+      'savings': 'Poupança',
+      'credit_card': 'Cartão de Crédito',
+      'investment': 'Investimento',
+      'crypto': 'Cripto',
+      'brokerage': 'Corretora'
+    };
+    return labels[type] || 'Conta';
+  };
+
+  const getAccountGradient = (type) => {
+    const gradients = {
+      'checking': 'from-blue-600 to-cyan-600',
+      'savings': 'from-green-600 to-emerald-600',
+      'credit_card': 'from-purple-600 to-pink-600',
+      'investment': 'from-yellow-600 to-orange-600',
+      'crypto': 'from-orange-600 to-red-600',
+      'brokerage': 'from-indigo-600 to-fuchsia-600'
+    };
+    return gradients[type] || 'from-indigo-600 to-purple-600';
+  };
 
   if (hasError) {
     return (
@@ -377,48 +421,145 @@ export default function Dashboard() {
           </React.Suspense>
         </div>
 
-        <Card className="glass-card border-0 neon-glow">
-          <CardHeader className="border-b border-purple-900/30">
-            <CardTitle className="flex items-center gap-2 text-white">
-              <Wallet className="w-5 h-5 text-purple-400" />
-              Minhas Contas
-            </CardTitle>
+        {/* ✅ NOVA SEÇÃO DE CONTAS - MUITO MAIS BONITA */}
+        <Card className="glass-card border-0 neon-glow overflow-hidden">
+          <CardHeader className="border-b border-purple-900/30 bg-gradient-to-r from-purple-900/30 to-pink-900/20">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-3 text-white">
+                <div className="p-3 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600">
+                  <Wallet className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold">Minhas Carteiras</h3>
+                  <p className="text-purple-300 text-sm font-normal">
+                    {accounts.length} {accounts.length === 1 ? 'conta ativa' : 'contas ativas'}
+                  </p>
+                </div>
+              </CardTitle>
+              <Link to={createPageUrl("Accounts")}>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="border-purple-700 text-purple-300 hover:bg-purple-900/30"
+                >
+                  Ver Todas
+                  <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              </Link>
+            </div>
           </CardHeader>
           <CardContent className="p-6">
             {accounts.length === 0 ? (
-              <div className="text-center py-8 text-purple-300">
-                <Wallet className="w-12 h-12 mx-auto mb-3 text-purple-400" />
-                <p>Nenhuma conta cadastrada</p>
+              <div className="text-center py-12">
+                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-purple-900/30 flex items-center justify-center">
+                  <Wallet className="w-10 h-10 text-purple-400" />
+                </div>
+                <p className="text-purple-300 text-lg mb-2">Nenhuma carteira cadastrada</p>
+                <p className="text-purple-400 text-sm mb-4">Crie sua primeira carteira para começar!</p>
+                <Link to={createPageUrl("Accounts")}>
+                  <Button className="bg-gradient-to-r from-purple-600 to-pink-600">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Criar Primeira Carteira
+                  </Button>
+                </Link>
               </div>
             ) : (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {accounts.map((acc, index) => (
+                {accounts.map((acc, index) => {
+                  const AccountIcon = getAccountIcon(acc.type);
+                  const gradient = getAccountGradient(acc.type);
+                  const isPositive = acc.balance >= 0;
+                  
+                  return (
+                    <Link key={acc.id} to={createPageUrl("Accounts")}>
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: index * 0.05 }}
+                        whileHover={{ scale: 1.03, y: -4 }}
+                        className="group relative overflow-hidden cursor-pointer"
+                      >
+                        {/* Fundo gradiente animado */}
+                        <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-20 transition-opacity duration-300`} />
+                        
+                        {/* Brilho no hover */}
+                        <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 via-pink-600 to-cyan-600 rounded-2xl opacity-0 group-hover:opacity-30 blur-xl transition-opacity duration-300" />
+                        
+                        <div className="relative p-5 rounded-xl glass-card border border-purple-700/30 group-hover:border-purple-600/60 transition-all duration-300">
+                          {/* Header com ícone e tipo */}
+                          <div className="flex items-center justify-between mb-4">
+                            <div className={`p-3 rounded-xl bg-gradient-to-br ${gradient} shadow-lg`}>
+                              <AccountIcon className="w-6 h-6 text-white" />
+                            </div>
+                            <Badge className="bg-purple-900/50 text-purple-300 border-0">
+                              {getAccountTypeLabel(acc.type)}
+                            </Badge>
+                          </div>
+
+                          {/* Nome da conta */}
+                          <h4 className="text-white font-bold text-lg mb-1 truncate group-hover:text-purple-200 transition-colors">
+                            {acc.name}
+                          </h4>
+
+                          {/* Saldo */}
+                          <div className="flex items-baseline gap-2 mb-3">
+                            <p className={`text-3xl font-bold ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+                              R$ {Math.abs(acc.balance).toFixed(2)}
+                            </p>
+                            {!isPositive && (
+                              <span className="text-red-400 text-sm">negativo</span>
+                            )}
+                          </div>
+
+                          {/* Indicador de status */}
+                          <div className="flex items-center justify-between pt-3 border-t border-purple-700/30">
+                            <div className="flex items-center gap-2">
+                              {isPositive ? (
+                                <>
+                                  <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                                  <span className="text-green-400 text-xs font-medium">Saudável</span>
+                                </>
+                              ) : (
+                                <>
+                                  <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
+                                  <span className="text-red-400 text-xs font-medium">Atenção</span>
+                                </>
+                              )}
+                            </div>
+                            <ChevronRight className="w-5 h-5 text-purple-400 group-hover:text-purple-300 group-hover:translate-x-1 transition-all" />
+                          </div>
+
+                          {/* Efeito de brilho no canto */}
+                          <div className={`absolute -top-8 -right-8 w-24 h-24 bg-gradient-to-br ${gradient} opacity-10 rounded-full blur-2xl group-hover:opacity-30 transition-opacity duration-300`} />
+                        </div>
+                      </motion.div>
+                    </Link>
+                  );
+                })}
+
+                {/* Card para adicionar nova conta */}
+                <Link to={createPageUrl("Accounts")}>
                   <motion.div
-                    key={acc.id}
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: index * 0.03 }}
-                    className="p-4 rounded-xl glass-card border border-purple-700/30"
+                    transition={{ delay: accounts.length * 0.05 }}
+                    whileHover={{ scale: 1.03, y: -4 }}
+                    className="group relative overflow-hidden cursor-pointer h-full min-h-[200px]"
                   >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-purple-300 text-sm">{acc.name}</p>
-                        <p className="text-xl font-bold text-white mt-1">
-                          R$ {acc.balance.toFixed(2)}
-                        </p>
+                    <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 to-pink-600/10 group-hover:from-purple-600/20 group-hover:to-pink-600/20 transition-all duration-300" />
+                    
+                    <div className="relative h-full p-5 rounded-xl glass-card border-2 border-dashed border-purple-700/40 group-hover:border-purple-600/70 transition-all duration-300 flex flex-col items-center justify-center gap-3">
+                      <div className="p-4 rounded-2xl bg-gradient-to-br from-purple-600/20 to-pink-600/20 group-hover:from-purple-600/30 group-hover:to-pink-600/30 transition-all">
+                        <Plus className="w-8 h-8 text-purple-400 group-hover:text-purple-300 transition-colors" />
                       </div>
-                      <div className={`p-2 rounded-full ${
-                        acc.balance >= 0 ? "bg-green-600/20" : "bg-red-600/20"
-                      }`}>
-                        {acc.balance >= 0 ? (
-                          <CheckCircle className="w-5 h-5 text-green-400" />
-                        ) : (
-                          <AlertTriangle className="w-5 h-5 text-red-400" />
-                        )}
+                      <div className="text-center">
+                        <p className="text-white font-bold mb-1">Adicionar Carteira</p>
+                        <p className="text-purple-400 text-sm">Crie uma nova conta</p>
                       </div>
+                      <ChevronRight className="w-5 h-5 text-purple-400 group-hover:text-purple-300 group-hover:translate-x-1 transition-all" />
                     </div>
                   </motion.div>
-                ))}
+                </Link>
               </div>
             )}
           </CardContent>
