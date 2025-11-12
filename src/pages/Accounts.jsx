@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Account } from "@/entities/all";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,11 +17,36 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Wallet, Plus, Edit, Trash2, TrendingUp, TrendingDown, Check, Loader2 } from "lucide-react"; // Added Loader2
+import { Wallet, Plus, Edit, Trash2, TrendingUp, TrendingDown, Check, Loader2, Building2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import FeatureGuard from "../components/FeatureGuard";
 
-// ✨ Ícones predefinidos para escolha rápida
+// 🏦 BANCOS BRASILEIROS MAIS CONHECIDOS
+const BRAZILIAN_BANKS = [
+  { code: "nubank", name: "Nubank", emoji: "💜", color: "#8A05BE" },
+  { code: "inter", name: "Banco Inter", emoji: "🧡", color: "#FF7A00" },
+  { code: "bb", name: "Banco do Brasil", emoji: "💛", color: "#FDB913" },
+  { code: "caixa", name: "Caixa Econômica", emoji: "🔵", color: "#0057A0" },
+  { code: "itau", name: "Itaú", emoji: "🔶", color: "#EC7000" },
+  { code: "bradesco", name: "Bradesco", emoji: "🔴", color: "#CC092F" },
+  { code: "santander", name: "Santander", emoji: "❤️", color: "#EC0000" },
+  { code: "safra", name: "Banco Safra", emoji: "💙", color: "#0066B3" },
+  { code: "original", name: "Banco Original", emoji: "💚", color: "#00A868" },
+  { code: "c6", name: "C6 Bank", emoji: "⚫", color: "#1A1A1A" },
+  { code: "btg", name: "BTG Pactual", emoji: "🟦", color: "#000080" },
+  { code: "pan", name: "Banco Pan", emoji: "💙", color: "#0077C8" },
+  { code: "next", name: "Next (Bradesco)", emoji: "💚", color: "#00AB63" },
+  { code: "picpay", name: "PicPay", emoji: "💚", color: "#21C25E" },
+  { code: "mercadopago", name: "Mercado Pago", emoji: "💙", color: "#009EE3" },
+  { code: "neon", name: "Neon", emoji: "💙", color: "#00D1FF" },
+  { code: "will", name: "Will Bank", emoji: "🟣", color: "#6B4FBB" },
+  { code: "generic", name: "Outro Banco", emoji: "🏦", color: "#6366f1" },
+  { code: "wallet", name: "Carteira/Dinheiro", emoji: "💵", color: "#10b981" },
+  { code: "investment", name: "Corretora", emoji: "📈", color: "#f59e0b" },
+  { code: "crypto", name: "Exchange Cripto", emoji: "₿", color: "#f97316" }
+];
+
+// ✨ Ícones alternativos genéricos
 const PRESET_ICONS = [
   { emoji: "💳", label: "Cartão" },
   { emoji: "🏦", label: "Banco" },
@@ -38,28 +62,12 @@ const PRESET_ICONS = [
   { emoji: "🌟", label: "Especial" }
 ];
 
-// 🎨 Cores predefinidas bonitas
-const PRESET_COLORS = [
-  { color: "#a855f7", name: "Roxo" },
-  { color: "#3b82f6", name: "Azul" },
-  { color: "#10b981", name: "Verde" },
-  { color: "#f59e0b", name: "Laranja" },
-  { color: "#ef4444", name: "Vermelho" },
-  { color: "#ec4899", name: "Rosa" },
-  { color: "#06b6d4", name: "Ciano" },
-  { color: "#8b5cf6", name: "Violeta" },
-  { color: "#14b8a6", name: "Turquesa" },
-  { color: "#f97316", name: "Laranja Forte" },
-  { color: "#6366f1", name: "Índigo" },
-  { color: "#84cc16", name: "Lima" }
-];
-
 export default function Accounts() {
   const [accounts, setAccounts] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingAccount, setEditingAccount] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false); // ✅ NOVO: Estado de submissão
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     type: "checking",
@@ -67,11 +75,13 @@ export default function Accounts() {
     currency: "BRL",
     color: "#a855f7",
     icon: "💳",
+    bank_code: "",
     is_active: true
   });
 
   useEffect(() => {
     loadAccounts();
+    document.title = "Carteiras - FINEX";
   }, []);
 
   const loadAccounts = async () => {
@@ -90,7 +100,6 @@ export default function Accounts() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // ✅ BLOQUEAR cliques duplos
     if (isSubmitting) {
       console.log("⚠️ Já está processando, ignorando clique duplo");
       return;
@@ -119,6 +128,7 @@ export default function Accounts() {
         currency: "BRL",
         color: "#a855f7",
         icon: "💳",
+        bank_code: "",
         is_active: true
       });
       loadAccounts();
@@ -139,6 +149,7 @@ export default function Accounts() {
       currency: acc.currency || "BRL",
       color: acc.color || "#a855f7",
       icon: acc.icon || "💳",
+      bank_code: acc.bank_code || "",
       is_active: acc.is_active !== false
     });
     setShowForm(true);
@@ -156,6 +167,16 @@ export default function Accounts() {
     }
   };
 
+  const handleSelectBank = (bank) => {
+    setFormData({
+      ...formData,
+      bank_code: bank.code,
+      icon: bank.emoji,
+      color: bank.color,
+      name: formData.name || bank.name
+    });
+  };
+
   const accountTypes = {
     checking: "Conta Corrente",
     savings: "Poupança",
@@ -164,7 +185,6 @@ export default function Accounts() {
     crypto: "Criptomoedas"
   };
 
-  // 💡 Sugestões de nomes baseadas no tipo
   const getNameSuggestion = (type) => {
     const suggestions = {
       checking: "Banco Inter, Nubank, Itaú",
@@ -190,7 +210,6 @@ export default function Accounts() {
     <FeatureGuard pageName="Accounts">
       <div className="min-h-screen bg-gradient-to-br from-[#0a0a0f] via-[#1a1a2e] to-[#0a0a0f] p-4 md:p-8">
         <div className="max-w-6xl mx-auto space-y-6">
-          {/* Header */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
@@ -208,6 +227,7 @@ export default function Accounts() {
                   currency: "BRL",
                   color: "#a855f7",
                   icon: "💳",
+                  bank_code: "",
                   is_active: true
                 });
                 setShowForm(true);
@@ -219,7 +239,6 @@ export default function Accounts() {
             </Button>
           </div>
 
-          {/* Total Balance */}
           <Card className="glass-card border-0 neon-glow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -236,7 +255,6 @@ export default function Accounts() {
             </CardContent>
           </Card>
 
-          {/* Accounts Grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {accounts.map((acc, index) => (
               <motion.div
@@ -318,45 +336,79 @@ export default function Accounts() {
           )}
         </div>
 
-        {/* Formulário Modal */}
         <Dialog open={showForm} onOpenChange={setShowForm}>
-          <DialogContent className="glass-card border-purple-700/50 text-white max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="glass-card border-purple-700/50 text-white max-w-[95vw] sm:max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader className="sticky top-0 bg-[#1a1a2e] z-10 pb-4">
               <DialogTitle className="text-2xl bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
                 {editingAccount ? "✏️ Editar Conta" : "✨ Nova Conta"}
               </DialogTitle>
               <p className="text-purple-300 text-sm mt-1">
-                {editingAccount ? "Atualize os dados da sua conta" : "Adicione uma nova conta para gerenciar seu dinheiro"}
+                {editingAccount ? "Atualize os dados da sua conta" : "Escolha seu banco e configure sua carteira"}
               </p>
             </DialogHeader>
             
             <form onSubmit={handleSubmit} className="space-y-6 pb-4">
               {/* Preview da Conta */}
               <div className="bg-gradient-to-r from-purple-900/30 to-indigo-900/30 rounded-xl p-6 border border-purple-700/30">
-                <p className="text-purple-300 text-xs mb-3">👁️ PRÉVIA</p>
+                <p className="text-purple-300 text-xs mb-3 flex items-center gap-2">
+                  <Building2 className="w-3 h-3" />
+                  PRÉVIA DA CARTEIRA
+                </p>
                 <div className="flex items-center gap-4">
                   <div
-                    className="w-16 h-16 rounded-xl flex items-center justify-center text-3xl shadow-lg"
-                    style={{ backgroundColor: formData.color + '40' }}
+                    className="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl shadow-xl"
+                    style={{ backgroundColor: formData.color + '40', border: `2px solid ${formData.color}60` }}
                   >
                     {formData.icon}
                   </div>
                   <div className="flex-1">
-                    <p className="text-white font-bold text-lg">
+                    <p className="text-white font-bold text-xl mb-1">
                       {formData.name || "Nome da Conta"}
                     </p>
-                    <p className="text-purple-300 text-sm">{accountTypes[formData.type]}</p>
-                    <p className="text-2xl font-bold text-green-400 mt-1">
+                    <p className="text-purple-300 text-sm mb-2">{accountTypes[formData.type]}</p>
+                    <p className="text-3xl font-bold text-green-400">
                       R$ {formData.balance || "0.00"}
                     </p>
                   </div>
                 </div>
               </div>
 
+              {/* Seleção de Banco Brasileiro */}
+              <div>
+                <Label className="text-purple-200 text-sm font-semibold mb-3 block">
+                  🏦 Selecione seu Banco ou Instituição
+                </Label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-[300px] overflow-y-auto p-2 bg-purple-900/10 rounded-lg">
+                  {BRAZILIAN_BANKS.map((bank) => (
+                    <button
+                      key={bank.code}
+                      type="button"
+                      onClick={() => handleSelectBank(bank)}
+                      className={`relative p-4 rounded-xl text-center transition-all ${
+                        formData.bank_code === bank.code
+                          ? 'bg-gradient-to-br from-purple-600 to-pink-600 shadow-lg scale-105'
+                          : 'bg-purple-900/30 hover:bg-purple-900/50 hover:scale-105'
+                      }`}
+                    >
+                      <div className="text-3xl mb-2">{bank.emoji}</div>
+                      <p className="text-white text-xs font-semibold">{bank.name}</p>
+                      {formData.bank_code === bank.code && (
+                        <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                          <Check className="w-4 h-4 text-white" />
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-purple-400 text-xs mt-2">
+                  💡 Clique no banco da sua conta para aplicar o ícone e cor automaticamente
+                </p>
+              </div>
+
               {/* Tipo da Conta */}
               <div>
                 <Label className="text-purple-200 text-sm font-semibold mb-2 block">
-                  🏦 Tipo de Conta
+                  📋 Tipo de Conta
                 </Label>
                 <Select
                   value={formData.type}
@@ -373,9 +425,6 @@ export default function Accounts() {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-purple-400 mt-1">
-                  💡 Ex: {getNameSuggestion(formData.type)}
-                </p>
               </div>
 
               {/* Nome da Conta */}
@@ -388,7 +437,7 @@ export default function Accounts() {
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
                   className="bg-purple-900/20 border-purple-700/50 text-white h-12 text-base"
-                  placeholder={`Ex: ${getNameSuggestion(formData.type).split(',')[0]}`}
+                  placeholder="Ex: Nubank Conta Corrente"
                 />
               </div>
 
@@ -398,7 +447,7 @@ export default function Accounts() {
                   💰 Saldo Inicial *
                 </Label>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-300 font-bold">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-300 font-bold text-lg">
                     R$
                   </span>
                   <Input
@@ -407,7 +456,7 @@ export default function Accounts() {
                     value={formData.balance}
                     onChange={(e) => setFormData({ ...formData, balance: e.target.value })}
                     required
-                    className="bg-purple-900/20 border-purple-700/50 text-white h-12 text-base pl-12"
+                    className="bg-purple-900/20 border-purple-700/50 text-white h-12 text-base pl-14"
                     placeholder="0.00"
                   />
                 </div>
@@ -416,64 +465,63 @@ export default function Accounts() {
                 </p>
               </div>
 
-              {/* Escolher Ícone */}
-              <div>
+              {/* Personalização Manual (opcional) */}
+              <div className="border-t border-purple-700/30 pt-6">
                 <Label className="text-purple-200 text-sm font-semibold mb-3 block">
-                  🎨 Escolha um Ícone
+                  🎨 Personalização Manual (Opcional)
                 </Label>
-                <div className="grid grid-cols-6 gap-2">
-                  {PRESET_ICONS.map(({ emoji, label }) => (
-                    <button
-                      key={emoji}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, icon: emoji })}
-                      className={`relative p-3 rounded-lg text-2xl hover:scale-110 transition-all ${
-                        formData.icon === emoji
-                          ? 'bg-purple-600 shadow-lg'
-                          : 'bg-purple-900/20 hover:bg-purple-900/40'
-                      }`}
-                      title={label}
-                    >
-                      {emoji}
-                      {formData.icon === emoji && (
-                        <div className="absolute top-0 right-0 w-3 h-3 bg-green-500 rounded-full" />
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
+                
+                <div className="space-y-4">
+                  {/* Ícone Manual */}
+                  <div>
+                    <Label className="text-purple-300 text-xs mb-2 block">Ou escolha outro ícone:</Label>
+                    <div className="grid grid-cols-6 gap-2">
+                      {PRESET_ICONS.map(({ emoji, label }) => (
+                        <button
+                          key={emoji}
+                          type="button"
+                          onClick={() => setFormData({ ...formData, icon: emoji })}
+                          className={`relative p-3 rounded-lg text-2xl hover:scale-110 transition-all ${
+                            formData.icon === emoji
+                              ? 'bg-purple-600 shadow-lg'
+                              : 'bg-purple-900/20 hover:bg-purple-900/40'
+                          }`}
+                          title={label}
+                        >
+                          {emoji}
+                          {formData.icon === emoji && (
+                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
-              {/* Escolher Cor */}
-              <div>
-                <Label className="text-purple-200 text-sm font-semibold mb-3 block">
-                  🌈 Escolha uma Cor
-                </Label>
-                <div className="grid grid-cols-6 gap-2">
-                  {PRESET_COLORS.map(({ color, name }) => (
-                    <button
-                      key={color}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, color })}
-                      className="relative p-4 rounded-lg hover:scale-110 transition-all"
-                      style={{ backgroundColor: color + '60' }}
-                      title={name}
-                    >
-                      <div
-                        className="w-full h-6 rounded"
-                        style={{ backgroundColor: color }}
+                  {/* Cor Manual */}
+                  <div>
+                    <Label className="text-purple-300 text-xs mb-2 block">Ou personalize a cor:</Label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="color"
+                        value={formData.color}
+                        onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                        className="w-16 h-12 rounded-lg cursor-pointer bg-purple-900/20 border-2 border-purple-700/50"
                       />
-                      {formData.color === color && (
-                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-white rounded-full flex items-center justify-center">
-                          <Check className="w-3 h-3 text-green-600" />
-                        </div>
-                      )}
-                    </button>
-                  ))}
+                      <div className="flex-1">
+                        <Input
+                          value={formData.color}
+                          onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                          className="bg-purple-900/20 border-purple-700/50 text-white"
+                          placeholder="#a855f7"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               {/* Botões */}
-              <div className="flex flex-col sm:flex-row gap-3 pt-4 sticky bottom-0 bg-[#1a1a2e] pb-2">
+              <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-purple-700/30">
                 <Button
                   type="button"
                   variant="outline"
