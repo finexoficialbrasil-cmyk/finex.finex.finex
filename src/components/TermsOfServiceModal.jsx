@@ -245,17 +245,18 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
   return (
     <Dialog open={isOpen} onOpenChange={() => {}}>
       <DialogContent 
-        className="glass-card border-purple-700/50 text-white w-[95vw] max-w-4xl max-h-[95vh] flex flex-col p-4 sm:p-6"
+        className="glass-card border-purple-700/50 text-white w-[95vw] max-w-5xl h-[95vh] flex flex-col p-0 overflow-hidden"
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
-        <DialogHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <DialogTitle className="text-xl sm:text-2xl bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent text-center">
+        {/* Header Fixo */}
+        <DialogHeader className="p-4 sm:p-6 border-b border-purple-700/30 flex-shrink-0">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <DialogTitle className="text-lg sm:text-xl md:text-2xl bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
                 📋 Termos de Uso e Política de Privacidade
               </DialogTitle>
-              <p className="text-purple-300 text-sm text-center mt-2">
+              <p className="text-purple-300 text-xs sm:text-sm mt-2">
                 Versão {terms.version} • Vigência: {new Date(terms.effective_date).toLocaleDateString('pt-BR')}
               </p>
             </div>
@@ -263,7 +264,7 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
               onClick={handlePrint}
               variant="outline"
               size="sm"
-              className="border-cyan-700 text-cyan-300 hover:bg-cyan-900/20 flex-shrink-0 ml-2"
+              className="border-cyan-700 text-cyan-300 hover:bg-cyan-900/20 flex-shrink-0"
               title="Imprimir termos"
             >
               <Printer className="w-4 h-4" />
@@ -271,109 +272,118 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
           </div>
         </DialogHeader>
 
-        <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
-          {/* Ilustração */}
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            className="flex justify-center"
-          >
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-full blur-2xl"></div>
-              <div className="relative p-4 rounded-full bg-gradient-to-br from-blue-600 to-cyan-600">
-                <FileText className="w-10 h-10 sm:w-12 sm:h-12 text-white" />
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Aviso Importante */}
-          <div className="bg-yellow-900/20 border border-yellow-700/30 p-3 sm:p-4 rounded-lg">
-            <div className="flex items-start gap-2 sm:gap-3">
-              <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-yellow-300 font-bold mb-1 text-sm sm:text-base">
-                  ⚠️ Leitura Obrigatória
-                </p>
-                <p className="text-yellow-200 text-xs sm:text-sm">
-                  Por favor, leia atentamente os termos abaixo. Ao aceitar, você concorda com todas as cláusulas e condições de uso do FINEX.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Conteúdo dos Termos */}
-          <ScrollArea className="flex-1 border border-purple-700/30 rounded-lg p-4 bg-purple-900/10">
-            <div 
-              ref={contentRef}
-              className="prose prose-sm prose-invert max-w-none text-purple-100
-                         prose-headings:text-white prose-headings:font-bold
-                         prose-h2:text-xl prose-h2:mt-6 prose-h2:mb-3
-                         prose-h3:text-lg prose-h3:mt-4 prose-h3:mb-2
-                         prose-p:leading-relaxed prose-p:mb-3
-                         prose-ul:my-3 prose-li:my-1
-                         prose-strong:text-cyan-300
-                         prose-a:text-cyan-400"
-              dangerouslySetInnerHTML={{ __html: terms.content }}
-            />
-          </ScrollArea>
-
-          {/* Dica de Impressão */}
-          <div className="bg-cyan-900/20 border border-cyan-700/30 p-3 rounded-lg">
-            <div className="flex items-start gap-2">
-              <Printer className="w-4 h-4 text-cyan-400 flex-shrink-0 mt-0.5" />
-              <p className="text-cyan-200 text-xs sm:text-sm">
-                <strong className="text-cyan-300">💡 Dica:</strong> Use o botão <Printer className="w-3 h-3 inline" /> no topo para imprimir ou salvar os termos em PDF para sua referência.
-              </p>
-            </div>
-          </div>
-
-          {/* Checkbox de Aceitação */}
-          <div className="bg-purple-900/20 border border-purple-700/30 p-4 rounded-lg">
-            <div className="flex items-start gap-3">
-              <Checkbox
-                id="accept-terms"
-                checked={accepted}
-                onCheckedChange={setAccepted}
-                className="mt-0.5"
-              />
-              <label 
-                htmlFor="accept-terms" 
-                className="text-sm sm:text-base text-purple-200 cursor-pointer flex-1"
+        {/* Conteúdo Rolável */}
+        <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+          <ScrollArea className="flex-1 px-4 sm:px-6">
+            <div className="space-y-4 py-4">
+              {/* Ilustração */}
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="flex justify-center"
               >
-                Li e aceito os <strong className="text-white">Termos de Uso</strong> e a <strong className="text-white">Política de Privacidade</strong> do FINEX. Concordo em usar o sistema de acordo com as regras estabelecidas.
-              </label>
-            </div>
-          </div>
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-full blur-2xl"></div>
+                  <div className="relative p-3 sm:p-4 rounded-full bg-gradient-to-br from-blue-600 to-cyan-600">
+                    <FileText className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
+                  </div>
+                </div>
+              </motion.div>
 
-          {/* Info de Segurança */}
-          <div className="bg-green-900/20 border border-green-700/30 p-3 rounded-lg">
-            <div className="flex items-start gap-2">
-              <Shield className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" />
-              <p className="text-green-200 text-xs sm:text-sm">
-                <strong className="text-green-300">🔒 Registro Legal:</strong> Sua aceitação será registrada com data, hora e IP para fins legais e de conformidade.
-              </p>
+              {/* Aviso Importante */}
+              <div className="bg-yellow-900/20 border border-yellow-700/30 p-3 sm:p-4 rounded-lg">
+                <div className="flex items-start gap-2 sm:gap-3">
+                  <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-yellow-300 font-bold mb-1 text-sm sm:text-base">
+                      ⚠️ Leitura Obrigatória
+                    </p>
+                    <p className="text-yellow-200 text-xs sm:text-sm">
+                      Por favor, role e leia atentamente os termos abaixo. Ao aceitar, você concorda com todas as cláusulas e condições de uso do FINEX.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Conteúdo dos Termos - Container com altura controlada */}
+              <div className="border border-purple-700/30 rounded-lg p-3 sm:p-4 bg-purple-900/10">
+                <div 
+                  ref={contentRef}
+                  className="prose prose-sm prose-invert max-w-none text-purple-100
+                             prose-headings:text-white prose-headings:font-bold
+                             prose-h2:text-base sm:prose-h2:text-xl prose-h2:mt-4 prose-h2:mb-2
+                             prose-h3:text-sm sm:prose-h3:text-lg prose-h3:mt-3 prose-h3:mb-2
+                             prose-p:leading-relaxed prose-p:mb-2 prose-p:text-xs sm:prose-p:text-sm
+                             prose-ul:my-2 prose-li:my-1 prose-li:text-xs sm:prose-li:text-sm
+                             prose-strong:text-cyan-300
+                             prose-a:text-cyan-400"
+                  dangerouslySetInnerHTML={{ __html: terms.content }}
+                />
+              </div>
+
+              {/* Dica de Impressão */}
+              <div className="bg-cyan-900/20 border border-cyan-700/30 p-3 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <Printer className="w-4 h-4 text-cyan-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-cyan-200 text-xs sm:text-sm">
+                    <strong className="text-cyan-300">💡 Dica:</strong> Use o botão <Printer className="w-3 h-3 inline" /> no topo para imprimir ou salvar os termos em PDF.
+                  </p>
+                </div>
+              </div>
             </div>
-          </div>
+          </ScrollArea>
         </div>
 
-        <DialogFooter className="flex-col sm:flex-row gap-3">
-          <Button
-            onClick={handleAccept}
-            disabled={!accepted || isSubmitting}
-            className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-base sm:text-lg py-5 sm:py-6"
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                Registrando...
-              </>
-            ) : (
-              <>
-                <CheckCircle className="w-5 h-5 mr-2" />
-                Aceitar e Continuar
-              </>
-            )}
-          </Button>
+        {/* Footer Fixo */}
+        <DialogFooter className="p-4 sm:p-6 border-t border-purple-700/30 flex-shrink-0 bg-[#1a1a2e]/95 backdrop-blur-sm">
+          <div className="w-full space-y-3">
+            {/* Checkbox de Aceitação */}
+            <div className="bg-purple-900/20 border border-purple-700/30 p-3 sm:p-4 rounded-lg">
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  id="accept-terms"
+                  checked={accepted}
+                  onCheckedChange={setAccepted}
+                  className="mt-0.5 flex-shrink-0"
+                />
+                <label 
+                  htmlFor="accept-terms" 
+                  className="text-xs sm:text-sm text-purple-200 cursor-pointer flex-1"
+                >
+                  Li e aceito os <strong className="text-white">Termos de Uso</strong> e a <strong className="text-white">Política de Privacidade</strong> do FINEX. Concordo em usar o sistema de acordo com as regras estabelecidas.
+                </label>
+              </div>
+            </div>
+
+            {/* Info de Segurança */}
+            <div className="bg-green-900/20 border border-green-700/30 p-2 sm:p-3 rounded-lg">
+              <div className="flex items-start gap-2">
+                <Shield className="w-3 h-3 sm:w-4 sm:h-4 text-green-400 flex-shrink-0 mt-0.5" />
+                <p className="text-green-200 text-xs">
+                  <strong className="text-green-300">🔒 Registro Legal:</strong> Sua aceitação será registrada com data, hora e IP para fins legais.
+                </p>
+              </div>
+            </div>
+
+            {/* Botão de Aceitar */}
+            <Button
+              onClick={handleAccept}
+              disabled={!accepted || isSubmitting}
+              className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-sm sm:text-base py-4 sm:py-5"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 mr-2 animate-spin" />
+                  Registrando...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                  Aceitar e Continuar
+                </>
+              )}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
