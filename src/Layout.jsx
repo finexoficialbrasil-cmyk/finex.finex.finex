@@ -38,6 +38,8 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { User as UserEntity } from "@/entities/User";
+import { SystemPlan } from "@/entities/SystemPlan"; // Added import
+import { SystemSettings } from "@/entities/SystemSettings"; // Added import
 import { motion, AnimatePresence } from "framer-motion";
 import SubscriptionGuard from "./components/SubscriptionGuard";
 import WelcomeEmailSender from "./components/WelcomeEmailSender";
@@ -150,16 +152,8 @@ const hasActiveAccess = (user) => {
     
     const trialActive = trialEnd >= today;
     
-    console.log(`🎁 Layout - Verificação TRIAL:`, {
-      email: user.email,
-      trialEnd: user.trial_ends_at,
-      trialActive,
-      daysLeft: Math.ceil((trialEnd - today) / (1000 * 60 * 60 * 24))
-    });
-    
     // ✅ Se trial acabou, BLOQUEAR
     if (!trialActive) {
-      console.log(`❌ Layout - TRIAL EXPIRADO! Bloqueando menu.`);
       return false;
     }
     
@@ -173,16 +167,8 @@ const hasActiveAccess = (user) => {
     
     const isActive = endDate >= today;
     
-    console.log(`💳 Layout - Verificação ASSINATURA:`, {
-      email: user.email,
-      endDate: user.subscription_end_date,
-      isActive,
-      daysLeft: Math.ceil((endDate - today) / (1000 * 60 * 60 * 24))
-    });
-    
     // ✅ Se assinatura venceu, BLOQUEAR (NÃO dar trial novamente)
     if (!isActive) {
-      console.log(`❌ Layout - ASSINATURA VENCIDA! Bloqueando menu.`);
       return false;
     }
     
@@ -190,7 +176,6 @@ const hasActiveAccess = (user) => {
   }
   
   // ✅ Sem trial e sem assinatura = BLOQUEADO
-  console.log(`❌ Layout - SEM ACESSO ATIVO. Bloqueando menu.`);
   return false;
 };
 
@@ -248,10 +233,16 @@ function LayoutContent({ children }) {
   }, [location.pathname, previousPath, setOpenMobile, setOpen]);
 
   const loadUserAndSettings = async () => {
+    const startTime = performance.now();
     setIsLoadingLayout(true);
     setHasLayoutError(false);
+    
     try {
+      console.log("⚡ Layout - Carregando usuário...");
       const userData = await UserEntity.me();
+      const userLoadTime = performance.now() - startTime;
+      console.log(`✅ Usuário carregado em ${userLoadTime.toFixed(0)}ms`);
+      
       setUser(userData);
       setTheme(userData.theme || "dark");
 
@@ -267,6 +258,8 @@ function LayoutContent({ children }) {
       });
 
       setIsLoadingLayout(false);
+      
+      // ✅ Carregar resto em background (não bloqueia)
       loadAdditionalDataInBackground(userData);
       
     } catch (error) {
@@ -278,14 +271,14 @@ function LayoutContent({ children }) {
 
   const loadAdditionalDataInBackground = async (userData) => {
     try {
+      // ✅ Carregar plano do usuário (se tiver)
       if (userData.subscription_plan && userData.role !== 'admin' && hasActiveAccess(userData)) {
-        const { SystemPlan } = await import("@/entities/SystemPlan");
         const plans = await SystemPlan.list();
         const plan = plans.find(p => p.plan_type === userData.subscription_plan);
         setUserPlan(plan);
       }
 
-      const { SystemSettings } = await import("@/entities/SystemSettings");
+      // ✅ Carregar configurações do sistema
       const allSettings = await SystemSettings.list();
       
       const appNameSetting = allSettings.find(s => s.key === "app_name");
@@ -302,8 +295,6 @@ function LayoutContent({ children }) {
       
       if (appLogoSetting && appLogoSetting.value) {
         setAppLogo(appLogoSetting.value);
-      } else {
-        setAppLogo("");
       }
 
       if (faviconSetting && faviconSetting.value) {
@@ -316,20 +307,18 @@ function LayoutContent({ children }) {
         link.href = faviconSetting.value;
         document.head.appendChild(link);
       }
+      
+      console.log("✅ Configurações carregadas em background");
     } catch (error) {
       console.warn("⚠️ Erro ao carregar dados secundários (não crítico):", error);
     }
   };
 
   const handlePhoneUpdated = (newPhone) => {
-    console.log("📞 Telefone atualizado:", newPhone);
-    // Atualizar estado do usuário
     setUser(prev => ({ ...prev, phone: newPhone, phone_verified: true }));
   };
 
   const handleTermsAccepted = () => {
-    console.log("📋 Termos aceitos pelo usuário");
-    // Atualizar estado do usuário
     setUser(prev => ({ ...prev, terms_accepted: true }));
   };
 
@@ -338,7 +327,7 @@ function LayoutContent({ children }) {
       <div className="min-h-screen bg-gradient-to-br from-[#0a0a0f] via-[#1a1a2e] to-[#0a0a0f] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <Sparkles className="w-12 h-12 text-purple-400 animate-spin" />
-          <p className="text-purple-300">Carregando...</p>
+          <p className="text-purple-300">Carregando FINEX...</p>
         </div>
       </div>
     );
@@ -450,7 +439,7 @@ function LayoutContent({ children }) {
   const menuItems = getFilteredMenuItems();
 
   const handleMenuItemClick = () => {
-    console.log("🔗 Item do menu clicado");
+    // Fechamento de menu é tratado pelo useEffect acima
   };
 
   return (
@@ -580,25 +569,8 @@ function LayoutContent({ children }) {
           100% { background-position: 0% 50%; }
         }
 
-        @keyframes text-shimmer {
-          0%, 100% { 
-            text-shadow: 
-              0 0 20px rgba(168, 85, 247, 0.8),
-              0 0 40px rgba(236, 72, 153, 0.6),
-              2px 2px 10px rgba(59, 130, 246, 0.4);
-            filter: brightness(1);
-          }
-          50% { 
-            text-shadow: 
-              0 0 30px rgba(168, 85, 247, 1),
-              0 0 60px rgba(236, 72, 153, 0.8),
-              3px 3px 15px rgba(59, 130, 246, 0.6);
-            filter: brightness(1.3);
-          }
-        }
-
         .logo-text {
-          animation: text-shimmer ${getAnimationDuration(3)} ease-in-out infinite, gradient-shift ${getAnimationDuration(6)} ease infinite;
+          animation: gradient-shift ${getAnimationDuration(6)} ease infinite;
           background: linear-gradient(
             135deg,
             #a855f7 0%,
@@ -612,7 +584,6 @@ function LayoutContent({ children }) {
           -webkit-text-fill-color: transparent;
           background-clip: text;
           font-weight: 900;
-          letter-spacing: -0.5px;
         }
 
         .logo-subtitle {
@@ -646,98 +617,6 @@ function LayoutContent({ children }) {
           text-transform: uppercase;
         }
         `}
-
-        ${themeSettings.particles ? `
-        @keyframes float-particle {
-          0% {
-            transform: translateY(0) translateX(0) scale(0);
-            opacity: 0;
-          }
-          10% {
-            opacity: 0.6;
-            transform: scale(1);
-          }
-          90% {
-            opacity: 0.6;
-          }
-          100% {
-            transform: translateY(-100px) translateX(20px) scale(0);
-            opacity: 0;
-          }
-        }
-
-        .financial-particle {
-          position: absolute;
-          font-size: 12px;
-          color: rgba(168, 85, 247, 0.4);
-          animation: float-particle ${getAnimationDuration(6)} ease-in-out infinite;
-          pointer-events: none;
-          z-index: 1;
-        }
-
-        .financial-particle:nth-child(1) {
-          left: 20%;
-          animation-delay: 0s;
-          top: 100%;
-        }
-
-        .financial-particle:nth-child(2) {
-          left: 50%;
-          animation-delay: ${parseFloat(getAnimationDuration(6)) / 3}s;
-          top: 120%;
-        }
-
-        .financial-particle:nth-child(3) {
-          left: 80%;
-          animation-delay: ${parseFloat(getAnimationDuration(6)) * 2 / 3}s;
-          top: 80%;
-        }
-        ` : ''}
-
-        ${themeSettings.scanLine ? `
-        @keyframes scan-line {
-          0% { top: -100%; }
-          100% { top: 100%; }
-        }
-
-        .scan-line {
-          position: absolute;
-          top: -100%;
-          left: 0;
-          right: 0;
-          height: 2px;
-          background: linear-gradient(
-            to right,
-            transparent,
-            rgba(59, 130, 246, 0.8),
-            transparent
-          );
-          animation: scan-line ${getAnimationDuration(3)} ease-in-out infinite;
-          pointer-events: none;
-          z-index: 20;
-        }
-        ` : ''}
-
-        ${themeSettings.neonBorder ? `
-        .neon-border {
-          position: absolute;
-          inset: -1px;
-          background: linear-gradient(
-            45deg,
-            #a855f7,
-            #ec4899,
-            #3b82f6,
-            #06b6d4,
-            #a855f7
-          );
-          background-size: 400% 400%;
-          border-radius: inherit;
-          opacity: 0.3;
-          filter: blur(8px);
-          animation: gradient-shift ${getAnimationDuration(6)} ease infinite;
-          z-index: -1;
-        }
-        ` : ''}
 
         .logo-header-container {
           position: relative;
@@ -777,20 +656,10 @@ function LayoutContent({ children }) {
         <Sidebar>
           <SidebarHeader className="border-b-2 border-purple-900/50 p-6 relative overflow-hidden logo-header-container">
             
-            {themeSettings.particles && (
-              <>
-                <div className="financial-particle">$</div>
-                <div className="financial-particle">₿</div>
-                <div className="financial-particle">€</div>
-              </>
-            )}
-
             <div className="flex items-center gap-4 relative z-10">
               <div className="logo-container relative">
-                {themeSettings.neonBorder && <div className="neon-border"></div>}
                 {appLogo ? (
                   <div className="w-14 h-14 rounded-xl logo-box relative">
-                    {themeSettings.scanLine && <div className="scan-line"></div>}
                     <img
                       src={appLogo}
                       alt={appName}
@@ -799,7 +668,6 @@ function LayoutContent({ children }) {
                   </div>
                 ) : (
                   <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-600 via-pink-600 to-blue-600 flex items-center justify-center logo-box relative">
-                    {themeSettings.scanLine && <div className="scan-line"></div>}
                     <Sparkles className="w-7 h-7 text-white relative z-10 drop-shadow-[0_0_10px_rgba(255,255,255,0.8)]" />
                   </div>
                 )}
@@ -813,33 +681,10 @@ function LayoutContent({ children }) {
                   <p className="text-[10px] logo-subtitle">
                     FINEX
                   </p>
-                  {themeSettings.pulseDots && (
-                    <div className="flex gap-0.5">
-                      <div className="w-1 h-1 rounded-full bg-purple-500 animate-pulse"></div>
-                      <div className="w-1 h-1 rounded-full bg-pink-500 animate-pulse" style={{ animationDelay: '0.3s' }}></div>
-                      <div className="w-1 h-1 rounded-full bg-cyan-500 animate-pulse" style={{ animationDelay: '0.6s' }}></div>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
-
-            {themeSettings.glowEffects && (
-              <>
-                <div className="absolute -bottom-12 -right-12 w-48 h-48 bg-gradient-to-br from-purple-600/30 via-pink-600/20 to-transparent rounded-full blur-3xl animate-pulse" style={{ animationDuration: getAnimationDuration(4) }}></div>
-                <div className="absolute -top-12 -left-12 w-48 h-48 bg-gradient-to-br from-blue-600/30 via-cyan-600/20 to-transparent rounded-full blur-3xl animate-pulse" style={{ animationDuration: getAnimationDuration(5), animationDelay: '1s' }}></div>
-              </>
-            )}
             
-            {themeSettings.gridBg && (
-              <div className="absolute inset-0 opacity-[0.03]" style={{
-                backgroundImage: `
-                  linear-gradient(rgba(168, 85, 247, 0.5) 1px, transparent 1px),
-                  linear-gradient(90deg, rgba(168, 85, 247, 0.5) 1px, transparent 1px)
-                `,
-                backgroundSize: '20px 20px'
-              }}></div>
-            )}
           </SidebarHeader>
           
           <SidebarContent className="p-4">
@@ -861,17 +706,7 @@ function LayoutContent({ children }) {
                               <item.icon className="w-5 h-5 text-white" />
                             </div>
                             <span className={`font-medium text-sm ${
-                              isActive 
-                                ? theme === 'dark'
-                                  ? 'text-purple-200'
-                                  : theme === 'light'
-                                  ? 'text-indigo-700'
-                                  : theme === 'purple'
-                                  ? 'text-fuchsia-200'
-                                  : theme === 'blue'
-                                  ? 'text-blue-200'
-                                  : 'text-emerald-200'
-                                : 'text-white'
+                              isActive ? 'text-purple-200' : 'text-white'
                             }`}>
                               {item.title}
                             </span>

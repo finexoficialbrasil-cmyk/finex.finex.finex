@@ -3,132 +3,116 @@ import { Bill } from "@/entities/Bill";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowUpCircle, Calendar, X, Eye } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { createPageUrl } from "@/utils";
+import { X, DollarSign, Calendar, TrendingUp } from "lucide-react";
 import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import { motion, AnimatePresence } from "framer-motion";
+import { differenceInDays } from "date-fns";
 
 export default function ReceivablesNotification() {
   const [receivables, setReceivables] = useState([]);
-  const [dismissed, setDismissed] = useState([]);
+  const [dismissedIds, setDismissedIds] = useState([]);
 
   useEffect(() => {
     loadReceivables();
     
-    const interval = setInterval(loadReceivables, 300000);
+    // ✅ Recarregar menos frequentemente (a cada 5 minutos)
+    const interval = setInterval(loadReceivables, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
   const loadReceivables = async () => {
     try {
-      const today = new Date();
-      const in7Days = new Date();
-      in7Days.setDate(today.getDate() + 7);
-
-      const allReceivables = await Bill.filter({ type: "receivable" }, "-due_date");
+      // ✅ OTIMIZADO: Carregar apenas 5 contas a receber
+      const bills = await Bill.filter({ type: "receivable", status: "pending" }, "-due_date", 5);
       
-      const upcomingReceivables = allReceivables.filter(bill => {
-        if (bill.status !== "pending") return false;
-        
-        const dueDate = new Date(bill.due_date);
-        return dueDate >= today && dueDate <= in7Days;
+      const today = new Date();
+      const upcoming = bills.filter(b => {
+        const daysUntil = differenceInDays(new Date(b.due_date), today);
+        return daysUntil >= 0 && daysUntil <= 7;
       });
-
-      setReceivables(upcomingReceivables);
+      
+      setReceivables(upcoming);
+      
+      const stored = localStorage.getItem('dismissed_receivables');
+      if (stored) {
+        setDismissedIds(JSON.parse(stored));
+      }
     } catch (error) {
-      console.error("Erro ao carregar contas a receber:", error);
+      console.error("Erro ao carregar recebíveis:", error);
     }
   };
 
-  const handleDismiss = (billId) => {
-    setDismissed([...dismissed, billId]);
-    localStorage.setItem(`receivable_dismissed_${billId}`, 'true');
+  const handleDismiss = (id) => {
+    const newDismissed = [...dismissedIds, id];
+    setDismissedIds(newDismissed);
+    localStorage.setItem('dismissed_receivables', JSON.stringify(newDismissed));
   };
 
-  const getDaysUntilDue = (dueDate) => {
-    const today = new Date();
-    const due = new Date(dueDate);
-    const diffTime = due - today;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
+  const getDaysUntilColor = (daysUntil) => {
+    if (daysUntil === 0) return 'text-red-400';
+    if (daysUntil <= 2) return 'text-yellow-400';
+    return 'text-green-400';
   };
 
-  const getDueDateColor = (daysUntil) => {
-    if (daysUntil === 0) return "from-orange-600 to-red-600";
-    if (daysUntil <= 2) return "from-yellow-600 to-orange-600";
-    return "from-green-600 to-emerald-600";
+  const getDaysUntilText = (daysUntil) => {
+    if (daysUntil === 0) return 'Vence hoje!';
+    if (daysUntil === 1) return '1 dia';
+    return `${daysUntil} dias`;
   };
 
-  const getDueDateText = (daysUntil) => {
-    if (daysUntil === 0) return "Hoje";
-    if (daysUntil === 1) return "Amanhã";
-    return `${daysUntil}d`;
-  };
+  const activeReceivables = receivables.filter(r => !dismissedIds.includes(r.id));
 
-  const activeReceivables = receivables.filter(bill => {
-    const isDismissed = dismissed.includes(bill.id) || 
-                       localStorage.getItem(`receivable_dismissed_${bill.id}`);
-    return !isDismissed;
-  });
-
-  if (activeReceivables.length === 0) return null;
+  if (activeReceivables.length === 0) {
+    return null;
+  }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3 mb-6">
       <AnimatePresence>
         {activeReceivables.map((bill, index) => {
-          const daysUntil = getDaysUntilDue(bill.due_date);
-          const gradient = getDueDateColor(daysUntil);
-          const dueDateText = getDueDateText(daysUntil);
-
+          const daysUntil = differenceInDays(new Date(bill.due_date), new Date());
+          
           return (
             <motion.div
               key={bill.id}
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -50 }}
-              transition={{ delay: index * 0.1 }}
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, x: 100 }}
+              transition={{ delay: index * 0.05 }}
             >
-              <Card className={`border-l-4 ${
-                daysUntil === 0 ? "border-red-500 bg-red-900/10" :
-                daysUntil <= 2 ? "border-yellow-500 bg-yellow-900/10" :
-                "border-green-500 bg-green-900/10"
-              } glass-card`}>
+              <Card className="glass-card border-0 border-l-4 border-green-500 bg-green-900/10">
                 <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className={`p-3 rounded-full bg-gradient-to-br ${gradient}`}>
-                        <ArrowUpCircle className="w-6 h-6 text-white" />
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-start gap-4 flex-1">
+                      <div className="p-3 rounded-full bg-green-600/20">
+                        <TrendingUp className="w-6 h-6 text-green-400" />
                       </div>
-                      <div>
-                        <p className="font-bold text-white">{bill.description}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <p className="text-sm text-purple-300">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-white mb-1">{bill.description}</p>
+                        <div className="flex flex-wrap items-center gap-3 text-sm">
+                          <span className="text-green-300 font-bold">
                             R$ {bill.amount.toFixed(2)}
-                          </p>
-                          <Badge className={`${
-                            daysUntil === 0 ? "bg-red-600/20 text-red-400 border-red-600/40" :
-                            daysUntil <= 2 ? "bg-yellow-600/20 text-yellow-400 border-yellow-600/40" :
-                            "bg-green-600/20 text-green-400 border-green-600/40"
-                          }`}>
-                            <Calendar className="w-3 h-3 mr-1" />
-                            Vence: {dueDateText}
-                          </Badge>
+                          </span>
+                          <span className="text-purple-400">•</span>
+                          <span className={getDaysUntilColor(daysUntil)}>
+                            <Calendar className="w-3 h-3 inline mr-1" />
+                            {getDaysUntilText(daysUntil)}
+                          </span>
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex gap-2 flex-shrink-0">
                       <Link to={createPageUrl("Receivables")}>
-                        <Button variant="outline" size="sm" className="border-purple-700 text-purple-300 hover:bg-purple-900/20">
-                          <Eye className="w-4 h-4 mr-1" />
-                          Ver
+                        <Button size="sm" variant="outline" className="border-green-700 text-green-300">
+                          Ver Todas
                         </Button>
                       </Link>
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => handleDismiss(bill.id)}
-                        className="text-gray-400 hover:bg-gray-900/20"
+                        className="text-purple-400 hover:text-white h-8 w-8"
                       >
                         <X className="w-4 h-4" />
                       </Button>

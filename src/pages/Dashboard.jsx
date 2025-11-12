@@ -54,38 +54,56 @@ export default function Dashboard() {
   }, []);
 
   const loadData = useCallback(async () => {
+    const startTime = performance.now();
     setIsLoading(true);
     setHasError(false);
+    
     try {
-      console.log("🔄 Carregando dados do Dashboard...");
+      console.log("⚡ Dashboard - Início do carregamento...");
       
-      // ✅ OTIMIZADO: Carregar com LIMITES menores
-      const [userData, txs, accs, cats, gls, billsData] = await Promise.all([
+      // ✅ SUPER OTIMIZADO: Só o essencial, limites mínimos
+      const [userData, txs, accs] = await Promise.all([
         User.me(),
-        Transaction.list("-created_date", 10), // ✅ REDUZIDO: 30 → 10
-        Account.list("-created_date", 10), // ✅ REDUZIDO: 20 → 10
-        Category.list("-created_date", 20), // ✅ REDUZIDO: 50 → 20
-        Goal.list("-created_date", 5), // ✅ REDUZIDO: 10 → 5
-        Bill.list("-due_date", 10) // ✅ REDUZIDO: 15 → 10
+        Transaction.list("-created_date", 5), // ✅ MÍNIMO: apenas 5 para o dashboard
+        Account.list("-created_date", 5) // ✅ MÍNIMO: apenas 5 contas
       ]);
       
-      console.log(`✅ Dashboard carregou: ${txs.length} transações, ${accs.length} contas`);
+      const loadTime = performance.now() - startTime;
+      console.log(`⚡ Dashboard - Dados principais carregados em ${loadTime.toFixed(0)}ms`);
       
       setUser(userData);
       setTransactions(txs);
       setAccounts(accs);
-      setCategories(cats);
-      setGoals(gls);
-      setBills(billsData);
+      setIsLoading(false);
+      
+      // ✅ Carregar resto em background (não bloqueia UI)
+      loadSecondaryData();
+      
     } catch (error) {
       console.error("❌ Erro ao carregar dados:", error);
       setHasError(true);
-    } finally {
       setIsLoading(false);
     }
   }, []);
 
-  // ✅ OTIMIZADO: Remover logs excessivos
+  const loadSecondaryData = async () => {
+    try {
+      console.log("🔄 Carregando dados secundários...");
+      const [cats, gls, billsData] = await Promise.all([
+        Category.list("-created_date", 15), // Reduzido
+        Goal.list("-created_date", 3), // Reduzido
+        Bill.list("-due_date", 5) // Reduzido
+      ]);
+      
+      setCategories(cats);
+      setGoals(gls);
+      setBills(billsData);
+      console.log("✅ Dados secundários carregados");
+    } catch (error) {
+      console.error("⚠️ Erro ao carregar dados secundários (não crítico):", error);
+    }
+  };
+
   const stats = useMemo(() => {
     const now = new Date();
     const currentMonth = now.getMonth();
@@ -268,7 +286,7 @@ export default function Dashboard() {
           </motion.div>
         )}
 
-        <React.Suspense fallback={<div className="text-purple-300 text-center">Carregando...</div>}>
+        <React.Suspense fallback={null}>
           <ReceivablesNotification />
           <SystemNotifications />
         </React.Suspense>
@@ -280,7 +298,7 @@ export default function Dashboard() {
                 key={index}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
+                transition={{ delay: index * 0.05 }}
               >
                 <Card className={`border-l-4 ${
                   alert.type === "error" ? "border-red-500 bg-red-900/10" :
@@ -319,10 +337,9 @@ export default function Dashboard() {
           </div>
         )}
 
-        <React.Suspense fallback={<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[1,2,3,4].map(i => <div key={i} className="h-32 bg-purple-900/20 animate-pulse rounded-lg" />)}
-        </div>}>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Stats Cards - Renderiza imediatamente com dados disponíveis */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <React.Suspense fallback={<div className="h-32 bg-purple-900/20 animate-pulse rounded-lg" />}>
             <StatsCard
               title="Saldo Total"
               value={`R$ ${stats.balance.toFixed(2)}`}
@@ -330,6 +347,8 @@ export default function Dashboard() {
               gradient="from-purple-600 to-purple-400"
               trend="+5.2%"
             />
+          </React.Suspense>
+          <React.Suspense fallback={<div className="h-32 bg-purple-900/20 animate-pulse rounded-lg" />}>
             <StatsCard
               title="Entradas do Mês"
               value={`R$ ${stats.totalIncome.toFixed(2)}`}
@@ -337,6 +356,8 @@ export default function Dashboard() {
               gradient="from-green-600 to-emerald-400"
               trend="+12.3%"
             />
+          </React.Suspense>
+          <React.Suspense fallback={<div className="h-32 bg-purple-900/20 animate-pulse rounded-lg" />}>
             <StatsCard
               title="Saídas do Mês"
               value={`R$ ${stats.totalExpense.toFixed(2)}`}
@@ -344,6 +365,8 @@ export default function Dashboard() {
               gradient="from-red-600 to-pink-400"
               trend="-3.1%"
             />
+          </React.Suspense>
+          <React.Suspense fallback={<div className="h-32 bg-purple-900/20 animate-pulse rounded-lg" />}>
             <StatsCard
               title="Economia"
               value={`R$ ${(stats.totalIncome - stats.totalExpense).toFixed(2)}`}
@@ -351,8 +374,8 @@ export default function Dashboard() {
               gradient="from-cyan-600 to-blue-400"
               trend="+8.7%"
             />
-          </div>
-        </React.Suspense>
+          </React.Suspense>
+        </div>
 
         <Card className="glass-card border-0 neon-glow">
           <CardHeader className="border-b border-purple-900/30">
@@ -362,35 +385,42 @@ export default function Dashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {accounts.map((acc, index) => (
-                <motion.div
-                  key={acc.id}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="p-4 rounded-xl glass-card border border-purple-700/30"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-purple-300 text-sm">{acc.name}</p>
-                      <p className="text-xl font-bold text-white mt-1">
-                        R$ {acc.balance.toFixed(2)}
-                      </p>
+            {accounts.length === 0 ? (
+              <div className="text-center py-8 text-purple-300">
+                <Wallet className="w-12 h-12 mx-auto mb-3 text-purple-400" />
+                <p>Nenhuma conta cadastrada</p>
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {accounts.map((acc, index) => (
+                  <motion.div
+                    key={acc.id}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: index * 0.03 }}
+                    className="p-4 rounded-xl glass-card border border-purple-700/30"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-purple-300 text-sm">{acc.name}</p>
+                        <p className="text-xl font-bold text-white mt-1">
+                          R$ {acc.balance.toFixed(2)}
+                        </p>
+                      </div>
+                      <div className={`p-2 rounded-full ${
+                        acc.balance >= 0 ? "bg-green-600/20" : "bg-red-600/20"
+                      }`}>
+                        {acc.balance >= 0 ? (
+                          <CheckCircle className="w-5 h-5 text-green-400" />
+                        ) : (
+                          <AlertTriangle className="w-5 h-5 text-red-400" />
+                        )}
+                      </div>
                     </div>
-                    <div className={`p-2 rounded-full ${
-                      acc.balance >= 0 ? "bg-green-600/20" : "bg-red-600/20"
-                    }`}>
-                      {acc.balance >= 0 ? (
-                        <CheckCircle className="w-5 h-5 text-green-400" />
-                      ) : (
-                        <AlertTriangle className="w-5 h-5 text-red-400" />
-                      )}
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
