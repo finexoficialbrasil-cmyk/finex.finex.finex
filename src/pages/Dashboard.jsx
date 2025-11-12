@@ -387,25 +387,25 @@ export default function Dashboard() {
           </React.Suspense>
         </div>
 
-        {/* ✅ CARTEIRAS COMPACTAS */}
+        {/* ✅ CARTEIRAS SUPER COMPACTAS */}
         <Card className="glass-card border-0 neon-glow overflow-hidden">
-          <CardContent className="p-4">
+          <CardContent className="p-3">
             {accounts.length === 0 ? (
-              <div className="text-center py-8">
-                <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-purple-900/30 flex items-center justify-center">
-                  <Wallet className="w-8 h-8 text-purple-400" />
+              <div className="text-center py-6">
+                <div className="w-12 h-12 mx-auto mb-2 rounded-full bg-purple-900/30 flex items-center justify-center">
+                  <Wallet className="w-6 h-6 text-purple-400" />
                 </div>
-                <p className="text-purple-300 text-base mb-1">Nenhuma carteira cadastrada</p>
-                <p className="text-purple-400 text-sm mb-4">Crie sua primeira carteira para começar!</p>
+                <p className="text-purple-300 text-sm mb-1">Nenhuma carteira cadastrada</p>
+                <p className="text-purple-400 text-xs mb-3">Crie sua primeira carteira!</p>
                 <Link to={createPageUrl("Accounts")}>
-                  <Button className="bg-gradient-to-r from-purple-600 to-pink-600">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Criar Primeira Carteira
+                  <Button size="sm" className="bg-gradient-to-r from-purple-600 to-pink-600">
+                    <Plus className="w-3 h-3 mr-1" />
+                    Criar
                   </Button>
                 </Link>
               </div>
             ) : (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
                 {accounts.map((acc, index) => {
                   const isPositive = acc.balance >= 0;
                   
@@ -414,73 +414,73 @@ export default function Dashboard() {
                       <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: index * 0.03 }}
-                        whileHover={{ scale: 1.05, y: -2 }}
+                        transition={{ delay: index * 0.02 }}
+                        whileHover={{ scale: 1.03, y: -1 }}
                         className="group relative overflow-hidden cursor-pointer"
                       >
                         <div 
-                          className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-300"
+                          className="absolute inset-0 opacity-0 group-hover:opacity-15 transition-opacity duration-300"
                           style={{ background: `linear-gradient(135deg, ${acc.color || '#a855f7'}40, ${acc.color || '#a855f7'}10)` }}
                         />
                         
-                        <div className="relative p-4 rounded-xl glass-card border border-purple-700/30 group-hover:border-purple-600/60 transition-all duration-300">
-                          <div className="flex items-start justify-between mb-3">
+                        <div className="relative p-2.5 rounded-lg glass-card border border-purple-700/30 group-hover:border-purple-600/60 transition-all duration-300">
+                          <div className="flex items-start justify-between mb-2">
                             <div 
-                              className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300 overflow-hidden"
+                              className="w-9 h-9 rounded-lg flex items-center justify-center shadow group-hover:scale-110 transition-transform duration-300 overflow-hidden flex-shrink-0"
                               style={{ 
                                 backgroundColor: (acc.color || '#a855f7') + '20',
-                                border: `2px solid ${acc.color || '#a855f7'}60`
+                                border: `1.5px solid ${acc.color || '#a855f7'}60`
                               }}
                             >
                               {acc.logo_url ? (
                                 <img 
                                   src={acc.logo_url} 
                                   alt={acc.name}
-                                  className="w-full h-full object-contain p-1"
+                                  className="w-full h-full object-contain p-0.5"
                                   onError={(e) => {
                                     if (e.target && e.target.parentElement) {
-                                      e.target.parentElement.innerHTML = `<span class="text-3xl">${acc.icon || '🏦'}</span>`;
+                                      e.target.parentElement.innerHTML = `<span class="text-xl">${acc.icon || '🏦'}</span>`;
                                     }
                                   }}
                                 />
                               ) : (
-                                <span className="text-3xl">{acc.icon || '🏦'}</span>
+                                <span className="text-xl">{acc.icon || '🏦'}</span>
                               )}
                             </div>
                             
-                            <div className="p-1.5 rounded-lg bg-green-600/20">
+                            <div className="p-1 rounded bg-green-600/20">
                               {isPositive ? (
-                                <TrendingUp className="w-3.5 h-3.5 text-green-400" />
+                                <TrendingUp className="w-2.5 h-2.5 text-green-400" />
                               ) : (
-                                <TrendingDown className="w-3.5 h-3.5 text-red-400" />
+                                <TrendingDown className="w-2.5 h-2.5 text-red-400" />
                               )}
                             </div>
                           </div>
 
-                          <h4 className="text-white font-bold text-sm mb-0.5 truncate group-hover:text-purple-200 transition-colors">
+                          <h4 className="text-white font-bold text-xs mb-0.5 truncate group-hover:text-purple-200 transition-colors">
                             {acc.name}
                           </h4>
                           
                           {acc.bank_name && (
-                            <p className="text-purple-400 text-xs mb-2 truncate">
+                            <p className="text-purple-400 text-[10px] mb-1.5 truncate">
                               {acc.bank_name}
                             </p>
                           )}
 
-                          <div className="mb-2">
-                            <p className={`text-xl font-bold ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+                          <div className="mb-1.5">
+                            <p className={`text-base font-bold ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
                               R$ {Math.abs(acc.balance).toFixed(2)}
                             </p>
                           </div>
 
-                          <div className="flex items-center justify-between pt-2 border-t border-purple-700/30">
-                            <div className="flex items-center gap-1.5">
-                              <div className={`w-1.5 h-1.5 rounded-full ${isPositive ? 'bg-green-400' : 'bg-red-400'} animate-pulse`} />
-                              <span className={`${isPositive ? 'text-green-400' : 'text-red-400'} text-xs font-medium`}>
-                                {isPositive ? 'Saudável' : 'Atenção'}
+                          <div className="flex items-center justify-between pt-1.5 border-t border-purple-700/30">
+                            <div className="flex items-center gap-1">
+                              <div className={`w-1 h-1 rounded-full ${isPositive ? 'bg-green-400' : 'bg-red-400'} animate-pulse`} />
+                              <span className={`${isPositive ? 'text-green-400' : 'text-red-400'} text-[10px] font-medium`}>
+                                {isPositive ? 'OK' : 'Atenção'}
                               </span>
                             </div>
-                            <ChevronRight className="w-4 h-4 text-purple-400 group-hover:text-purple-300 group-hover:translate-x-1 transition-all" />
+                            <ChevronRight className="w-3 h-3 text-purple-400 group-hover:text-purple-300 group-hover:translate-x-0.5 transition-all" />
                           </div>
                         </div>
                       </motion.div>
@@ -488,24 +488,24 @@ export default function Dashboard() {
                   );
                 })}
 
-                {/* Card para adicionar nova conta - COMPACTO */}
+                {/* Card para adicionar nova conta - SUPER COMPACTO */}
                 <Link to={createPageUrl("Accounts")}>
                   <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: accounts.length * 0.03 }}
-                    whileHover={{ scale: 1.05, y: -2 }}
-                    className="group relative overflow-hidden cursor-pointer h-full min-h-[140px]"
+                    transition={{ delay: accounts.length * 0.02 }}
+                    whileHover={{ scale: 1.03, y: -1 }}
+                    className="group relative overflow-hidden cursor-pointer h-full min-h-[110px]"
                   >
                     <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 to-pink-600/10 group-hover:from-purple-600/20 group-hover:to-pink-600/20 transition-all duration-300" />
                     
-                    <div className="relative h-full p-4 rounded-xl glass-card border-2 border-dashed border-purple-700/40 group-hover:border-purple-600/70 transition-all duration-300 flex flex-col items-center justify-center gap-2">
-                      <div className="p-3 rounded-xl bg-gradient-to-br from-purple-600/20 to-pink-600/20 group-hover:from-purple-600/30 group-hover:to-pink-600/30 transition-all">
-                        <Plus className="w-6 h-6 text-purple-400 group-hover:text-purple-300 transition-colors" />
+                    <div className="relative h-full p-2.5 rounded-lg glass-card border-2 border-dashed border-purple-700/40 group-hover:border-purple-600/70 transition-all duration-300 flex flex-col items-center justify-center gap-1.5">
+                      <div className="p-2 rounded-lg bg-gradient-to-br from-purple-600/20 to-pink-600/20 group-hover:from-purple-600/30 group-hover:to-pink-600/30 transition-all">
+                        <Plus className="w-4 h-4 text-purple-400 group-hover:text-purple-300 transition-colors" />
                       </div>
                       <div className="text-center">
-                        <p className="text-white font-bold text-sm mb-0.5">Adicionar</p>
-                        <p className="text-purple-400 text-xs">Nova carteira</p>
+                        <p className="text-white font-bold text-xs mb-0.5">Adicionar</p>
+                        <p className="text-purple-400 text-[10px]">Nova carteira</p>
                       </div>
                     </div>
                   </motion.div>
