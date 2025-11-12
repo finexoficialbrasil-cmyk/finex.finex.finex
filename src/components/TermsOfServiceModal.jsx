@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { User } from "@/entities/User";
+import { TermsOfService } from "@/entities/TermsOfService";
 import { base44 } from "@/api/base44Client";
 import {
   Dialog,
@@ -28,7 +29,6 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
   const loadTerms = async () => {
     try {
       console.log("📋 TermsModal: Carregando termos...");
-      const { TermsOfService } = await import("@/entities/TermsOfService");
       const allTerms = await TermsOfService.list("-created_date", 10);
       console.log("📋 TermsModal: Total de termos encontrados:", allTerms.length);
       

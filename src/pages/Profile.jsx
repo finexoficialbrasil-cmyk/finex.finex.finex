@@ -1,5 +1,7 @@
+
 import React, { useState, useEffect } from "react";
 import { User } from "@/entities/User";
+import { TermsOfService } from "@/entities/TermsOfService"; // Moved import to top
 import { base44 } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -86,7 +88,7 @@ export default function Profile() {
 
   const loadActiveTerms = async () => {
     try {
-      const { TermsOfService } = await import("@/entities/TermsOfService");
+      // const { TermsOfService } = await import("@/entities/TermsOfService"); // Removed dynamic import
       const allTerms = await TermsOfService.list("-created_date", 10);
       const activeTerms = allTerms.find(t => t.is_active);
       
