@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { Transaction, Account, Category, Goal, Bill } from "@/entities/all";
-import { User } from "@/entities/User";
+import { base44 } from "@/api/base44Client";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -36,56 +36,77 @@ const ReceivablesNotification = React.lazy(() => import("../components/Receivabl
 
 export default function Dashboard() {
   const [user, setUser] = useState(null);
-  const [transactions, setTransactions] = useState([]);
-  const [accounts, setAccounts] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [goals, setGoals] = useState([]);
-  const [bills, setBills] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
-
+  
   useEffect(() => {
-    loadData();
-    updatePageTitle();
-  }, []);
-
-  const updatePageTitle = useCallback(() => {
+    loadUser();
     document.title = "Dashboard - FINEX";
   }, []);
 
-  const loadData = useCallback(async () => {
-    setIsLoading(true);
-    setHasError(false);
+  const loadUser = async () => {
     try {
-      console.log("🔄 Carregando dados do Dashboard...");
-      
-      // ✅ OTIMIZADO: Carregar com LIMITES menores
-      const [userData, txs, accs, cats, gls, billsData] = await Promise.all([
-        User.me(),
-        Transaction.list("-created_date", 10), // ✅ REDUZIDO: 30 → 10
-        Account.list("-created_date", 10), // ✅ REDUZIDO: 20 → 10
-        Category.list("-created_date", 20), // ✅ REDUZIDO: 50 → 20
-        Goal.list("-created_date", 5), // ✅ REDUZIDO: 10 → 5
-        Bill.list("-due_date", 10) // ✅ REDUZIDO: 15 → 10
-      ]);
-      
-      console.log(`✅ Dashboard carregou: ${txs.length} transações, ${accs.length} contas`);
-      
+      const userData = await base44.auth.me();
       setUser(userData);
-      setTransactions(txs);
-      setAccounts(accs);
-      setCategories(cats);
-      setGoals(gls);
-      setBills(billsData);
     } catch (error) {
-      console.error("❌ Erro ao carregar dados:", error);
+      console.error("❌ Erro ao carregar usuário:", error);
       setHasError(true);
-    } finally {
-      setIsLoading(false);
     }
-  }, []);
+  };
 
-  // ✅ OTIMIZADO: Remover logs excessivos
+  // ✅ OTIMIZADO: React Query com cache automático
+  const { data: transactions = [], isLoading: loadingTx } = useQuery({
+    queryKey: ['dashboard-transactions'],
+    queryFn: async () => {
+      const { Transaction } = await import("@/entities/Transaction");
+      return Transaction.list("-created_date", 10); // ✅ Apenas 10 mais recentes
+    },
+    staleTime: 1000 * 60 * 5, // ✅ Cache por 5 minutos
+    enabled: !!user
+  });
+
+  const { data: accounts = [], isLoading: loadingAcc } = useQuery({
+    queryKey: ['dashboard-accounts'],
+    queryFn: async () => {
+      const { Account } = await import("@/entities/Account");
+      return Account.list("-created_date", 5); // ✅ Apenas 5 contas
+    },
+    staleTime: 1000 * 60 * 5,
+    enabled: !!user
+  });
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ['dashboard-categories'],
+    queryFn: async () => {
+      const { Category } = await import("@/entities/Category");
+      return Category.list("-created_date", 20);
+    },
+    staleTime: 1000 * 60 * 10, // ✅ Cache por 10 min (muda pouco)
+    enabled: !!user
+  });
+
+  const { data: goals = [] } = useQuery({
+    queryKey: ['dashboard-goals'],
+    queryFn: async () => {
+      const { Goal } = await import("@/entities/Goal");
+      return Goal.list("-created_date", 3); // ✅ Apenas 3 metas
+    },
+    staleTime: 1000 * 60 * 5,
+    enabled: !!user
+  });
+
+  const { data: bills = [] } = useQuery({
+    queryKey: ['dashboard-bills'],
+    queryFn: async () => {
+      const { Bill } = await import("@/entities/Bill");
+      return Bill.list("-due_date", 5); // ✅ Apenas 5 contas próximas
+    },
+    staleTime: 1000 * 60 * 5,
+    enabled: !!user
+  });
+
+  const isLoading = loadingTx || loadingAcc;
+
+  // ✅ OTIMIZADO: Cálculos memoizados
   const stats = useMemo(() => {
     const now = new Date();
     const currentMonth = now.getMonth();
@@ -93,12 +114,10 @@ export default function Dashboard() {
 
     const monthTransactions = transactions.filter(t => {
       if (!t.date) return false;
-      
       const txDate = new Date(t.date);
-      const txMonth = txDate.getMonth();
-      const txYear = txDate.getFullYear();
-      
-      return txMonth === currentMonth && txYear === currentYear && t.status === "completed";
+      return txDate.getMonth() === currentMonth && 
+             txDate.getFullYear() === currentYear && 
+             t.status === "completed";
     });
 
     const totalIncome = monthTransactions
@@ -111,7 +130,7 @@ export default function Dashboard() {
 
     const balance = accounts.reduce((sum, acc) => sum + (acc.balance || 0), 0);
 
-    return { totalIncome, totalExpense, balance, monthTransactions };
+    return { totalIncome, totalExpense, balance };
   }, [transactions, accounts]);
 
   const alerts = useMemo(() => {
@@ -150,25 +169,8 @@ export default function Dashboard() {
       });
     }
 
-    const inactiveGoals = goals.filter(g => {
-      if (g.status !== "active") return false;
-      const lastUpdate = new Date(g.updated_date || g.created_date);
-      return differenceInDays(today, lastUpdate) > 30;
-    });
-    
-    if (inactiveGoals.length > 0) {
-      alertsList.push({
-        type: "info",
-        icon: Target,
-        title: `${inactiveGoals.length} meta(s) sem atualização`,
-        message: "Algumas metas estão há mais de 30 dias sem progresso",
-        action: "Ver Metas",
-        link: createPageUrl("Goals")
-      });
-    }
-
     return alertsList;
-  }, [bills, goals]);
+  }, [bills]);
 
   if (hasError) {
     return (
@@ -178,13 +180,10 @@ export default function Dashboard() {
             <AlertTriangle className="w-16 h-16 text-red-400 mx-auto mb-4" />
             <h2 className="text-xl font-bold text-white mb-2">Erro ao Carregar</h2>
             <p className="text-purple-300 mb-4">
-              Não foi possível carregar os dados. Verifique sua conexão.
+              Não foi possível carregar os dados.
             </p>
-            <Button
-              onClick={loadData}
-              className="bg-gradient-to-r from-purple-600 to-pink-600"
-            >
-              Tentar Novamente
+            <Button onClick={() => window.location.reload()} className="bg-gradient-to-r from-purple-600 to-pink-600">
+              Recarregar
             </Button>
           </CardContent>
         </Card>
@@ -239,30 +238,17 @@ export default function Dashboard() {
                       🚀 Bem-vindo ao FINEX!
                     </h2>
                     <p className="text-yellow-200 text-base md:text-lg mb-4">
-                      Para começar a usar todas as funcionalidades e ter controle total das suas finanças, 
-                      <strong className="text-yellow-300"> escolha um plano agora</strong>!
+                      Escolha um plano para começar!
                     </p>
                     
-                    <div className="flex flex-col sm:flex-row gap-3">
-                      <Link to={createPageUrl("Plans")} className="flex-1 sm:flex-initial">
-                        <Button className="w-full bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 hover:from-yellow-600 hover:via-orange-600 hover:to-red-600 text-white font-bold shadow-lg shadow-yellow-500/30 text-base">
-                          <Crown className="w-5 h-5 mr-2" />
-                          Ver Planos Premium
-                        </Button>
-                      </Link>
-                      
-                      <Link to={createPageUrl("Plans")} className="flex-1 sm:flex-initial">
-                        <Button variant="outline" className="w-full border-yellow-600/50 text-yellow-300 hover:bg-yellow-600/10">
-                          <Sparkles className="w-4 h-4 mr-2" />
-                          Ver Recursos
-                        </Button>
-                      </Link>
-                    </div>
+                    <Link to={createPageUrl("Plans")}>
+                      <Button className="bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 hover:from-yellow-600 hover:via-orange-600 hover:to-red-600 text-white font-bold">
+                        <Crown className="w-5 h-5 mr-2" />
+                        Ver Planos
+                      </Button>
+                    </Link>
                   </div>
                 </div>
-                
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-yellow-500/20 to-orange-500/20 rounded-full blur-3xl" />
-                <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-br from-red-500/20 to-pink-500/20 rounded-full blur-3xl" />
               </CardContent>
             </Card>
           </motion.div>
@@ -284,21 +270,16 @@ export default function Dashboard() {
               >
                 <Card className={`border-l-4 ${
                   alert.type === "error" ? "border-red-500 bg-red-900/10" :
-                  alert.type === "warning" ? "border-yellow-500 bg-yellow-900/10" :
-                  "border-blue-500 bg-blue-900/10"
+                  "border-yellow-500 bg-yellow-900/10"
                 } glass-card`}>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
                         <div className={`p-3 rounded-full ${
-                          alert.type === "error" ? "bg-red-600/20" :
-                          alert.type === "warning" ? "bg-yellow-600/20" :
-                          "bg-blue-600/20"
+                          alert.type === "error" ? "bg-red-600/20" : "bg-yellow-600/20"
                         }`}>
                           <alert.icon className={`w-6 h-6 ${
-                            alert.type === "error" ? "text-red-400" :
-                            alert.type === "warning" ? "text-yellow-400" :
-                            "text-blue-400"
+                            alert.type === "error" ? "text-red-400" : "text-yellow-400"
                           }`} />
                         </div>
                         <div>
@@ -328,28 +309,24 @@ export default function Dashboard() {
               value={`R$ ${stats.balance.toFixed(2)}`}
               icon={Wallet}
               gradient="from-purple-600 to-purple-400"
-              trend="+5.2%"
             />
             <StatsCard
               title="Entradas do Mês"
               value={`R$ ${stats.totalIncome.toFixed(2)}`}
               icon={ArrowUpRight}
               gradient="from-green-600 to-emerald-400"
-              trend="+12.3%"
             />
             <StatsCard
               title="Saídas do Mês"
               value={`R$ ${stats.totalExpense.toFixed(2)}`}
               icon={ArrowDownRight}
               gradient="from-red-600 to-pink-400"
-              trend="-3.1%"
             />
             <StatsCard
               title="Economia"
               value={`R$ ${(stats.totalIncome - stats.totalExpense).toFixed(2)}`}
               icon={Target}
               gradient="from-cyan-600 to-blue-400"
-              trend="+8.7%"
             />
           </div>
         </React.Suspense>
@@ -362,35 +339,43 @@ export default function Dashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {accounts.map((acc, index) => (
-                <motion.div
-                  key={acc.id}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="p-4 rounded-xl glass-card border border-purple-700/30"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-purple-300 text-sm">{acc.name}</p>
-                      <p className="text-xl font-bold text-white mt-1">
-                        R$ {acc.balance.toFixed(2)}
-                      </p>
+            {isLoading ? (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[1,2,3].map(i => (
+                  <div key={i} className="h-20 bg-purple-900/20 animate-pulse rounded-lg" />
+                ))}
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {accounts.map((acc, index) => (
+                  <motion.div
+                    key={acc.id}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="p-4 rounded-xl glass-card border border-purple-700/30"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-purple-300 text-sm">{acc.name}</p>
+                        <p className="text-xl font-bold text-white mt-1">
+                          R$ {acc.balance.toFixed(2)}
+                        </p>
+                      </div>
+                      <div className={`p-2 rounded-full ${
+                        acc.balance >= 0 ? "bg-green-600/20" : "bg-red-600/20"
+                      }`}>
+                        {acc.balance >= 0 ? (
+                          <CheckCircle className="w-5 h-5 text-green-400" />
+                        ) : (
+                          <AlertTriangle className="w-5 h-5 text-red-400" />
+                        )}
+                      </div>
                     </div>
-                    <div className={`p-2 rounded-full ${
-                      acc.balance >= 0 ? "bg-green-600/20" : "bg-red-600/20"
-                    }`}>
-                      {acc.balance >= 0 ? (
-                        <CheckCircle className="w-5 h-5 text-green-400" />
-                      ) : (
-                        <AlertTriangle className="w-5 h-5 text-red-400" />
-                      )}
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -423,7 +408,7 @@ export default function Dashboard() {
       </div>
 
       <React.Suspense fallback={null}>
-        <VoiceAssistant onSuccess={loadData} />
+        <VoiceAssistant />
       </React.Suspense>
     </div>
   );
