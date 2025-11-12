@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Shield, Users, Crown, Video, Tags, Bell, Settings, Database, DollarSign, Smartphone, Zap, FileText, Loader2, Mail } from "lucide-react";
+import { Shield, Users, Crown, Video, Tags, Bell, Settings, Database, DollarSign, Smartphone, Zap, FileText, Loader2, Mail, Clock } from "lucide-react";
 
 // ✅ Lazy loading dos componentes admin
 const AdminDashboard = React.lazy(() => import("../components/admin/AdminDashboard"));
@@ -21,6 +21,7 @@ const AdminWebhookLogs = React.lazy(() => import("../components/admin/AdminWebho
 const AdminBackup = React.lazy(() => import("../components/admin/AdminBackup"));
 const AdminUserReport = React.lazy(() => import("../components/admin/AdminUserReport"));
 const AdminEmailLogs = React.lazy(() => import("../components/admin/AdminEmailLogs")); // ✅ NOVO
+const AdminCronJobs = React.lazy(() => import("../components/admin/AdminCronJobs")); // ✅ NOVO
 
 // ✅ Loading fallback
 const TabLoading = () => (
@@ -168,7 +169,7 @@ export default function Admin() {
 
         <Card className="glass-card border-0 neon-glow">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="bg-purple-900/20 w-full grid grid-cols-2 md:grid-cols-4 lg:grid-cols-10 gap-2 p-2">
+            <TabsList className="bg-purple-900/20 w-full grid grid-cols-2 md:grid-cols-4 lg:grid-cols-11 gap-2 p-2">
               <TabsTrigger value="dashboard" className="flex items-center gap-2">
                 <Shield className="w-4 h-4" />
                 <span className="hidden md:inline">Dashboard</span>
@@ -188,6 +189,10 @@ export default function Admin() {
               <TabsTrigger value="subscriptions" className="flex items-center gap-2">
                 <DollarSign className="w-4 h-4" />
                 <span className="hidden md:inline">Assinaturas</span>
+              </TabsTrigger>
+              <TabsTrigger value="cron" className="flex items-center gap-2">
+                <Clock className="w-4 h-4" />
+                <span className="hidden md:inline">Automação</span>
               </TabsTrigger>
               <TabsTrigger value="emails" className="flex items-center gap-2">
                 <Mail className="w-4 h-4" />
@@ -231,6 +236,9 @@ export default function Admin() {
                 </TabsContent>
                 <TabsContent value="subscriptions">
                   <AdminSubscriptions />
+                </TabsContent>
+                <TabsContent value="cron">
+                  <AdminCronJobs />
                 </TabsContent>
                 <TabsContent value="emails">
                   <AdminEmailLogs />
