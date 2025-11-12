@@ -196,6 +196,10 @@ export default function Dashboard() {
     return alertsList;
   }, [bills, goals]);
 
+  const isUrlImage = (icon) => {
+    return icon && (icon.startsWith('http://') || icon.startsWith('https://'));
+  };
+
   if (hasError) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#0a0a0f] via-[#1a1a2e] to-[#0a0a0f] flex items-center justify-center p-4">
@@ -385,7 +389,7 @@ export default function Dashboard() {
           </React.Suspense>
         </div>
 
-        {/* ✅ SEÇÃO MINHAS CARTEIRAS - COM ÍCONES DE BANCOS */}
+        {/* ✅ CARTEIRAS COM LOGOS OFICIAIS DOS BANCOS */}
         <Card className="glass-card border-0 neon-glow overflow-hidden">
           <CardHeader className="border-b border-purple-900/30 bg-gradient-to-r from-purple-900/30 to-pink-900/20">
             <div className="flex items-center justify-between">
@@ -431,6 +435,7 @@ export default function Dashboard() {
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {accounts.map((acc, index) => {
                   const isPositive = acc.balance >= 0;
+                  const isImage = isUrlImage(acc.icon);
                   
                   return (
                     <Link key={acc.id} to={createPageUrl("Accounts")}>
@@ -454,21 +459,32 @@ export default function Dashboard() {
                         />
                         
                         <div className="relative p-5 rounded-xl glass-card border border-purple-700/30 group-hover:border-purple-600/60 transition-all duration-300">
-                          {/* Header com ícone do banco */}
+                          {/* Header com logo do banco */}
                           <div className="flex items-center justify-between mb-4">
                             <div 
-                              className="w-16 h-16 rounded-2xl flex items-center justify-center text-4xl shadow-xl relative overflow-hidden"
+                              className="w-20 h-20 rounded-2xl flex items-center justify-center p-3 bg-white/95 shadow-2xl relative overflow-hidden group-hover:scale-110 transition-transform duration-300"
                               style={{ 
-                                backgroundColor: acc.color + '30',
-                                border: `2px solid ${acc.color}60`
+                                border: `3px solid ${acc.color}60`
                               }}
                             >
-                              {/* Brilho interno */}
-                              <div 
-                                className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"
-                              />
-                              <span className="relative z-10">{acc.icon}</span>
+                              {/* Brilho interno sutil */}
+                              <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent" />
+                              
+                              {isImage ? (
+                                <img 
+                                  src={acc.icon} 
+                                  alt={acc.name}
+                                  className="w-full h-full object-contain relative z-10"
+                                  onError={(e) => {
+                                    e.target.style.display = 'none';
+                                    e.target.parentElement.innerHTML = '<span class="text-4xl">🏦</span>'; // Fallback to bank emoji
+                                  }}
+                                />
+                              ) : (
+                                <span className="text-4xl relative z-10">{acc.icon}</span>
+                              )}
                             </div>
+                            
                             <div className="flex items-center gap-2">
                               {isPositive ? (
                                 <div className="p-2 rounded-lg bg-green-600/20">
