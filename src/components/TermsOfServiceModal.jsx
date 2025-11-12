@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { User } from "@/entities/User";
+import { TermsOfService } from "@/entities/TermsOfService";
 import { base44 } from "@/api/base44Client";
 import {
   Dialog,
@@ -26,22 +27,34 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
 
   const loadTerms = async () => {
     try {
-      const { TermsOfService } = await import("@/entities/TermsOfService");
+      console.log("📋 Tentando carregar termos...");
       const allTerms = await TermsOfService.list("-created_date", 1);
+      console.log("📋 Termos retornados:", allTerms);
       const activeTerms = allTerms.find(t => t.is_active);
       
-      console.log("📋 Termos carregados:", activeTerms);
+      if (activeTerms) {
+        console.log("✅ Termos ativos encontrados:", activeTerms);
+      } else {
+        console.log("⚠️ Nenhum termo ativo encontrado");
+      }
+      
       setTerms(activeTerms);
     } catch (error) {
-      console.error("Erro ao carregar termos:", error);
+      console.error("❌ Erro ao carregar termos:", error);
+      console.error("   Name:", error.name);
+      console.error("   Message:", error.message);
+      console.error("   Stack:", error.stack);
     } finally {
       setIsLoading(false);
+      console.log("📋 Carregamento de termos finalizado");
     }
   };
 
   const needsToAcceptTerms = () => {
     if (!user || !terms) {
       console.log("⏭️ Sem usuário ou termos, não precisa aceitar");
+      console.log("   user:", user ? "EXISTS" : "NULL");
+      console.log("   terms:", terms ? "EXISTS" : "NULL");
       return false;
     }
     
@@ -232,12 +245,18 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
   };
 
   if (isLoading) {
+    console.log("⏳ Ainda carregando termos...");
     return null;
   }
 
   if (!isOpen || !terms) {
+    console.log("⏭️ Modal não deve ser exibido");
+    console.log("   isOpen:", isOpen);
+    console.log("   terms:", terms ? "EXISTS" : "NULL");
     return null;
   }
+
+  console.log("✅ Renderizando modal de termos");
 
   return (
     <Dialog open={isOpen} onOpenChange={() => {}}>
