@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Transaction, Account, Category, Goal, Bill } from "@/entities/all";
 import { User } from "@/entities/User";
@@ -79,16 +78,20 @@ export default function Dashboard() {
       const loadTime = performance.now() - startTime;
       console.log(`⚡ Dashboard - Dados principais carregados em ${loadTime.toFixed(0)}ms`);
       
-      setUser(userData);
-      setTransactions(txs);
-      setAccounts(accs);
+      setUser(userData || {});
+      setTransactions(txs || []);
+      setAccounts(accs || []);
       setIsLoading(false);
       
       // ✅ Carregar resto em background (não bloqueia UI)
       loadSecondaryData();
       
     } catch (error) {
-      console.error("❌ Erro ao carregar dados:", error);
+      console.error("❌ Erro ao carregar dados no Dashboard:", error);
+      // ✅ NÃO quebrar - mostrar interface vazia
+      setUser({});
+      setTransactions([]);
+      setAccounts([]);
       setHasError(true);
       setIsLoading(false);
     }
@@ -103,12 +106,16 @@ export default function Dashboard() {
         Bill.list("-due_date", 5) // Reduzido
       ]);
       
-      setCategories(cats);
-      setGoals(gls);
-      setBills(billsData);
+      setCategories(cats || []);
+      setGoals(gls || []);
+      setBills(billsData || []);
       console.log("✅ Dados secundários carregados");
     } catch (error) {
       console.error("⚠️ Erro ao carregar dados secundários (não crítico):", error);
+      // ✅ Definir arrays vazios em caso de erro
+      setCategories([]);
+      setGoals([]);
+      setBills([]);
     }
   };
 

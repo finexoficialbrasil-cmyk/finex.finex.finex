@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -49,6 +48,7 @@ import { Button } from "@/components/ui/button";
 import PerformanceMonitor from "./components/PerformanceMonitor";
 import PhoneVerificationModal from "./components/PhoneVerificationModal";
 import TermsOfServiceModal from "./components/TermsOfServiceModal";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 const navigationItems = [
   {
@@ -800,9 +800,11 @@ function LayoutContent({ children }) {
 
 export default function Layout({ children }) {
   return (
-    <SidebarProvider>
-      <LayoutContent>{children}</LayoutContent>
-      <PerformanceMonitor />
-    </SidebarProvider>
+    <ErrorBoundary>
+      <SidebarProvider>
+        <LayoutContent>{children}</LayoutContent>
+        <PerformanceMonitor />
+      </SidebarProvider>
+    </ErrorBoundary>
   );
 }
