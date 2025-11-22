@@ -19,17 +19,28 @@ export default function TransactionList({ transactions, categories, accounts, is
   const [selectedTransaction, setSelectedTransaction] = useState(null);
 
   const getCategoryInfo = useMemo(() => {
-    return (categoryId) => categories.find(c => c.id === categoryId) || { name: "Sem categoria", color: "#666" };
+    return (categoryId) => {
+      if (!categoryId || !Array.isArray(categories)) return { name: "Sem categoria", color: "#666" };
+      return categories.find(c => c.id === categoryId) || { name: "Sem categoria", color: "#666" };
+    };
   }, [categories]);
 
   const getAccountInfo = useMemo(() => {
-    return (accountId) => accounts.find(a => a.id === accountId) || { name: "Não definida" };
+    return (accountId) => {
+      if (!accountId || !Array.isArray(accounts)) return { name: "Não definida" };
+      return accounts.find(a => a.id === accountId) || { name: "Não definida" };
+    };
   }, [accounts]);
 
   // ✅ CORRIGIDO: Confiar na ordenação do backend e pegar apenas 5 primeiras
   // O Dashboard já carrega com Transaction.list("-created_date", 30)
   // Então as transações já vêm ordenadas do mais recente para o mais antigo
   const recentTransactions = useMemo(() => {
+    if (!Array.isArray(transactions)) {
+      console.warn("⚠️ transactions não é array:", transactions);
+      return [];
+    }
+    
     console.log("📊 TransactionList - Total de transações:", transactions.length);
     
     // Pegar as 5 primeiras (já vêm ordenadas do backend)
