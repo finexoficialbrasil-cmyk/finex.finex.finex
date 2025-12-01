@@ -193,9 +193,22 @@ export default function TransactionsPage() {
       
       console.log("📝 Criando transação com data:", finalDate);
       
+      // ✅ Converter valor BR (1.234,56) para número
+      const parseAmountBR = (value) => {
+        if (!value) return 0;
+        let str = String(value).trim();
+        if (str.includes(',') && str.includes('.')) {
+          str = str.replace(/\./g, '').replace(',', '.');
+        } else if (str.includes(',')) {
+          str = str.replace(',', '.');
+        }
+        const num = parseFloat(str);
+        return isNaN(num) ? 0 : num;
+      };
+
       const data = {
         ...formData,
-        amount: parseFloat(formData.amount),
+        amount: parseAmountBR(formData.amount),
         date: finalDate // ✅ Usar data garantida
       };
 
