@@ -31,7 +31,7 @@ import {
 import { motion } from "framer-motion";
 import { format, differenceInDays, isBefore } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { formatCurrencyBR } from "../utils/formatCurrency";
+import { formatCurrencyBR } from "../components/utils/formatCurrency";
 
 const StatsCard = React.lazy(() => import("../components/dashboard/StatsCard"));
 const TransactionList = React.lazy(() => import("../components/dashboard/TransactionList"));
