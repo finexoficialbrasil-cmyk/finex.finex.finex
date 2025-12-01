@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Transaction, Account, Category, SystemCategory } from "@/entities/all";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -638,17 +637,42 @@ export default function TransactionsPage() {
                   </div>
 
                   <div>
-                    <Label className="text-purple-200 text-sm">Valor</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={formData.amount}
-                      onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                      required
-                      className="bg-purple-900/20 border-purple-700/50 text-white mt-1"
-                      placeholder="0.00"
-                    />
-                  </div>
+                      <Label className="text-purple-200 text-sm">Valor</Label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-300 font-bold text-sm">
+                          R$
+                        </span>
+                        <Input
+                          type="text"
+                          inputMode="decimal"
+                          value={formData.amount}
+                          onChange={(e) => {
+                            // Remove tudo exceto números
+                            let raw = e.target.value.replace(/\D/g, '');
+
+                            if (raw === '') {
+                              setFormData({ ...formData, amount: '' });
+                              return;
+                            }
+
+                            // Limita a 12 dígitos
+                            raw = raw.slice(0, 12);
+
+                            // Converte para número e formata como moeda BR
+                            const cents = parseInt(raw, 10);
+                            const formatted = (cents / 100).toLocaleString('pt-BR', {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2
+                            });
+
+                            setFormData({ ...formData, amount: formatted });
+                          }}
+                          required
+                          className="bg-purple-900/20 border-purple-700/50 text-white mt-1 pl-10"
+                          placeholder="0,00"
+                        />
+                      </div>
+                    </div>
                 </div>
 
                 <div>
