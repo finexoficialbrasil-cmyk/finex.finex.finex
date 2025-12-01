@@ -31,7 +31,16 @@ import {
 import { motion } from "framer-motion";
 import { format, differenceInDays, isBefore } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { formatCurrencyBR } from "../components/utils/formatCurrency";
+// Formata número para moeda brasileira (R$ 1.234,56)
+const formatCurrencyBR = (value) => {
+  if (value === null || value === undefined || isNaN(value)) return 'R$ 0,00';
+  return value.toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+};
 
 const StatsCard = React.lazy(() => import("../components/dashboard/StatsCard"));
 const TransactionList = React.lazy(() => import("../components/dashboard/TransactionList"));
