@@ -78,11 +78,11 @@ export default function Dashboard() {
     try {
       console.log("⚡ Dashboard - Início do carregamento...");
       
-      // ✅ SUPER OTIMIZADO: Só o essencial, limites mínimos
+      // ✅ Carregar transações suficientes para estatísticas do mês
       const [userData, txs, accs] = await Promise.all([
         User.me(),
-        Transaction.list("-created_date", 5), // ✅ MÍNIMO: apenas 5 para o dashboard
-        Account.list("-created_date", 5) // ✅ MÍNIMO: apenas 5 contas
+        Transaction.list("-created_date", 100), // ✅ Carregar transações do mês atual
+        Account.list("-created_date", 20) // ✅ Todas as contas do usuário
       ]);
       
       const loadTime = performance.now() - startTime;
