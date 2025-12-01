@@ -239,16 +239,35 @@ export default function Accounts() {
     }
   };
 
+  // ✅ Converte valor BR (1.234,56) para número
+  const parseBalanceBR = (value) => {
+    if (!value) return 0;
+    let str = String(value).trim();
+
+    // Se tem vírgula E ponto, assumir formato BR (1.234,56)
+    if (str.includes(',') && str.includes('.')) {
+      str = str.replace(/\./g, '').replace(',', '.');
+    } 
+    // Se só tem vírgula, trocar por ponto (1234,56 -> 1234.56)
+    else if (str.includes(',')) {
+      str = str.replace(',', '.');
+    }
+    // Se só tem ponto, manter como está (1234.56)
+
+    const num = parseFloat(str);
+    return isNaN(num) ? 0 : num;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (isSubmitting) return;
     setIsSubmitting(true);
-    
+
     try {
       const data = {
         ...formData,
-        balance: parseFloat(formData.balance)
+        balance: parseBalanceBR(formData.balance)
       };
 
       if (editingAccount) {
@@ -741,15 +760,22 @@ export default function Accounts() {
                     R$
                   </span>
                   <Input
-                    type="number"
-                    step="0.01"
+                    type="text"
+                    inputMode="decimal"
                     value={formData.balance}
-                    onChange={(e) => setFormData({ ...formData, balance: e.target.value })}
+                    onChange={(e) => {
+                      // Permite números, vírgula e ponto
+                      let value = e.target.value.replace(/[^\d.,]/g, '');
+                      setFormData({ ...formData, balance: value });
+                    }}
                     required
                     className="bg-purple-900/20 border-purple-700/50 text-white h-12 text-base pl-14"
-                    placeholder="0.00"
+                    placeholder="0,00"
                   />
                 </div>
+                <p className="text-purple-400 text-xs mt-1">
+                  💡 Ex: 1.234,56 ou 1234.56
+                </p>
               </div>
 
               {/* Cor Personalizada */}
