@@ -134,23 +134,32 @@ export default function Dashboard() {
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
 
+    console.log("📊 Calculando stats para:", currentMonth + 1, "/", currentYear);
+    console.log("📊 Total de transações recebidas:", transactions.length);
+
     const monthTransactions = transactions.filter(t => {
       if (!t.date) return false;
       
-      const txDate = new Date(t.date);
-      const txMonth = txDate.getMonth();
-      const txYear = txDate.getFullYear();
+      // ✅ CORRIGIDO: Parsear a data corretamente (formato YYYY-MM-DD)
+      const [year, month, day] = t.date.split('-').map(Number);
       
-      return txMonth === currentMonth && txYear === currentYear && t.status === "completed";
+      const isCurrentMonth = month === (currentMonth + 1) && year === currentYear;
+      const isCompleted = t.status === "completed";
+      
+      return isCurrentMonth && isCompleted;
     });
+
+    console.log("📊 Transações do mês atual:", monthTransactions.length);
 
     const totalIncome = monthTransactions
       .filter(t => t.type === "income")
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + (t.amount || 0), 0);
 
     const totalExpense = monthTransactions
       .filter(t => t.type === "expense")
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + (t.amount || 0), 0);
+
+    console.log("📊 Total Entradas:", totalIncome, "| Total Saídas:", totalExpense);
 
     const balance = accounts.reduce((sum, acc) => sum + (acc.balance || 0), 0);
 
