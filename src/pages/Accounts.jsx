@@ -22,6 +22,17 @@ import { Wallet, Plus, Edit, Trash2, TrendingUp, TrendingDown, Building2, Loader
 import { motion } from "framer-motion";
 import FeatureGuard from "../components/FeatureGuard";
 
+// Formata número para moeda brasileira (R$ 1.234,56)
+const formatCurrencyBR = (value) => {
+  if (value === null || value === undefined || isNaN(value)) return 'R$ 0,00';
+  return value.toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+};
+
 // 🇧🇷 LISTA COMPLETA DE BANCOS BRASILEIROS
 const BANCOS_BRASIL = [
   // Bancos Digitais (Mais Populares)
@@ -394,8 +405,8 @@ export default function Accounts() {
                 <div>
                   <p className="text-purple-300 text-sm mb-1">Saldo Total</p>
                   <p className="text-4xl font-bold text-white">
-                    R$ {totalBalance.toFixed(2)}
-                  </p>
+                                            {formatCurrencyBR(totalBalance)}
+                                          </p>
                 </div>
                 <div className="p-4 rounded-full bg-indigo-600/20">
                   <Wallet className="w-8 h-8 text-indigo-400" />
@@ -471,8 +482,8 @@ export default function Accounts() {
                       <div>
                         <p className="text-purple-300 text-sm mb-1">Saldo</p>
                         <p className={`text-2xl font-bold ${acc.balance >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                          R$ {acc.balance.toFixed(2)}
-                        </p>
+                                                      {formatCurrencyBR(acc.balance)}
+                                                    </p>
                       </div>
                       {acc.balance >= 0 ? (
                         <TrendingUp className="w-6 h-6 text-green-400" />
@@ -550,8 +561,8 @@ export default function Accounts() {
                       </p>
                     )}
                     <p className="text-3xl font-bold text-green-400">
-                      R$ {formData.balance || "0.00"}
-                    </p>
+                                                {formData.balance ? `R$ ${formData.balance}` : "R$ 0,00"}
+                                              </p>
                   </div>
                 </div>
               </div>
