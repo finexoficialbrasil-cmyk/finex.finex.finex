@@ -31,6 +31,7 @@ import {
 import { motion } from "framer-motion";
 import { format, differenceInDays, isBefore } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { formatCurrencyBR } from "../utils/formatCurrency";
 
 const StatsCard = React.lazy(() => import("../components/dashboard/StatsCard"));
 const TransactionList = React.lazy(() => import("../components/dashboard/TransactionList"));
@@ -359,7 +360,7 @@ export default function Dashboard() {
           <React.Suspense fallback={<div className="h-32 bg-purple-900/20 animate-pulse rounded-lg" />}>
             <StatsCard
               title="Saldo Total"
-              value={`R$ ${stats.balance.toFixed(2)}`}
+              value={formatCurrencyBR(stats.balance)}
               icon={Wallet}
               gradient="from-purple-600 to-purple-400"
               trend="+5.2%"
@@ -368,7 +369,7 @@ export default function Dashboard() {
           <React.Suspense fallback={<div className="h-32 bg-purple-900/20 animate-pulse rounded-lg" />}>
             <StatsCard
               title="Entradas do Mês"
-              value={`R$ ${stats.totalIncome.toFixed(2)}`}
+              value={formatCurrencyBR(stats.totalIncome)}
               icon={ArrowUpRight}
               gradient="from-green-600 to-emerald-400"
               trend="+12.3%"
@@ -377,7 +378,7 @@ export default function Dashboard() {
           <React.Suspense fallback={<div className="h-32 bg-purple-900/20 animate-pulse rounded-lg" />}>
             <StatsCard
               title="Saídas do Mês"
-              value={`R$ ${stats.totalExpense.toFixed(2)}`}
+              value={formatCurrencyBR(stats.totalExpense)}
               icon={ArrowDownRight}
               gradient="from-red-600 to-pink-400"
               trend="-3.1%"
@@ -386,7 +387,7 @@ export default function Dashboard() {
           <React.Suspense fallback={<div className="h-32 bg-purple-900/20 animate-pulse rounded-lg" />}>
             <StatsCard
               title="Economia"
-              value={`R$ ${(stats.totalIncome - stats.totalExpense).toFixed(2)}`}
+              value={formatCurrencyBR(stats.totalIncome - stats.totalExpense)}
               icon={Target}
               gradient="from-cyan-600 to-blue-400"
               trend="+8.7%"
@@ -476,7 +477,7 @@ export default function Dashboard() {
 
                           <div className="mb-1.5">
                             <p className={`text-base font-bold ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
-                              R$ {Math.abs(acc.balance).toFixed(2)}
+                              {formatCurrencyBR(Math.abs(acc.balance))}
                             </p>
                           </div>
 
