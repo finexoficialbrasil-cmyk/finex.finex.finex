@@ -764,18 +764,32 @@ export default function Accounts() {
                     inputMode="decimal"
                     value={formData.balance}
                     onChange={(e) => {
-                      // Permite números, vírgula e ponto
-                      let value = e.target.value.replace(/[^\d.,]/g, '');
-                      setFormData({ ...formData, balance: value });
+                      // Remove tudo exceto números
+                      let raw = e.target.value.replace(/\D/g, '');
+
+                      // Converte para centavos e formata
+                      if (raw === '') {
+                        setFormData({ ...formData, balance: '' });
+                        return;
+                      }
+
+                      // Limita a 12 dígitos
+                      raw = raw.slice(0, 12);
+
+                      // Converte para número e formata como moeda BR
+                      const cents = parseInt(raw, 10);
+                      const formatted = (cents / 100).toLocaleString('pt-BR', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                      });
+
+                      setFormData({ ...formData, balance: formatted });
                     }}
                     required
                     className="bg-purple-900/20 border-purple-700/50 text-white h-12 text-base pl-14"
                     placeholder="0,00"
                   />
                 </div>
-                <p className="text-purple-400 text-xs mt-1">
-                  💡 Ex: 1.234,56 ou 1234.56
-                </p>
               </div>
 
               {/* Cor Personalizada */}
