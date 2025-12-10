@@ -415,124 +415,84 @@ export default function Dashboard() {
 
         {/* ✅ CARTEIRAS SUPER COMPACTAS */}
         <Card className="glass-card border-0 neon-glow overflow-hidden">
-          <CardContent className="p-3">
+          <CardContent className="p-4">
             {accounts.length === 0 ? (
-              <div className="text-center py-6">
-                <div className="w-12 h-12 mx-auto mb-2 rounded-full bg-purple-900/30 flex items-center justify-center">
-                  <Wallet className="w-6 h-6 text-purple-400" />
+              <div className="text-center py-8">
+                <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-purple-900/30 flex items-center justify-center">
+                  <Wallet className="w-8 h-8 text-purple-400" />
                 </div>
                 <p className="text-purple-300 text-sm mb-1">Nenhuma carteira cadastrada</p>
-                <p className="text-purple-400 text-xs mb-3">Crie sua primeira carteira!</p>
+                <p className="text-purple-400 text-xs mb-4">Crie sua primeira carteira!</p>
                 <Link to={createPageUrl("Accounts")}>
                   <Button size="sm" className="bg-gradient-to-r from-purple-600 to-pink-600">
-                    <Plus className="w-3 h-3 mr-1" />
+                    <Plus className="w-4 h-4 mr-1" />
                     Criar
                   </Button>
                 </Link>
               </div>
             ) : (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
-                {accounts.map((acc, index) => {
-                  const isPositive = acc.balance >= 0;
-                  
-                  return (
-                    <Link key={acc.id} to={createPageUrl("Accounts")}>
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: index * 0.02 }}
-                        whileHover={{ scale: 1.03, y: -1 }}
-                        className="group relative overflow-hidden cursor-pointer"
-                      >
-                        <div 
-                          className="absolute inset-0 opacity-0 group-hover:opacity-15 transition-opacity duration-300"
-                          style={{ background: `linear-gradient(135deg, ${acc.color || '#a855f7'}40, ${acc.color || '#a855f7'}10)` }}
-                        />
-                        
-                        <div className="relative p-2.5 rounded-lg glass-card border border-purple-700/30 group-hover:border-purple-600/60 transition-all duration-300">
-                          <div className="flex items-start justify-between mb-2">
-                            <div 
-                              className="w-9 h-9 rounded-lg flex items-center justify-center shadow group-hover:scale-110 transition-transform duration-300 overflow-hidden flex-shrink-0"
-                              style={{ 
-                                backgroundColor: (acc.color || '#a855f7') + '20',
-                                border: `1.5px solid ${acc.color || '#a855f7'}60`
-                              }}
-                            >
-                              {acc.logo_url ? (
-                                <img 
-                                  src={acc.logo_url} 
-                                  alt={acc.name}
-                                  className="w-full h-full object-contain p-0.5"
-                                  onError={(e) => {
-                                    if (e.target && e.target.parentElement) {
-                                      e.target.parentElement.innerHTML = `<span class="text-xl">${acc.icon || '🏦'}</span>`;
-                                    }
-                                  }}
-                                />
-                              ) : (
-                                <span className="text-xl">{acc.icon || '🏦'}</span>
-                              )}
-                            </div>
-                            
-                            <div className="p-1 rounded bg-green-600/20">
-                              {isPositive ? (
-                                <TrendingUp className="w-2.5 h-2.5 text-green-400" />
-                              ) : (
-                                <TrendingDown className="w-2.5 h-2.5 text-red-400" />
-                              )}
-                            </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                {accounts.map((acc, index) => (
+                  <Link key={acc.id} to={createPageUrl("Accounts")}>
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: index * 0.03 }}
+                      whileHover={{ scale: 1.05 }}
+                      className="group cursor-pointer"
+                    >
+                      <div className="p-4 rounded-xl glass-card border border-purple-700/30 group-hover:border-purple-600/60 transition-all duration-300">
+                        <div className="flex flex-col items-center text-center gap-3">
+                          <div 
+                            className="w-14 h-14 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300 overflow-hidden"
+                            style={{ 
+                              backgroundColor: (acc.color || '#a855f7') + '20',
+                              border: `2px solid ${acc.color || '#a855f7'}60`
+                            }}
+                          >
+                            {acc.logo_url ? (
+                              <img 
+                                src={acc.logo_url} 
+                                alt={acc.name}
+                                className="w-full h-full object-contain p-1"
+                                onError={(e) => {
+                                  if (e.target && e.target.parentElement) {
+                                    e.target.parentElement.innerHTML = `<span class="text-3xl">${acc.icon || '🏦'}</span>`;
+                                  }
+                                }}
+                              />
+                            ) : (
+                              <span className="text-3xl">{acc.icon || '🏦'}</span>
+                            )}
                           </div>
 
-                          <h4 className="text-white font-bold text-xs mb-0.5 truncate group-hover:text-purple-200 transition-colors">
-                            {acc.name}
-                          </h4>
-                          
-                          {acc.bank_name && (
-                            <p className="text-purple-400 text-[10px] mb-1.5 truncate">
-                              {acc.bank_name}
+                          <div className="w-full">
+                            <h4 className="text-white font-bold text-sm mb-1 truncate">
+                              {acc.name}
+                            </h4>
+                            <p className={`text-lg font-bold ${acc.balance >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                              {formatCurrencyBR(acc.balance)}
                             </p>
-                          )}
-
-                          <div className="mb-1.5">
-                            <p className={`text-base font-bold ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
-                              {formatCurrencyBR(Math.abs(acc.balance))}
-                            </p>
-                          </div>
-
-                          <div className="flex items-center justify-between pt-1.5 border-t border-purple-700/30">
-                            <div className="flex items-center gap-1">
-                              <div className={`w-1 h-1 rounded-full ${isPositive ? 'bg-green-400' : 'bg-red-400'} animate-pulse`} />
-                              <span className={`${isPositive ? 'text-green-400' : 'text-red-400'} text-[10px] font-medium`}>
-                                {isPositive ? 'OK' : 'Atenção'}
-                              </span>
-                            </div>
-                            <ChevronRight className="w-3 h-3 text-purple-400 group-hover:text-purple-300 group-hover:translate-x-0.5 transition-all" />
                           </div>
                         </div>
-                      </motion.div>
-                    </Link>
-                  );
-                })}
+                      </div>
+                    </motion.div>
+                  </Link>
+                ))}
 
-                {/* Card para adicionar nova conta - SUPER COMPACTO */}
                 <Link to={createPageUrl("Accounts")}>
                   <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
+                    initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: accounts.length * 0.02 }}
-                    whileHover={{ scale: 1.03, y: -1 }}
-                    className="group relative overflow-hidden cursor-pointer h-full min-h-[110px]"
+                    transition={{ delay: accounts.length * 0.03 }}
+                    whileHover={{ scale: 1.05 }}
+                    className="group cursor-pointer h-full min-h-[120px]"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 to-pink-600/10 group-hover:from-purple-600/20 group-hover:to-pink-600/20 transition-all duration-300" />
-                    
-                    <div className="relative h-full p-2.5 rounded-lg glass-card border-2 border-dashed border-purple-700/40 group-hover:border-purple-600/70 transition-all duration-300 flex flex-col items-center justify-center gap-1.5">
-                      <div className="p-2 rounded-lg bg-gradient-to-br from-purple-600/20 to-pink-600/20 group-hover:from-purple-600/30 group-hover:to-pink-600/30 transition-all">
-                        <Plus className="w-4 h-4 text-purple-400 group-hover:text-purple-300 transition-colors" />
+                    <div className="h-full p-4 rounded-xl glass-card border-2 border-dashed border-purple-700/40 group-hover:border-purple-600/70 transition-all duration-300 flex flex-col items-center justify-center gap-2">
+                      <div className="p-3 rounded-xl bg-gradient-to-br from-purple-600/20 to-pink-600/20 group-hover:from-purple-600/30 group-hover:to-pink-600/30 transition-all">
+                        <Plus className="w-6 h-6 text-purple-400 group-hover:text-purple-300 transition-colors" />
                       </div>
-                      <div className="text-center">
-                        <p className="text-white font-bold text-xs mb-0.5">Adicionar</p>
-                        <p className="text-purple-400 text-[10px]">Nova carteira</p>
-                      </div>
+                      <p className="text-white font-bold text-sm">Adicionar</p>
                     </div>
                   </motion.div>
                 </Link>
