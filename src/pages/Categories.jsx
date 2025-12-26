@@ -263,7 +263,7 @@ export default function Categories() {
                                   </div>
                                   {cat.budget_limit && (
                                     <p className="text-xs text-purple-300">
-                                      Limite: R$ {cat.budget_limit.toFixed(2)}
+                                      Limite: {cat.budget_limit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                     </p>
                                   )}
                                 </div>
@@ -332,7 +332,7 @@ export default function Categories() {
                                   </div>
                                   {cat.budget_limit && (
                                     <p className="text-xs text-purple-300">
-                                      Limite: R$ {cat.budget_limit.toFixed(2)}
+                                      Limite: {cat.budget_limit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                     </p>
                                   )}
                                 </div>
