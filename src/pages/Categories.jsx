@@ -41,9 +41,11 @@ export default function Categories() {
   const [systemCategories, setSystemCategories] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
-  const [isLoading, setIsLoading] = useState(true); // New state for loading
-  const [isSubmitting, setIsSubmitting] = useState(false); // ✅ NOVO: Estado de submissão
-  const [filterType, setFilterType] = useState("all"); // New state for filter
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [filterType, setFilterType] = useState("all");
+  const [selectedCategories, setSelectedCategories] = useState([]); // ✅ NOVO: Categorias selecionadas
+  const [isDeleting, setIsDeleting] = useState(false); // ✅ NOVO: Estado de exclusão
   const [formData, setFormData] = useState({
     name: "",
     type: "expense",
@@ -179,6 +181,68 @@ export default function Categories() {
     }
   };
 
+  // ✅ NOVO: Selecionar/Desselecionar categoria
+  const toggleSelectCategory = (categoryId) => {
+    setSelectedCategories(prev => {
+      if (prev.includes(categoryId)) {
+        return prev.filter(id => id !== categoryId);
+      } else {
+        return [...prev, categoryId];
+      }
+    });
+  };
+
+  // ✅ NOVO: Selecionar/Desselecionar todas
+  const toggleSelectAll = () => {
+    const userCategories = categories.filter(c => !c.isSystem);
+    if (selectedCategories.length === userCategories.length) {
+      setSelectedCategories([]);
+    } else {
+      setSelectedCategories(userCategories.map(c => c.id));
+    }
+  };
+
+  // ✅ NOVO: Deletar categorias selecionadas
+  const handleDeleteSelected = async () => {
+    if (selectedCategories.length === 0) {
+      alert("⚠️ Selecione pelo menos uma categoria para excluir.");
+      return;
+    }
+
+    const categoriesToDelete = categories.filter(c => selectedCategories.includes(c.id));
+    const categoryNames = categoriesToDelete.map(c => c.name).join(", ");
+
+    if (!confirm(`⚠️ CONFIRMAR EXCLUSÃO\n\nDeseja excluir ${selectedCategories.length} categoria(s)?\n\n${categoryNames}\n\nEsta ação não pode ser desfeita!`)) {
+      return;
+    }
+
+    setIsDeleting(true);
+    let successCount = 0;
+    let errorCount = 0;
+    const errors = [];
+
+    for (const categoryId of selectedCategories) {
+      try {
+        await Category.delete(categoryId);
+        successCount++;
+      } catch (error) {
+        errorCount++;
+        const cat = categories.find(c => c.id === categoryId);
+        errors.push(`${cat?.name || categoryId}: ${error.message}`);
+      }
+    }
+
+    setIsDeleting(false);
+    setSelectedCategories([]);
+    await loadCategories();
+
+    if (errorCount === 0) {
+      alert(`✅ ${successCount} categoria(s) excluída(s) com sucesso!`);
+    } else {
+      alert(`⚠️ Exclusão concluída:\n\n✅ ${successCount} excluída(s)\n❌ ${errorCount} com erro\n\nErros:\n${errors.join("\n")}`);
+    }
+  };
+
   // Mesclar categorias do sistema com categorias do usuário
   const allCategories = [
     ...systemCategories.map(c => ({ ...c, isSystem: true })),
@@ -211,14 +275,49 @@ export default function Categories() {
                 Categorias
               </h1>
               <p className="text-purple-300 mt-1">Organize suas finanças por categorias</p>
+              {selectedCategories.length > 0 && (
+                <p className="text-cyan-400 text-sm mt-1">
+                  {selectedCategories.length} selecionada(s)
+                </p>
+              )}
             </div>
-            <Button
-              onClick={() => setShowForm(true)}
-              className="bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 neon-glow"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Nova Categoria
-            </Button>
+            <div className="flex gap-2">
+              {selectedCategories.length > 0 && (
+                <>
+                  <Button
+                    onClick={handleDeleteSelected}
+                    disabled={isDeleting}
+                    className="bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700"
+                  >
+                    {isDeleting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Excluindo...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Excluir ({selectedCategories.length})
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    onClick={() => setSelectedCategories([])}
+                    variant="outline"
+                    className="border-purple-700 text-purple-300"
+                  >
+                    Cancelar
+                  </Button>
+                </>
+              )}
+              <Button
+                onClick={() => setShowForm(true)}
+                className="bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 neon-glow"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Nova Categoria
+              </Button>
+            </div>
           </div>
 
           {/* Tabs */}
@@ -232,10 +331,22 @@ export default function Categories() {
 
                 {/* Income Categories Tab Content */}
                 <TabsContent value="income" className="mt-6">
-                  <h2 className="text-xl font-bold text-green-400 mb-4 flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5" />
-                    Entradas
-                  </h2>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-green-400 flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5" />
+                      Entradas
+                    </h2>
+                    {categories.filter(c => !c.isSystem && c.type === "income").length > 0 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={toggleSelectAll}
+                        className="border-purple-700 text-purple-300"
+                      >
+                        {selectedCategories.length === categories.filter(c => !c.isSystem).length ? "Desmarcar Todas" : "Selecionar Todas"}
+                      </Button>
+                    )}
+                  </div>
                   <div className="grid md:grid-cols-3 gap-4">
                     {incomeCategories.map((cat, index) => (
                       <motion.div
@@ -301,10 +412,22 @@ export default function Categories() {
 
                 {/* Expense Categories Tab Content */}
                 <TabsContent value="expense" className="mt-6">
-                  <h2 className="text-xl font-bold text-red-400 mb-4 flex items-center gap-2">
-                    <TrendingDown className="w-5 h-5" />
-                    Saídas
-                  </h2>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-red-400 flex items-center gap-2">
+                      <TrendingDown className="w-5 h-5" />
+                      Saídas
+                    </h2>
+                    {categories.filter(c => !c.isSystem && c.type === "expense").length > 0 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={toggleSelectAll}
+                        className="border-purple-700 text-purple-300"
+                      >
+                        {selectedCategories.length === categories.filter(c => !c.isSystem).length ? "Desmarcar Todas" : "Selecionar Todas"}
+                      </Button>
+                    )}
+                  </div>
                   <div className="grid md:grid-cols-3 gap-4">
                     {expenseCategories.map((cat, index) => (
                       <motion.div
@@ -312,11 +435,24 @@ export default function Categories() {
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: index * 0.1 }}
+                        onClick={() => !cat.isSystem && toggleSelectCategory(cat.id)}
+                        className={`cursor-pointer ${!cat.isSystem && selectedCategories.includes(cat.id) ? 'ring-2 ring-cyan-400' : ''}`}
                       >
-                        <Card className="glass-card border-0 neon-glow hover:scale-105 transition-transform">
+                        <Card className={`glass-card border-0 neon-glow hover:scale-105 transition-transform ${selectedCategories.includes(cat.id) ? 'bg-cyan-900/20' : ''}`}>
                           <CardContent className="p-4">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-3">
+                                {!cat.isSystem && (
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedCategories.includes(cat.id)}
+                                    onChange={(e) => {
+                                      e.stopPropagation();
+                                      toggleSelectCategory(cat.id);
+                                    }}
+                                    className="w-5 h-5 rounded border-purple-700 text-cyan-600 focus:ring-cyan-500"
+                                  />
+                                )}
                                 <div
                                   className="w-12 h-12 rounded-full flex items-center justify-center"
                                   style={{ backgroundColor: cat.color + '30', border: `2px solid ${cat.color}` }}
@@ -338,7 +474,7 @@ export default function Categories() {
                                 </div>
                               </div>
                               {!cat.isSystem && (
-                                <div className="flex gap-1">
+                                <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
                                   <Button
                                     variant="ghost"
                                     size="icon"
