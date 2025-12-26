@@ -43,8 +43,8 @@ export default function ExportBillsPDF({ bills, categories, accounts, type = "pa
       const addPageNumber = () => {
         doc.setFontSize(9);
         doc.setTextColor(150, 150, 150);
-        doc.text(`Página ${pageNumber}`, pageWidth - 20, pageHeight - 10, { align: 'right' });
-        doc.text('FINEX - Inteligência Financeira', 14, pageHeight - 10);
+        doc.text(`Pagina ${pageNumber}`, pageWidth - 20, pageHeight - 10, { align: 'right' });
+        doc.text('FINEX - Inteligencia Financeira', 14, pageHeight - 10);
         pageNumber++;
       };
 
@@ -65,7 +65,7 @@ export default function ExportBillsPDF({ bills, categories, accounts, type = "pa
         
         doc.setFontSize(10);
         doc.setFont(undefined, 'normal');
-        doc.text('Inteligência Financeira Empresarial', 14, 28);
+        doc.text('Inteligencia Financeira Empresarial', 14, 28);
         
         if (includePageNumber) {
           addPageNumber();
@@ -290,7 +290,6 @@ export default function ExportBillsPDF({ bills, categories, accounts, type = "pa
       doc.text('DISTRIBUICAO POR STATUS', 14, y);
       y += 10;
       
-      const totalAmount = filteredBills.reduce((sum, b) => sum + b.amount, 0);
       const statuses = [
         { label: 'Pago', amount: paidAmount, color: [34, 197, 94], count: filteredBills.filter(b => b.status === "paid").length },
         { label: 'Pendente', amount: pendingAmount, color: [234, 179, 8], count: filteredBills.filter(b => b.status === "pending").length },
@@ -431,7 +430,7 @@ export default function ExportBillsPDF({ bills, categories, accounts, type = "pa
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(8);
         doc.setFont(undefined, 'bold');
-        doc.text('DESCRIÇÃO', 17, y + 7);
+        doc.text('DESCRICAO', 17, y + 7);
         doc.text('CATEGORIA', 85, y + 7);
         doc.text('VENCIMENTO', 125, y + 7);
         doc.text('VALOR', 160, y + 7);
@@ -451,7 +450,7 @@ export default function ExportBillsPDF({ bills, categories, accounts, type = "pa
             doc.setTextColor(255, 255, 255);
             doc.setFontSize(8);
             doc.setFont(undefined, 'bold');
-            doc.text('DESCRIÇÃO', 17, y + 7);
+            doc.text('DESCRICAO', 17, y + 7);
             doc.text('CATEGORIA', 85, y + 7);
             doc.text('VENCIMENTO', 125, y + 7);
             doc.text('VALOR', 160, y + 7);
