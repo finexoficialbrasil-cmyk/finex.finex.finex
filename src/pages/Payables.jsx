@@ -33,8 +33,11 @@ import {
   Calendar,
   FileText,
   RepeatIcon,
-  Users, // ✅ Adicionado Users icon
-  Loader2 // ✅ NOVO: Adicionado Loader2 icon
+  Users,
+  Loader2,
+  Search,
+  CreditCard,
+  Building2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, differenceInDays, isBefore } from "date-fns";
@@ -62,8 +65,15 @@ export default function Payables() {
     is_recurring: false,
     recurring_type: "monthly",
     notes: "",
-    contact_name: "", // ✅ NOVO: Campo de nome do contato
-    contact_phone: ""  // ✅ NOVO: Campo de telefone do contato
+    contact_name: "",
+    contact_phone: "",
+    supplier_full_name: "",
+    supplier_cpf_cnpj: "",
+    supplier_payment_type: "pix",
+    supplier_pix_key: "",
+    supplier_bank_name: "",
+    supplier_bank_agency: "",
+    supplier_bank_account: ""
   });
 
   useEffect(() => {
@@ -171,8 +181,15 @@ export default function Payables() {
       is_recurring: false,
       recurring_type: "monthly",
       notes: "",
-      contact_name: "", // ✅ NOVO: Resetar campo de contato
-      contact_phone: ""  // ✅ NOVO: Resetar campo de contato
+      contact_name: "",
+      contact_phone: "",
+      supplier_full_name: "",
+      supplier_cpf_cnpj: "",
+      supplier_payment_type: "pix",
+      supplier_pix_key: "",
+      supplier_bank_name: "",
+      supplier_bank_agency: "",
+      supplier_bank_account: ""
     });
   };
 
@@ -193,7 +210,14 @@ export default function Payables() {
       recurring_type: bill.recurring_type || "monthly",
       notes: bill.notes || "",
       contact_name: bill.contact_name || "",
-      contact_phone: bill.contact_phone || ""
+      contact_phone: bill.contact_phone || "",
+      supplier_full_name: bill.supplier_full_name || "",
+      supplier_cpf_cnpj: bill.supplier_cpf_cnpj || "",
+      supplier_payment_type: bill.supplier_payment_type || "pix",
+      supplier_pix_key: bill.supplier_pix_key || "",
+      supplier_bank_name: bill.supplier_bank_name || "",
+      supplier_bank_agency: bill.supplier_bank_agency || "",
+      supplier_bank_account: bill.supplier_bank_account || ""
     });
     setShowForm(true);
   };
@@ -742,10 +766,10 @@ export default function Payables() {
                   </div>
                 </div>
 
-                {/* ✅ NOVO: Campo de fornecedor com botão de agenda */}
+                {/* Dados do Fornecedor/Cliente */}
                 <div className="space-y-3 p-4 rounded-lg bg-purple-900/10 border border-purple-700/30">
                   <div className="flex items-center justify-between mb-2">
-                    <Label className="text-purple-200 text-sm font-semibold">Dados do Fornecedor (Opcional)</Label>
+                    <Label className="text-purple-200 text-sm font-semibold">📋 Dados do Fornecedor/Cliente (Opcional)</Label>
                     <Button
                       type="button"
                       variant="outline"
@@ -754,18 +778,40 @@ export default function Payables() {
                       className="border-purple-700 text-purple-300 hover:bg-purple-900/20"
                       disabled={isSubmitting}
                     >
-                      <Users className="w-4 h-4 mr-2" />
+                      <Search className="w-4 h-4 mr-2" />
                       Buscar na Agenda
                     </Button>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <Label className="text-purple-200 text-sm">Nome do Fornecedor</Label>
+                      <Label className="text-purple-200 text-sm">Nome Completo</Label>
+                      <Input
+                        value={formData.supplier_full_name}
+                        onChange={(e) => setFormData({ ...formData, supplier_full_name: e.target.value })}
+                        placeholder="Nome completo do fornecedor"
+                        className="bg-purple-900/20 border-purple-700/50 text-white mt-1"
+                      />
+                    </div>
+
+                    <div>
+                      <Label className="text-purple-200 text-sm">CPF/CNPJ</Label>
+                      <Input
+                        value={formData.supplier_cpf_cnpj}
+                        onChange={(e) => setFormData({ ...formData, supplier_cpf_cnpj: e.target.value })}
+                        placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                        className="bg-purple-900/20 border-purple-700/50 text-white mt-1"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-purple-200 text-sm">Nome para Contato</Label>
                       <Input
                         value={formData.contact_name}
                         onChange={(e) => setFormData({ ...formData, contact_name: e.target.value })}
-                        placeholder="Nome do fornecedor"
+                        placeholder="Nome do contato"
                         className="bg-purple-900/20 border-purple-700/50 text-white mt-1"
                       />
                     </div>
@@ -778,11 +824,71 @@ export default function Payables() {
                         placeholder="(00) 00000-0000"
                         className="bg-purple-900/20 border-purple-700/50 text-white mt-1"
                       />
-                      <p className="text-xs text-purple-400 mt-1">
-                        💡 Útil para contato rápido
-                      </p>
                     </div>
                   </div>
+
+                  <div className="border-t border-purple-700/30 pt-3 mt-3">
+                    <Label className="text-purple-200 text-sm mb-2 block flex items-center gap-2">
+                      <CreditCard className="w-4 h-4" />
+                      Forma de Pagamento do Fornecedor
+                    </Label>
+                    <Select
+                      value={formData.supplier_payment_type}
+                      onValueChange={(value) => setFormData({...formData, supplier_payment_type: value})}
+                    >
+                      <SelectTrigger className="bg-purple-900/20 border-purple-700/50 text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pix">💰 PIX</SelectItem>
+                        <SelectItem value="bank">🏦 Transferência Bancária</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {formData.supplier_payment_type === "pix" && (
+                    <div>
+                      <Label className="text-purple-200 text-sm">Chave PIX</Label>
+                      <Input
+                        value={formData.supplier_pix_key}
+                        onChange={(e) => setFormData({ ...formData, supplier_pix_key: e.target.value })}
+                        placeholder="CPF, CNPJ, Email, Telefone ou Chave Aleatória"
+                        className="bg-purple-900/20 border-purple-700/50 text-white mt-1"
+                      />
+                    </div>
+                  )}
+
+                  {formData.supplier_payment_type === "bank" && (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <Label className="text-purple-200 text-sm">Banco</Label>
+                        <Input
+                          value={formData.supplier_bank_name}
+                          onChange={(e) => setFormData({ ...formData, supplier_bank_name: e.target.value })}
+                          placeholder="Nome do banco"
+                          className="bg-purple-900/20 border-purple-700/50 text-white mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-purple-200 text-sm">Agência</Label>
+                        <Input
+                          value={formData.supplier_bank_agency}
+                          onChange={(e) => setFormData({ ...formData, supplier_bank_agency: e.target.value })}
+                          placeholder="0000"
+                          className="bg-purple-900/20 border-purple-700/50 text-white mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-purple-200 text-sm">Conta</Label>
+                        <Input
+                          value={formData.supplier_bank_account}
+                          onChange={(e) => setFormData({ ...formData, supplier_bank_account: e.target.value })}
+                          placeholder="00000-0"
+                          className="bg-purple-900/20 border-purple-700/50 text-white mt-1"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -803,13 +909,13 @@ export default function Payables() {
                 </div>
 
                 <div>
-                  <Label className="text-purple-200 text-sm">Conta para Pagamento</Label>
+                  <Label className="text-purple-200 text-sm">Conta de Origem (de onde sairá o dinheiro)</Label>
                   <Select
                     value={formData.account_id}
                     onValueChange={(value) => setFormData({ ...formData, account_id: value })}
                   >
                     <SelectTrigger className="bg-purple-900/20 border-purple-700/50 text-white mt-1">
-                      <SelectValue placeholder="Selecione" />
+                      <SelectValue placeholder="Selecione a conta" />
                     </SelectTrigger>
                     <SelectContent>
                       {accounts.map(acc => (
@@ -819,6 +925,7 @@ export default function Payables() {
                       ))}
                     </SelectContent>
                   </Select>
+                  <p className="text-purple-400 text-xs mt-1">💡 Esta é a conta da qual o dinheiro será debitado</p>
                 </div>
 
                 {/* ✅ CAMPO DE RECORRÊNCIA */}
