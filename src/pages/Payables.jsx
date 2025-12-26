@@ -41,6 +41,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, differenceInDays, isBefore } from "date-fns";
+import ExportBillsPDF from "../components/bills/ExportBillsPDF";
 
 export default function Payables() {
   const [bills, setBills] = useState([]);
@@ -511,13 +512,21 @@ export default function Payables() {
               </h1>
               <p className="text-purple-300 mt-1 text-sm">Gerencie seus compromissos financeiros</p>
             </div>
-            <Button
-              onClick={() => setShowForm(true)}
-              className="w-full md:w-auto bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 neon-glow"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Nova Conta a Pagar
-            </Button>
+            <div className="flex gap-2">
+              <ExportBillsPDF 
+                bills={filteredBills} 
+                categories={categories} 
+                accounts={accounts}
+                type="payable"
+              />
+              <Button
+                onClick={() => setShowForm(true)}
+                className="w-full md:w-auto bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 neon-glow"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Nova Conta a Pagar
+              </Button>
+            </div>
           </div>
 
           {/* Stats Cards */}
