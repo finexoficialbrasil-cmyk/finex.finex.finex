@@ -279,7 +279,7 @@ export default function AdminUsers() {
   };
 
   // ✅ NEW: Import data from a backup JSON file
-  const handleImportBackup = async (user) => {
+  const handleImportBackup = async (targetUser) => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'application/json';
@@ -296,7 +296,7 @@ export default function AdminUsers() {
           throw new Error("Formato de arquivo de backup inválido. 'user_info.original_email' não encontrado.");
         }
 
-        if (!confirm(`⚠️ CONFIRMAR RESTAURAÇÃO DE BACKUP\n\nRestaurar backup de: ${backup.user_info.original_email}\nData do backup: ${new Date(backup.user_info.export_date).toLocaleDateString('pt-BR')}\n\nPara usuário: ${user.email}\n\nTodos os dados serão ADICIONADOS ao usuário atual.\n\nDeseja continuar?`)) {
+        if (!confirm(`⚠️ CONFIRMAR RESTAURAÇÃO DE BACKUP\n\nRestaurar backup de: ${backup.user_info.original_email}\nData do backup: ${new Date(backup.user_info.export_date).toLocaleDateString('pt-BR')}\n\nPara usuário: ${targetUser.email}\n\nTodos os dados serão ADICIONADOS ao usuário ${targetUser.full_name || targetUser.email}.\n\nDeseja continuar?`)) {
           return;
         }
 
@@ -308,24 +308,20 @@ export default function AdminUsers() {
 
         // Restaurar categorias
         for (const cat of backup.categories || []) {
+          const { id, created_by, created_date, updated_date, ...catData } = cat;
           const newCat = await Category.create({
-            ...cat,
-            id: undefined, // Let the system generate a new ID
-            created_by: user.email,
-            created_date: undefined,
-            updated_date: undefined
+            ...catData,
+            created_by: targetUser.email
           });
           categoryIdMap[cat.id] = newCat.id;
         }
 
         // Restaurar contas
         for (const acc of backup.accounts || []) {
+          const { id, created_by, created_date, updated_date, ...accData } = acc;
           const newAcc = await Account.create({
-            ...acc,
-            id: undefined, // Let the system generate a new ID
-            created_by: user.email,
-            created_date: undefined,
-            updated_date: undefined
+            ...accData,
+            created_by: targetUser.email
           });
           accountIdMap[acc.id] = newAcc.id;
         }
@@ -335,8 +331,8 @@ export default function AdminUsers() {
           const { id, created_by, created_date, updated_date, user_email, ...txData } = tx;
           await Transaction.create({
             ...txData,
-            created_by: user.email,
-            user_email: user.email,
+            created_by: targetUser.email,
+            user_email: targetUser.email,
             category_id: categoryIdMap[tx.category_id] || tx.category_id,
             account_id: accountIdMap[tx.account_id] || tx.account_id
           });
@@ -344,42 +340,36 @@ export default function AdminUsers() {
 
         // Restaurar metas
         for (const goal of backup.goals || []) {
+          const { id, created_by, created_date, updated_date, ...goalData } = goal;
           await Goal.create({
-            ...goal,
-            id: undefined, // Let the system generate a new ID
-            created_by: user.email,
-            created_date: undefined,
-            updated_date: undefined
+            ...goalData,
+            created_by: targetUser.email
           });
         }
 
         // Restaurar contas a pagar/receber
         for (const bill of backup.bills || []) {
+          const { id, created_by, created_date, updated_date, ...billData } = bill;
           await Bill.create({
-            ...bill,
-            id: undefined, // Let the system generate a new ID
-            created_by: user.email,
-            created_date: undefined,
-            updated_date: undefined,
-            category_id: categoryIdMap[bill.category_id] || bill.category_id, // Use new category ID if mapped
-            account_id: accountIdMap[bill.account_id] || bill.account_id      // Use new account ID if mapped
+            ...billData,
+            created_by: targetUser.email,
+            category_id: categoryIdMap[bill.category_id] || bill.category_id,
+            account_id: accountIdMap[bill.account_id] || bill.account_id
           });
         }
 
         // Restaurar transferências
         for (const transfer of backup.transfers || []) {
+          const { id, created_by, created_date, updated_date, ...transferData } = transfer;
           await Transfer.create({
-            ...transfer,
-            id: undefined, // Let the system generate a new ID
-            created_by: user.email,
-            created_date: undefined,
-            updated_date: undefined,
-            from_account_id: accountIdMap[transfer.from_account_id] || transfer.from_account_id, // Use new account ID if mapped
-            to_account_id: accountIdMap[transfer.to_account_id] || transfer.to_account_id         // Use new account ID if mapped
+            ...transferData,
+            created_by: targetUser.email,
+            from_account_id: accountIdMap[transfer.from_account_id] || transfer.from_account_id,
+            to_account_id: accountIdMap[transfer.to_account_id] || transfer.to_account_id
           });
         }
 
-        alert(`✅ BACKUP RESTAURADO COM SUCESSO!\n\n📊 Dados restaurados:\n- ${backup.transactions?.length || 0} transações\n- ${backup.accounts?.length || 0} contas\n- ${backup.categories?.length || 0} categorias\n- ${backup.goals?.length || 0} metas\n- ${backup.bills?.length || 0} contas a pagar/receber\n- ${backup.transfers?.length || 0} transferências`);
+        alert(`✅ BACKUP RESTAURADO COM SUCESSO!\n\n📊 Dados restaurados para ${targetUser.full_name || targetUser.email}:\n- ${backup.transactions?.length || 0} transações\n- ${backup.accounts?.length || 0} contas\n- ${backup.categories?.length || 0} categorias\n- ${backup.goals?.length || 0} metas\n- ${backup.bills?.length || 0} contas a pagar/receber\n- ${backup.transfers?.length || 0} transferências`);
         
         loadUsers();
       } catch (error) {
