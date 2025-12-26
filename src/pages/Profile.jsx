@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { User } from "@/entities/User";
-import { TermsOfService } from "@/entities/TermsOfService"; // Moved import to top
+import { TermsOfService } from "@/entities/TermsOfService";
+import { Transaction, Account, Category, Goal, Bill, Transfer } from "@/entities/all";
 import { base44 } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,7 +38,8 @@ import {
   Eye,
   Shield,
   XCircle,
-  AlertTriangle
+  AlertTriangle,
+  Download
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -46,8 +48,10 @@ export default function Profile() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [terms, setTerms] = useState(null);
+  const backupInputRef = useRef(null);
   const [formData, setFormData] = useState({
     full_name: "",
     phone: "",
@@ -356,6 +360,84 @@ export default function Profile() {
     window.location.reload();
   };
 
+  const handleRestoreBackup = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsRestoring(true);
+      const text = await file.text();
+      const backup = JSON.parse(text);
+
+      if (!backup.user_info || !backup.user_info.original_email) {
+        throw new Error("Arquivo de backup inválido");
+      }
+
+      if (!confirm(`⚠️ CONFIRMAR RESTAURAÇÃO\n\nRestaurar backup de: ${backup.user_info.original_email}\nData: ${new Date(backup.user_info.export_date).toLocaleDateString('pt-BR')}\n\nTodos os dados serão ADICIONADOS à sua conta atual.\n\nDeseja continuar?`)) {
+        setIsRestoring(false);
+        if (backupInputRef.current) backupInputRef.current.value = '';
+        return;
+      }
+
+      const accountIdMap = {};
+      const categoryIdMap = {};
+
+      for (const cat of backup.categories || []) {
+        const { id, created_by, created_date, updated_date, ...catData } = cat;
+        const newCat = await Category.create({ ...catData });
+        categoryIdMap[cat.id] = newCat.id;
+      }
+
+      for (const acc of backup.accounts || []) {
+        const { id, created_by, created_date, updated_date, ...accData } = acc;
+        const newAcc = await Account.create({ ...accData });
+        accountIdMap[acc.id] = newAcc.id;
+      }
+
+      for (const tx of backup.transactions || []) {
+        const { id, created_by, created_date, updated_date, user_email, ...txData } = tx;
+        await Transaction.create({
+          ...txData,
+          user_email: user.email,
+          category_id: categoryIdMap[tx.category_id] || tx.category_id,
+          account_id: accountIdMap[tx.account_id] || tx.account_id
+        });
+      }
+
+      for (const goal of backup.goals || []) {
+        const { id, created_by, created_date, updated_date, ...goalData } = goal;
+        await Goal.create({ ...goalData });
+      }
+
+      for (const bill of backup.bills || []) {
+        const { id, created_by, created_date, updated_date, ...billData } = bill;
+        await Bill.create({
+          ...billData,
+          category_id: categoryIdMap[bill.category_id] || bill.category_id,
+          account_id: accountIdMap[bill.account_id] || bill.account_id
+        });
+      }
+
+      for (const transfer of backup.transfers || []) {
+        const { id, created_by, created_date, updated_date, ...transferData } = transfer;
+        await Transfer.create({
+          ...transferData,
+          from_account_id: accountIdMap[transfer.from_account_id] || transfer.from_account_id,
+          to_account_id: accountIdMap[transfer.to_account_id] || transfer.to_account_id
+        });
+      }
+
+      alert(`✅ BACKUP RESTAURADO!\n\n📊 Dados restaurados:\n- ${backup.transactions?.length || 0} transações\n- ${backup.accounts?.length || 0} contas\n- ${backup.categories?.length || 0} categorias\n- ${backup.goals?.length || 0} metas\n- ${backup.bills?.length || 0} contas a pagar/receber\n- ${backup.transfers?.length || 0} transferências`);
+      
+      if (backupInputRef.current) backupInputRef.current.value = '';
+    } catch (error) {
+      console.error("Erro ao restaurar backup:", error);
+      alert(`❌ Erro ao restaurar backup: ${error.message}`);
+    } finally {
+      setIsRestoring(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#0a0a0f] via-[#1a1a2e] to-[#0a0a0f] flex items-center justify-center">
@@ -626,6 +708,51 @@ export default function Profile() {
             </CardContent>
           </Card>
         </motion.div>
+
+        {/* Restaurar Backup */}
+        <Card className="glass-card border-0 border-l-4 border-l-cyan-500">
+          <CardHeader className="border-b border-purple-900/30">
+            <CardTitle className="text-white flex items-center gap-2">
+              <Download className="w-5 h-5 text-cyan-400" />
+              Restaurar Backup
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6 space-y-4">
+            <p className="text-purple-300 text-sm">
+              Recebeu um arquivo de backup do administrador? Faça upload aqui para restaurar seus dados.
+            </p>
+            <div className="flex items-center gap-3">
+              <input
+                ref={backupInputRef}
+                type="file"
+                accept=".json"
+                onChange={handleRestoreBackup}
+                className="hidden"
+                disabled={isRestoring}
+              />
+              <Button
+                onClick={() => backupInputRef.current?.click()}
+                disabled={isRestoring}
+                className="bg-gradient-to-r from-cyan-600 to-blue-600"
+              >
+                {isRestoring ? "Restaurando..." : "Selecionar Arquivo"}
+              </Button>
+              {isRestoring && (
+                <div className="text-cyan-400 text-sm animate-pulse">
+                  Processando backup...
+                </div>
+              )}
+            </div>
+            <div className="p-3 bg-blue-900/20 border border-blue-700/30 rounded-lg text-xs text-blue-200">
+              <p className="font-semibold mb-1">ℹ️ Como funciona:</p>
+              <ol className="list-decimal list-inside space-y-1 ml-2">
+                <li>O administrador gera seu backup pelo painel admin</li>
+                <li>Você recebe o arquivo .json</li>
+                <li>Faça upload aqui para restaurar seus dados</li>
+              </ol>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Tema */}
         <Card className="glass-card border-0 neon-glow">
