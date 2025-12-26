@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import FeatureGuard from "../components/FeatureGuard";
 import { Bill, Account, Category, Transaction, SystemCategory } from "@/entities/all";
@@ -128,9 +127,21 @@ export default function Receivables() {
     setIsSubmitting(true);
     
     try {
+      const parseAmountBR = (value) => {
+        if (!value) return 0;
+        let str = String(value).trim();
+        if (str.includes(',') && str.includes('.')) {
+          str = str.replace(/\./g, '').replace(',', '.');
+        } else if (str.includes(',')) {
+          str = str.replace(',', '.');
+        }
+        const num = parseFloat(str);
+        return isNaN(num) ? 0 : num;
+      };
+
       const data = {
         ...formData,
-        amount: parseFloat(formData.amount)
+        amount: parseAmountBR(formData.amount)
       };
       
       if (editingBill) {
@@ -172,7 +183,10 @@ export default function Receivables() {
     setEditingBill(bill);
     setFormData({
       description: bill.description,
-      amount: bill.amount.toString(),
+      amount: bill.amount.toLocaleString('pt-BR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }),
       type: bill.type,
       category_id: bill.category_id || "",
       account_id: bill.account_id || "",
@@ -754,15 +768,33 @@ Agradecemos pela atenção e confiança!
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label className="text-purple-200 text-sm">Valor</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={formData.amount}
-                      onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                      required
-                      className="bg-purple-900/20 border-purple-700/50 text-white mt-1"
-                      placeholder="0.00"
-                    />
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-300 font-bold text-sm">
+                        R$
+                      </span>
+                      <Input
+                        type="text"
+                        inputMode="decimal"
+                        value={formData.amount}
+                        onChange={(e) => {
+                          let raw = e.target.value.replace(/\D/g, '');
+                          if (raw === '') {
+                            setFormData({ ...formData, amount: '' });
+                            return;
+                          }
+                          raw = raw.slice(0, 12);
+                          const cents = parseInt(raw, 10);
+                          const formatted = (cents / 100).toLocaleString('pt-BR', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                          });
+                          setFormData({ ...formData, amount: formatted });
+                        }}
+                        required
+                        className="bg-purple-900/20 border-purple-700/50 text-white mt-1 pl-10"
+                        placeholder="0,00"
+                      />
+                    </div>
                   </div>
 
                   <div>

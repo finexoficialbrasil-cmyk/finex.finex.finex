@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Goal, Transaction } from "@/entities/all";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -158,8 +157,14 @@ export default function GoalsPage() {
     setFormData({
       title: goal.title,
       description: goal.description || "",
-      target_amount: goal.target_amount.toString(),
-      current_amount: goal.current_amount.toString(),
+      target_amount: goal.target_amount.toLocaleString('pt-BR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }),
+      current_amount: goal.current_amount.toLocaleString('pt-BR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }),
       deadline: new Date(goal.deadline),
       icon: goal.icon,
       color: goal.color,
