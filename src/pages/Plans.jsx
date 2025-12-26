@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from "react";
 import { User } from "@/entities/User";
 import { SystemPlan, Subscription, SystemSettings } from "@/entities/all";
@@ -46,22 +45,26 @@ import { motion, AnimatePresence } from "framer-motion";
 const calculateDaysLeft = (endDateString) => {
   if (!endDateString) return 0;
   
-  // Parse the date string as YYYY-MM-DD
-  const [year, month, day] = endDateString.split('-').map(Number);
-  // Create a Date object in local timezone
-  // Month is 0-indexed in Date constructor, so month - 1
-  const endDate = new Date(year, month - 1, day);
-  
-  const now = new Date();
-  // Create a Date object for today, also in local timezone
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  
-  // Calculate difference in milliseconds
-  const diffTime = endDate.getTime() - today.getTime();
-  // Convert to days and ceil to count partial days as a full day left
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  
-  return diffDays;
+  try {
+    // Parse the date string as YYYY-MM-DD
+    const [year, month, day] = endDateString.split('-').map(Number);
+    // Create a Date object in local timezone
+    // Month is 0-indexed in Date constructor, so month - 1
+    const endDate = new Date(year, month - 1, day);
+    
+    const now = new Date();
+    // Create a Date object for today, also in local timezone
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    // Calculate difference in milliseconds
+    const diffTime = endDate.getTime() - today.getTime();
+    // Convert to days and ceil to count partial days as a full day left
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    return diffDays;
+  } catch (e) {
+    return 0;
+  }
 };
 
 // ✅ FUNÇÃO CORRIGIDA: NUNCA dar trial para quem já teve plano pago
@@ -74,16 +77,24 @@ const hasActiveAccess = (user) => {
 
   // ✅ VERIFICAR TRIAL
   if (user.subscription_status === 'trial' && user.trial_ends_at) {
-    const [year, month, day] = user.trial_ends_at.split('-').map(Number);
-    const trialEnd = new Date(year, month - 1, day);
-    return trialEnd >= today;
+    try {
+      const [year, month, day] = user.trial_ends_at.split('-').map(Number);
+      const trialEnd = new Date(year, month - 1, day);
+      return trialEnd >= today;
+    } catch (e) {
+      return false;
+    }
   }
   
   // ✅ VERIFICAR ASSINATURA PAGA
   if (user.subscription_status === 'active' && user.subscription_end_date) {
-    const [year, month, day] = user.subscription_end_date.split('-').map(Number);
-    const endDate = new Date(year, month - 1, day);
-    return endDate >= today;
+    try {
+      const [year, month, day] = user.subscription_end_date.split('-').map(Number);
+      const endDate = new Date(year, month - 1, day);
+      return endDate >= today;
+    } catch (e) {
+      return false;
+    }
   }
   
   return false;
