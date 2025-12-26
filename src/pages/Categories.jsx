@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import FeatureGuard from "../components/FeatureGuard";
 import { Category } from "@/entities/Category";
@@ -92,9 +91,18 @@ export default function Categories() {
     setIsSubmitting(true);
     
     try {
+      const parseAmountBR = (value) => {
+        if (!value) return undefined;
+        let str = String(value).trim();
+        if (str.includes(',') && str.includes('.')) str = str.replace(/\./g, '').replace(',', '.');
+        else if (str.includes(',')) str = str.replace(',', '.');
+        const num = parseFloat(str);
+        return isNaN(num) ? undefined : num;
+      };
+      
       const data = {
         ...formData,
-        budget_limit: formData.budget_limit ? parseFloat(formData.budget_limit) : undefined
+        budget_limit: parseAmountBR(formData.budget_limit)
       };
       
       if (editingCategory) {
@@ -136,7 +144,7 @@ export default function Categories() {
       name: category.name,
       type: category.type,
       color: category.color || "#a855f7",
-      budget_limit: category.budget_limit?.toString() || ""
+      budget_limit: category.budget_limit ? category.budget_limit.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ""
     });
     setShowForm(true);
   };
@@ -420,15 +428,28 @@ export default function Categories() {
 
               <div>
                 <Label className="text-purple-200">Limite Mensal (Opcional)</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={formData.budget_limit}
-                  onChange={(e) => setFormData({ ...formData, budget_limit: e.target.value })}
-                  placeholder="0.00"
-                  className="bg-purple-900/20 border-purple-700/50 text-white"
-                  disabled={isSubmitting}
-                />
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-300 font-bold text-sm">R$</span>
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    value={formData.budget_limit}
+                    onChange={(e) => {
+                      let raw = e.target.value.replace(/\D/g, '');
+                      if (raw === '') {
+                        setFormData({ ...formData, budget_limit: '' });
+                        return;
+                      }
+                      raw = raw.slice(0, 12);
+                      const cents = parseInt(raw, 10);
+                      const formatted = (cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                      setFormData({ ...formData, budget_limit: formatted });
+                    }}
+                    placeholder="0,00"
+                    className="bg-purple-900/20 border-purple-700/50 text-white pl-10"
+                    disabled={isSubmitting}
+                  />
+                </div>
               </div>
 
               <div>
