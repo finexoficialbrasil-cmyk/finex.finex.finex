@@ -134,7 +134,7 @@ export default function ExportBillsPDF({ bills, categories, accounts, type = "pa
       
       doc.setFontSize(14);
       doc.setFont(undefined, 'normal');
-      doc.text('Inteligência Financeira Empresarial', pageWidth / 2, 102, { align: 'center' });
+      doc.text('Inteligencia Financeira Empresarial', pageWidth / 2, 102, { align: 'center' });
       
       // Linha divisória
       doc.setDrawColor(255, 255, 255);
@@ -145,7 +145,7 @@ export default function ExportBillsPDF({ bills, categories, accounts, type = "pa
       doc.setFontSize(24);
       doc.setFont(undefined, 'bold');
       doc.text(
-        type === "payable" ? 'RELATÓRIO DE CONTAS A PAGAR' : 'RELATÓRIO DE CONTAS A RECEBER',
+        type === "payable" ? 'RELATORIO DE CONTAS A PAGAR' : 'RELATORIO DE CONTAS A RECEBER',
         pageWidth / 2,
         135,
         { align: 'center' }
@@ -154,22 +154,24 @@ export default function ExportBillsPDF({ bills, categories, accounts, type = "pa
       doc.setFontSize(12);
       doc.setFont(undefined, 'normal');
       const currentDate = new Date();
-      doc.text(`Período: ${currentDate.toLocaleDateString('pt-BR')}`, pageWidth / 2, 145, { align: 'center' });
+      doc.text(`Periodo: ${currentDate.toLocaleDateString('pt-BR')}`, pageWidth / 2, 145, { align: 'center' });
       
       // Box de informações
       const boxY = 160;
       doc.setFillColor(255, 255, 255, 0.1);
       doc.roundedRect(30, boxY, pageWidth - 60, 60, 5, 5, 'F');
       
+      const totalAmountCover = filteredBills.reduce((sum, b) => sum + b.amount, 0);
+      
       doc.setFontSize(11);
-      doc.text(`📊 Total de Registros: ${filteredBills.length}`, pageWidth / 2, boxY + 15, { align: 'center' });
-      doc.text(`💰 Valor Total: R$ ${filteredBills.reduce((sum, b) => sum + b.amount, 0).toFixed(2)}`, pageWidth / 2, boxY + 28, { align: 'center' });
-      doc.text(`📅 Gerado em: ${currentDate.toLocaleString('pt-BR')}`, pageWidth / 2, boxY + 41, { align: 'center' });
+      doc.text(`Total de Registros: ${filteredBills.length}`, pageWidth / 2, boxY + 15, { align: 'center' });
+      doc.text(`Valor Total: R$ ${totalAmountCover.toFixed(2)}`, pageWidth / 2, boxY + 28, { align: 'center' });
+      doc.text(`Gerado em: ${currentDate.toLocaleString('pt-BR')}`, pageWidth / 2, boxY + 41, { align: 'center' });
       
       // Footer capa
       doc.setFontSize(9);
       doc.text('Documento confidencial - Uso interno', pageWidth / 2, pageHeight - 20, { align: 'center' });
-      doc.text('© FINEX - Todos os direitos reservados', pageWidth / 2, pageHeight - 12, { align: 'center' });
+      doc.text('FINEX - Todos os direitos reservados', pageWidth / 2, pageHeight - 12, { align: 'center' });
 
       // ============================================
       // PÁGINA 2: SUMÁRIO EXECUTIVO
@@ -182,20 +184,25 @@ export default function ExportBillsPDF({ bills, categories, accounts, type = "pa
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(14);
       doc.setFont(undefined, 'bold');
-      doc.text('📋 SUMÁRIO EXECUTIVO', 18, y + 8);
+      doc.text('SUMARIO EXECUTIVO', 18, y + 8);
       y += 20;
 
       doc.setFont(undefined, 'normal');
       doc.setTextColor(60, 60, 60);
       doc.setFontSize(10);
-      doc.text(`Este relatório apresenta uma análise detalhada das ${type === 'payable' ? 'contas a pagar' : 'contas a receber'}`, 14, y);
+      doc.text(`Este relatorio apresenta uma analise detalhada das ${type === 'payable' ? 'contas a pagar' : 'contas a receber'}`, 14, y);
       y += 6;
-      doc.text(`da empresa, incluindo indicadores de performance, análise de tendências e projeções.`, 14, y);
+      doc.text(`da empresa, incluindo indicadores de performance, analise de tendencias e projecoes.`, 14, y);
       y += 15;
 
       // KPIs em cards
       const cardWidth = (pageWidth - 38) / 2;
       const cardHeight = 35;
+      
+      const totalAmount = filteredBills.reduce((sum, b) => sum + b.amount, 0);
+      const pendingAmount = filteredBills.filter(b => b.status === "pending").reduce((sum, b) => sum + b.amount, 0);
+      const paidAmount = filteredBills.filter(b => b.status === "paid").reduce((sum, b) => sum + b.amount, 0);
+      const overdueAmount = filteredBills.filter(b => b.status === "overdue").reduce((sum, b) => sum + b.amount, 0);
       
       // Card 1: Total Geral
       doc.setFillColor(248, 250, 252);
@@ -210,14 +217,13 @@ export default function ExportBillsPDF({ bills, categories, accounts, type = "pa
       doc.setTextColor(139, 92, 246);
       doc.setFontSize(18);
       doc.setFont(undefined, 'bold');
-      doc.text(`R$ ${filteredBills.reduce((sum, b) => sum + b.amount, 0).toFixed(2)}`, 18, y + 22);
+      doc.text(`R$ ${totalAmount.toFixed(2)}`, 18, y + 22);
       doc.setFont(undefined, 'normal');
       doc.setFontSize(8);
       doc.setTextColor(100, 100, 100);
       doc.text(`${filteredBills.length} registro(s)`, 18, y + 30);
       
       // Card 2: Pendente
-      const pendingAmount = filteredBills.filter(b => b.status === "pending").reduce((sum, b) => sum + b.amount, 0);
       doc.setFillColor(254, 252, 232);
       doc.roundedRect(14 + cardWidth + 10, y, cardWidth, cardHeight, 4, 4, 'F');
       doc.setDrawColor(234, 179, 8);
@@ -238,7 +244,6 @@ export default function ExportBillsPDF({ bills, categories, accounts, type = "pa
       y += cardHeight + 10;
       
       // Card 3: Pago
-      const paidAmount = filteredBills.filter(b => b.status === "paid").reduce((sum, b) => sum + b.amount, 0);
       doc.setFillColor(240, 253, 244);
       doc.roundedRect(14, y, cardWidth, cardHeight, 4, 4, 'F');
       doc.setDrawColor(34, 197, 94);
@@ -257,7 +262,6 @@ export default function ExportBillsPDF({ bills, categories, accounts, type = "pa
       doc.text(`${filteredBills.filter(b => b.status === "paid").length} conta(s)`, 18, y + 30);
       
       // Card 4: Vencido
-      const overdueAmount = filteredBills.filter(b => b.status === "overdue").reduce((sum, b) => sum + b.amount, 0);
       doc.setFillColor(254, 242, 242);
       doc.roundedRect(14 + cardWidth + 10, y, cardWidth, cardHeight, 4, 4, 'F');
       doc.setDrawColor(239, 68, 68);
@@ -283,7 +287,7 @@ export default function ExportBillsPDF({ bills, categories, accounts, type = "pa
       doc.setTextColor(80, 80, 80);
       doc.setFontSize(11);
       doc.setFont(undefined, 'bold');
-      doc.text('📊 DISTRIBUIÇÃO POR STATUS', 14, y);
+      doc.text('DISTRIBUICAO POR STATUS', 14, y);
       y += 10;
       
       const totalAmount = filteredBills.reduce((sum, b) => sum + b.amount, 0);
@@ -313,7 +317,7 @@ export default function ExportBillsPDF({ bills, categories, accounts, type = "pa
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(14);
       doc.setFont(undefined, 'bold');
-      doc.text('📈 ANÁLISE POR CATEGORIA', 18, y + 8);
+      doc.text('ANALISE POR CATEGORIA', 18, y + 8);
       y += 20;
       
       const categoryStats = {};
@@ -362,7 +366,7 @@ export default function ExportBillsPDF({ bills, categories, accounts, type = "pa
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(14);
       doc.setFont(undefined, 'bold');
-      doc.text('📋 DETALHAMENTO DE CONTAS', 18, y + 8);
+      doc.text('DETALHAMENTO DE CONTAS', 18, y + 8);
       y += 20;
 
       // Filtros aplicados
@@ -379,30 +383,30 @@ export default function ExportBillsPDF({ bills, categories, accounts, type = "pa
         doc.setTextColor(100, 100, 100);
         doc.setFontSize(9);
         doc.setFont(undefined, 'bold');
-        doc.text('🔍 Filtros aplicados:', 18, y + 5);
+        doc.text('Filtros aplicados:', 18, y + 5);
         y += 8;
         
         doc.setFont(undefined, 'normal');
         if (filters.status !== "all") {
-          doc.text(`  • Status: ${filters.status}`, 18, y);
+          doc.text(`  > Status: ${filters.status}`, 18, y);
           y += 4;
         }
         if (filters.category !== "all") {
           const cat = categories.find(c => c.id === filters.category);
-          doc.text(`  • Categoria: ${cat?.name || 'N/A'}`, 18, y);
+          doc.text(`  > Categoria: ${cat?.name || 'N/A'}`, 18, y);
           y += 4;
         }
         if (filters.account !== "all") {
           const acc = accounts.find(a => a.id === filters.account);
-          doc.text(`  • Conta: ${acc?.name || 'N/A'}`, 18, y);
+          doc.text(`  > Conta: ${acc?.name || 'N/A'}`, 18, y);
           y += 4;
         }
         if (filters.startDate) {
-          doc.text(`  • De: ${new Date(filters.startDate).toLocaleDateString('pt-BR')}`, 18, y);
+          doc.text(`  > De: ${new Date(filters.startDate).toLocaleDateString('pt-BR')}`, 18, y);
           y += 4;
         }
         if (filters.endDate) {
-          doc.text(`  • Até: ${new Date(filters.endDate).toLocaleDateString('pt-BR')}`, 18, y);
+          doc.text(`  > Ate: ${new Date(filters.endDate).toLocaleDateString('pt-BR')}`, 18, y);
           y += 4;
         }
         
@@ -416,7 +420,7 @@ export default function ExportBillsPDF({ bills, categories, accounts, type = "pa
         doc.roundedRect(14, y, pageWidth - 28, 25, 3, 3, 'F');
         doc.setTextColor(150, 150, 150);
         doc.setFontSize(10);
-        doc.text('📭 Nenhum registro encontrado com os filtros aplicados.', pageWidth / 2, y + 15, { align: 'center' });
+        doc.text('Nenhum registro encontrado com os filtros aplicados.', pageWidth / 2, y + 15, { align: 'center' });
       } else {
         y = checkPageSpace(y, 20);
         
@@ -505,12 +509,12 @@ export default function ExportBillsPDF({ bills, categories, accounts, type = "pa
           
           const account = accounts.find(a => a.id === bill.account_id);
           const details = [];
-          if (account) details.push(`💳 ${account.name}`);
-          if (bill.contact_name) details.push(`👤 ${bill.contact_name}`);
-          if (bill.notes) details.push(`📝 ${bill.notes.substring(0, 30)}`);
+          if (account) details.push(`Conta: ${account.name}`);
+          if (bill.contact_name) details.push(`Contato: ${bill.contact_name}`);
+          if (bill.notes) details.push(`Obs: ${bill.notes.substring(0, 30)}`);
           
           if (details.length > 0) {
-            doc.text(details.join(' • '), 17, y);
+            doc.text(details.join(' | '), 17, y);
             y += 5;
           }
           
@@ -530,14 +534,14 @@ export default function ExportBillsPDF({ bills, categories, accounts, type = "pa
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(14);
       doc.setFont(undefined, 'bold');
-      doc.text('💡 INSIGHTS E RECOMENDAÇÕES', 18, y + 8);
+      doc.text('INSIGHTS E RECOMENDACOES', 18, y + 8);
       y += 20;
       
       // Análise de tendências
       doc.setTextColor(60, 60, 60);
       doc.setFontSize(10);
       doc.setFont(undefined, 'bold');
-      doc.text('📊 Análise de Performance', 14, y);
+      doc.text('Analise de Performance', 14, y);
       y += 8;
       
       doc.setFont(undefined, 'normal');
@@ -546,24 +550,24 @@ export default function ExportBillsPDF({ bills, categories, accounts, type = "pa
       const insights = [];
       
       if (filteredBills.filter(b => b.status === "overdue").length > 0) {
-        insights.push('⚠️ Atenção: Existem contas vencidas que requerem ação imediata.');
+        insights.push('ATENCAO: Existem contas vencidas que requerem acao imediata.');
       }
       
       const avgAmount = totalAmount / filteredBills.length;
-      insights.push(`💰 Valor médio por conta: R$ ${avgAmount.toFixed(2)}`);
+      insights.push(`Valor medio por conta: R$ ${avgAmount.toFixed(2)}`);
       
       const paidPercentage = totalAmount > 0 ? (paidAmount / totalAmount) * 100 : 0;
       if (paidPercentage >= 80) {
-        insights.push(`✅ Excelente taxa de ${type === 'payable' ? 'pagamento' : 'recebimento'}: ${paidPercentage.toFixed(1)}%`);
+        insights.push(`Excelente taxa de ${type === 'payable' ? 'pagamento' : 'recebimento'}: ${paidPercentage.toFixed(1)}%`);
       } else if (paidPercentage >= 50) {
-        insights.push(`⚡ Taxa de ${type === 'payable' ? 'pagamento' : 'recebimento'} moderada: ${paidPercentage.toFixed(1)}%`);
+        insights.push(`Taxa de ${type === 'payable' ? 'pagamento' : 'recebimento'} moderada: ${paidPercentage.toFixed(1)}%`);
       } else {
-        insights.push(`⚠️ Taxa de ${type === 'payable' ? 'pagamento' : 'recebimento'} baixa: ${paidPercentage.toFixed(1)}% - Requer atenção`);
+        insights.push(`Taxa de ${type === 'payable' ? 'pagamento' : 'recebimento'} baixa: ${paidPercentage.toFixed(1)}% - Requer atencao`);
       }
       
       insights.forEach(insight => {
         y = checkPageSpace(y, 8);
-        doc.text(insight, 14, y);
+        doc.text(`> ${insight}`, 14, y);
         y += 7;
       });
       
@@ -572,18 +576,18 @@ export default function ExportBillsPDF({ bills, categories, accounts, type = "pa
       // Recomendações
       doc.setFont(undefined, 'bold');
       doc.setFontSize(10);
-      doc.text('🎯 Recomendações Estratégicas', 14, y);
+      doc.text('Recomendacoes Estrategicas', 14, y);
       y += 8;
       
       doc.setFont(undefined, 'normal');
       doc.setFontSize(9);
       
       const recommendations = [
-        '• Implemente lembretes automáticos para contas próximas do vencimento',
-        '• Negocie prazos melhores com fornecedores de maior volume',
-        '• Considere descontos para pagamentos antecipados',
-        '• Monitore tendências mensais para melhor planejamento',
-        '• Automatize processos de cobrança para maior eficiência'
+        '> Implemente lembretes automaticos para contas proximas do vencimento',
+        '> Negocie prazos melhores com fornecedores de maior volume',
+        '> Considere descontos para pagamentos antecipados',
+        '> Monitore tendencias mensais para melhor planejamento',
+        '> Automatize processos de cobranca para maior eficiencia'
       ];
       
       recommendations.forEach(rec => {
@@ -606,18 +610,18 @@ export default function ExportBillsPDF({ bills, categories, accounts, type = "pa
       doc.setTextColor(22, 163, 74);
       doc.setFontSize(10);
       doc.setFont(undefined, 'bold');
-      doc.text('✨ FINEX - Inteligência Financeira ao Seu Alcance', pageWidth / 2, y + 12, { align: 'center' });
+      doc.text('FINEX - Inteligencia Financeira ao Seu Alcance', pageWidth / 2, y + 12, { align: 'center' });
       doc.setFont(undefined, 'normal');
       doc.setFontSize(8);
-      doc.text('Este relatório foi gerado automaticamente pelo sistema FINEX.', pageWidth / 2, y + 20, { align: 'center' });
-      doc.text('Para mais informações, acesse o painel completo.', pageWidth / 2, y + 26, { align: 'center' });
+      doc.text('Este relatorio foi gerado automaticamente pelo sistema FINEX.', pageWidth / 2, y + 20, { align: 'center' });
+      doc.text('Para mais informacoes, acesse o painel completo.', pageWidth / 2, y + 26, { align: 'center' });
 
       // Não precisa adicionar footers manualmente, já feito em addPageNumber()
 
       const fileName = `${type === "payable" ? 'contas_pagar' : 'contas_receber'}_${new Date().toISOString().split('T')[0]}.pdf`;
       doc.save(fileName);
 
-      alert(`✅ PDF gerado com sucesso!\n\n📊 ${filteredBills.length} registro(s) exportado(s)\n💰 Total: R$ ${totalAmount.toFixed(2)}`);
+      alert(`PDF gerado com sucesso!\n\n${filteredBills.length} registro(s) exportado(s)\nTotal: R$ ${totalAmount.toFixed(2)}`);
       setShowModal(false);
     } catch (error) {
       console.error("Erro ao gerar PDF:", error);
@@ -660,10 +664,10 @@ export default function ExportBillsPDF({ bills, categories, accounts, type = "pa
           <div className="space-y-4">
             <div className="bg-purple-900/20 p-4 rounded-lg border border-purple-700/30">
               <p className="text-purple-200 text-sm mb-3">
-                <strong>📊 Filtros de Exportação</strong>
+                <strong>Filtros de Exportacao</strong>
               </p>
               <p className="text-purple-300 text-xs">
-                Selecione os filtros desejados para personalizar seu relatório em PDF.
+                Selecione os filtros desejados para personalizar seu relatorio em PDF.
               </p>
             </div>
 
