@@ -118,7 +118,7 @@ export default function AdminUsers() {
           phone: user.phone,
           export_date: new Date().toISOString()
         },
-        transactions: transactions.map(t => ({...t, id: undefined, created_by: undefined, created_date: undefined, updated_date: undefined})),
+        transactions: transactions.map(t => ({...t, id: undefined, created_by: undefined, created_date: undefined, updated_date: undefined, user_email: undefined})),
         accounts: accounts.map(a => ({...a, id: undefined, created_by: undefined, created_date: undefined, updated_date: undefined})),
         categories: categories.map(c => ({...c, id: undefined, created_by: undefined, created_date: undefined, updated_date: undefined})),
         goals: goals.map(g => ({...g, id: undefined, created_by: undefined, created_date: undefined, updated_date: undefined})),
@@ -332,14 +332,13 @@ export default function AdminUsers() {
 
         // Restaurar transações
         for (const tx of backup.transactions || []) {
+          const { id, created_by, created_date, updated_date, user_email, ...txData } = tx;
           await Transaction.create({
-            ...tx,
-            id: undefined, // Let the system generate a new ID
+            ...txData,
             created_by: user.email,
-            created_date: undefined,
-            updated_date: undefined,
-            category_id: categoryIdMap[tx.category_id] || tx.category_id, // Use new category ID if mapped
-            account_id: accountIdMap[tx.account_id] || tx.account_id      // Use new account ID if mapped
+            user_email: user.email,
+            category_id: categoryIdMap[tx.category_id] || tx.category_id,
+            account_id: accountIdMap[tx.account_id] || tx.account_id
           });
         }
 
