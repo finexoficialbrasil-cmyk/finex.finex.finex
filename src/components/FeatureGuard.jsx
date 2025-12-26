@@ -16,24 +16,32 @@ const hasActiveAccess = (user) => {
   
   // ✅ TRIAL ativo = acesso completo
   if (user.subscription_status === 'trial' && user.trial_ends_at) {
-    const [year, month, day] = user.trial_ends_at.split('-').map(Number);
-    const trialEnd = new Date(year, month - 1, day);
-    
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
-    return trialEnd >= today;
+    try {
+      const [year, month, day] = user.trial_ends_at.split('-').map(Number);
+      const trialEnd = new Date(year, month - 1, day);
+      
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      return trialEnd >= today;
+    } catch (e) {
+      return false;
+    }
   }
   
   // ✅ Assinatura paga ativa
   if (user.subscription_status === 'active' && user.subscription_end_date) {
-    const [year, month, day] = user.subscription_end_date.split('-').map(Number);
-    const endDate = new Date(year, month - 1, day);
-    
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
-    return endDate >= today;
+    try {
+      const [year, month, day] = user.subscription_end_date.split('-').map(Number);
+      const endDate = new Date(year, month - 1, day);
+      
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      return endDate >= today;
+    } catch (e) {
+      return false;
+    }
   }
   
   return false;

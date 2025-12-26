@@ -147,32 +147,40 @@ const hasActiveAccess = (user) => {
   
   // ✅ VERIFICAR TRIAL (apenas para quem NUNCA teve plano pago)
   if (user.subscription_status === 'trial' && user.trial_ends_at) {
-    const [year, month, day] = user.trial_ends_at.split('-').map(Number);
-    const trialEnd = new Date(year, month - 1, day);
-    
-    const trialActive = trialEnd >= today;
-    
-    // ✅ Se trial acabou, BLOQUEAR
-    if (!trialActive) {
+    try {
+      const [year, month, day] = user.trial_ends_at.split('-').map(Number);
+      const trialEnd = new Date(year, month - 1, day);
+
+      const trialActive = trialEnd >= today;
+
+      // ✅ Se trial acabou, BLOQUEAR
+      if (!trialActive) {
+        return false;
+      }
+
+      return true;
+    } catch (e) {
       return false;
     }
-    
-    return true;
   }
-  
+
   // ✅ VERIFICAR ASSINATURA PAGA
   if (user.subscription_status === 'active' && user.subscription_end_date) {
-    const [year, month, day] = user.subscription_end_date.split('-').map(Number);
-    const endDate = new Date(year, month - 1, day);
-    
-    const isActive = endDate >= today;
-    
-    // ✅ Se assinatura venceu, BLOQUEAR (NÃO dar trial novamente)
-    if (!isActive) {
+    try {
+      const [year, month, day] = user.subscription_end_date.split('-').map(Number);
+      const endDate = new Date(year, month - 1, day);
+
+      const isActive = endDate >= today;
+
+      // ✅ Se assinatura venceu, BLOQUEAR (NÃO dar trial novamente)
+      if (!isActive) {
+        return false;
+      }
+
+      return true;
+    } catch (e) {
       return false;
     }
-    
-    return true;
   }
   
   // ✅ Sem trial e sem assinatura = BLOQUEADO
