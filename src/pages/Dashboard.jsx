@@ -140,13 +140,17 @@ export default function Dashboard() {
     const monthTransactions = transactions.filter(t => {
       if (!t.date) return false;
       
-      // ✅ CORRIGIDO: Parsear a data corretamente (formato YYYY-MM-DD)
-      const [year, month, day] = t.date.split('-').map(Number);
-      
-      const isCurrentMonth = month === (currentMonth + 1) && year === currentYear;
-      const isCompleted = t.status === "completed";
-      
-      return isCurrentMonth && isCompleted;
+      try {
+        // ✅ CORRIGIDO: Parsear a data corretamente (formato YYYY-MM-DD)
+        const [year, month, day] = t.date.split('-').map(Number);
+        
+        const isCurrentMonth = month === (currentMonth + 1) && year === currentYear;
+        const isCompleted = t.status === "completed";
+        
+        return isCurrentMonth && isCompleted;
+      } catch (e) {
+        return false;
+      }
     });
 
     console.log("📊 Transações do mês atual:", monthTransactions.length);

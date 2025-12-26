@@ -113,6 +113,7 @@ export default function AdminSubscriptions() {
         
         const hasActivePlan = user.subscription_status === 'active' && 
                              user.subscription_end_date && 
+                             user.subscription_end_date.includes('-') &&
                              new Date(user.subscription_end_date) > new Date();
         
         const hasLifetime = user.subscription_plan === 'lifetime';
