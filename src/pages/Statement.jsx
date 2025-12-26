@@ -1,7 +1,7 @@
-
 import React, { useState, useEffect, useCallback } from "react";
 import FeatureGuard from "../components/FeatureGuard";
 import { Transaction, Account, Category, SystemCategory } from "@/entities/all";
+import { User } from "@/entities/User";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,6 +35,7 @@ const formatDateBR = (dateString) => {
 };
 
 export default function Statement() {
+  const [user, setUser] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -54,11 +55,14 @@ export default function Statement() {
     setIsLoading(true);
     try {
       // ✅ OTIMIZADO: Carregar com LIMITES
-      const [txs, accs, userCats] = await Promise.all([
+      const [userData, txs, accs, userCats] = await Promise.all([
+        User.me(),
         Transaction.list(sortBy, 200), // ✅ LIMITE de 200 transações
         Account.list("-created_date", 50), // ✅ LIMITE de 50 contas
         Category.list("-created_date", 100) // ✅ LIMITE de 100 categorias
       ]);
+      
+      setUser(userData);
       
       console.log(`📊 Extrato carregou ${txs.length} transações (ordem: ${sortBy})`);
       
@@ -138,7 +142,7 @@ export default function Statement() {
       <html>
       <head>
         <meta charset="UTF-8">
-        <title>Extrato Financeiro - Reality Activity</title>
+        <title>Extrato Financeiro - FINEX</title>
         <style>
           body {
             font-family: Arial, sans-serif;
@@ -258,20 +262,24 @@ export default function Statement() {
       </head>
       <body>
         <div class="header">
-          <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68e3d7b0d43cf17863ceff88/ead868f84_7f05ce15-3511-4cb5-b883-b4c200824cfc.jpg" alt="Reality Activity" />
-          <h1>Reality Activity</h1>
+          ${user?.avatar_url ? `<img src="${user.avatar_url}" alt="${user.full_name || 'Usuario'}" style="border-radius: 50%; object-fit: cover;" />` : `
+          <div style="width: 80px; height: 80px; margin: 0 auto 10px; background: linear-gradient(135deg, #a855f7, #ec4899); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 36px; font-weight: bold; color: white;">
+            ${(user?.full_name || 'U').charAt(0).toUpperCase()}
+          </div>
+          `}
+          <h1>${user?.full_name || 'Usuario'}</h1>
           <p>Extrato Financeiro Detalhado</p>
-          <p>Gerado em: ${formatDateBR(new Date().toISOString().split('T')[0])} às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
+          <p>Gerado em: ${formatDateBR(new Date().toISOString().split('T')[0])} as ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
         </div>
 
         <div class="info-section">
-          <h2 style="margin-top: 0; color: #a855f7;">Informações do Período</h2>
+          <h2 style="margin-top: 0; color: #a855f7;">Informacoes do Periodo</h2>
           <div class="info-row">
-            <span class="info-label">Período:</span>
-            <span>${formatDateBR(filters.startDate)} até ${formatDateBR(filters.endDate)}</span>
+            <span class="info-label">Periodo:</span>
+            <span>${formatDateBR(filters.startDate)} ate ${formatDateBR(filters.endDate)}</span>
           </div>
           <div class="info-row">
-            <span class="info-label">Total de Transações:</span>
+            <span class="info-label">Total de Transacoes:</span>
             <span>${filteredTransactions.length}</span>
           </div>
           <div class="info-row">
@@ -286,11 +294,11 @@ export default function Statement() {
             <p>R$ ${totals.income.toFixed(2)}</p>
           </div>
           <div class="total-card expense">
-            <h3>SAÍDAS TOTAIS</h3>
+            <h3>SAIDAS TOTAIS</h3>
             <p>R$ ${totals.expense.toFixed(2)}</p>
           </div>
           <div class="total-card">
-            <h3>SALDO DO PERÍODO</h3>
+            <h3>SALDO DO PERIODO</h3>
             <p>R$ ${totals.balance.toFixed(2)}</p>
           </div>
         </div>
@@ -299,7 +307,7 @@ export default function Statement() {
           <thead>
             <tr>
               <th>Data</th>
-              <th>Descrição</th>
+              <th>Descricao</th>
               <th>Categoria</th>
               <th>Conta</th>
               <th>Tipo</th>
@@ -318,7 +326,7 @@ export default function Statement() {
                   <td>${tx.description}</td>
                   <td><span class="badge" style="background: ${category?.color}20; color: ${category?.color};">${category?.name || "Sem categoria"}</span></td>
                   <td>${account?.name || "-"}</td>
-                  <td>${isIncome ? "Entrada" : "Saída"}</td>
+                  <td>${isIncome ? "Entrada" : "Saida"}</td>
                   <td class="${isIncome ? "income-amount" : "expense-amount"}">
                     ${isIncome ? "+" : "-"} R$ ${tx.amount.toFixed(2)}
                   </td>
@@ -329,9 +337,9 @@ export default function Statement() {
         </table>
 
         <div class="footer">
-          <p><strong>Reality Activity - Sistema Financeiro Inteligente</strong></p>
-          <p>Este documento foi gerado automaticamente pelo sistema Reality Activity</p>
-          <p>Para dúvidas ou suporte, entre em contato através do aplicativo</p>
+          <p><strong>FINEX - Sistema Financeiro Inteligente</strong></p>
+          <p>Este documento foi gerado automaticamente pelo sistema FINEX</p>
+          <p>Para duvidas ou suporte, entre em contato atraves do aplicativo</p>
         </div>
       </body>
       </html>
