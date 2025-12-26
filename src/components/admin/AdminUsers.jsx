@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { User } from "@/entities/User";
 import { Transaction, Account, Category, Goal, Bill, Transfer } from "@/entities/all";
@@ -196,81 +195,64 @@ export default function AdminUsers() {
 
       // 1. Transferir Categorias
       for (const cat of categories) {
-        // Prepare data for new creation, ensuring it's for the target user
+        const { id, created_by, created_date, updated_date, ...catData } = cat;
         const newCat = await Category.create({
-          ...cat,
-          id: undefined, // Let the system generate a new ID
-          created_by: targetUser.email,
-          created_date: undefined,
-          updated_date: undefined
+          ...catData,
+          created_by: targetUser.email
         });
         categoryIdMap[cat.id] = newCat.id;
       }
 
       // 2. Transferir Contas
       for (const acc of accounts) {
-        // Prepare data for new creation, ensuring it's for the target user
+        const { id, created_by, created_date, updated_date, ...accData } = acc;
         const newAcc = await Account.create({
-          ...acc,
-          id: undefined, // Let the system generate a new ID
-          created_by: targetUser.email,
-          created_date: undefined,
-          updated_date: undefined
+          ...accData,
+          created_by: targetUser.email
         });
         accountIdMap[acc.id] = newAcc.id;
       }
 
       // 3. Transferir Transações
       for (const tx of transactions) {
-        // Prepare data for new creation, mapping category_id and account_id
+        const { id, created_by, created_date, updated_date, user_email, ...txData } = tx;
         await Transaction.create({
-          ...tx,
-          id: undefined, // Let the system generate a new ID
+          ...txData,
           created_by: targetUser.email,
-          created_date: undefined,
-          updated_date: undefined,
-          category_id: categoryIdMap[tx.category_id] || tx.category_id, // Use new category ID if mapped
-          account_id: accountIdMap[tx.account_id] || tx.account_id,     // Use new account ID if mapped
+          user_email: targetUser.email,
+          category_id: categoryIdMap[tx.category_id] || tx.category_id,
+          account_id: accountIdMap[tx.account_id] || tx.account_id
         });
       }
 
       // 4. Transferir Metas
       for (const goal of goals) {
-        // Prepare data for new creation
+        const { id, created_by, created_date, updated_date, ...goalData } = goal;
         await Goal.create({
-          ...goal,
-          id: undefined, // Let the system generate a new ID
-          created_by: targetUser.email,
-          created_date: undefined,
-          updated_date: undefined
+          ...goalData,
+          created_by: targetUser.email
         });
       }
 
       // 5. Transferir Contas a Pagar/Receber
       for (const bill of bills) {
-        // Prepare data for new creation, mapping category_id and account_id
+        const { id, created_by, created_date, updated_date, ...billData } = bill;
         await Bill.create({
-          ...bill,
-          id: undefined, // Let the system generate a new ID
+          ...billData,
           created_by: targetUser.email,
-          created_date: undefined,
-          updated_date: undefined,
-          category_id: categoryIdMap[bill.category_id] || bill.category_id, // Use new category ID if mapped
-          account_id: accountIdMap[bill.account_id] || bill.account_id,     // Use new account ID if mapped
+          category_id: categoryIdMap[bill.category_id] || bill.category_id,
+          account_id: accountIdMap[bill.account_id] || bill.account_id
         });
       }
 
       // 6. Transferir Transferências
       for (const transfer of transfers) {
-        // Prepare data for new creation, mapping from_account_id and to_account_id
+        const { id, created_by, created_date, updated_date, ...transferData } = transfer;
         await Transfer.create({
-          ...transfer,
-          id: undefined, // Let the system generate a new ID
+          ...transferData,
           created_by: targetUser.email,
-          created_date: undefined,
-          updated_date: undefined,
-          from_account_id: accountIdMap[transfer.from_account_id] || transfer.from_account_id, // Use new account ID if mapped
-          to_account_id: accountIdMap[transfer.to_account_id] || transfer.to_account_id         // Use new account ID if mapped
+          from_account_id: accountIdMap[transfer.from_account_id] || transfer.from_account_id,
+          to_account_id: accountIdMap[transfer.to_account_id] || transfer.to_account_id
         });
       }
 
