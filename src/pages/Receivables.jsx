@@ -41,6 +41,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, differenceInDays, isBefore } from "date-fns";
+import ExportBillsPDF from "../components/bills/ExportBillsPDF";
 
 export default function Receivables() {
   const [bills, setBills] = useState([]);
@@ -541,13 +542,21 @@ Agradecemos pela atenção e confiança!
               </h1>
               <p className="text-purple-300 mt-1 text-sm">Gerencie seus recebimentos</p>
             </div>
-            <Button
-              onClick={() => setShowForm(true)}
-              className="w-full md:w-auto bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 neon-glow"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Nova Conta a Receber
-            </Button>
+            <div className="flex gap-2">
+              <ExportBillsPDF 
+                bills={filteredAndSortedBills} 
+                categories={categories} 
+                accounts={accounts}
+                type="receivable"
+              />
+              <Button
+                onClick={() => setShowForm(true)}
+                className="w-full md:w-auto bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 neon-glow"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Nova Conta a Receber
+              </Button>
+            </div>
           </div>
 
           {/* Stats Cards */}
