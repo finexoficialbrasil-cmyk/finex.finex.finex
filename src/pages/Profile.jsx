@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { User } from "@/entities/User";
 import { TermsOfService } from "@/entities/TermsOfService"; // Moved import to top
@@ -110,10 +109,9 @@ export default function Profile() {
 
     setIsUploading(true);
     try {
-      const { UploadFile } = await import("@/integrations/Core");
-      const { file_url } = await UploadFile({ file });
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
       
-      await User.updateMyUserData({ avatar_url: file_url });
+      await base44.auth.updateMe({ avatar_url: file_url });
       await loadUser();
       alert("Foto atualizada com sucesso!");
     } catch (error) {
@@ -132,7 +130,7 @@ export default function Profile() {
 
     setIsSaving(true);
     try {
-      await User.updateMyUserData({
+      await base44.auth.updateMe({
         full_name: formData.full_name,
         phone: formData.phone,
         theme: formData.theme
