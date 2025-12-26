@@ -114,10 +114,19 @@ export default function GoalsPage() {
     setIsSubmitting(true);
     
     try {
+      const parseAmountBR = (value) => {
+        if (!value) return 0;
+        let str = String(value).trim();
+        if (str.includes(',') && str.includes('.')) str = str.replace(/\./g, '').replace(',', '.');
+        else if (str.includes(',')) str = str.replace(',', '.');
+        const num = parseFloat(str);
+        return isNaN(num) ? 0 : num;
+      };
+
       const data = {
         ...formData,
-        target_amount: parseFloat(formData.target_amount),
-        current_amount: parseFloat(formData.current_amount || 0),
+        target_amount: parseAmountBR(formData.target_amount),
+        current_amount: parseAmountBR(formData.current_amount),
         deadline: format(formData.deadline, 'yyyy-MM-dd')
       };
 
@@ -193,7 +202,16 @@ export default function GoalsPage() {
       return;
     }
     
-    const amount = parseFloat(contributionAmount);
+    const parseAmountBR = (value) => {
+      if (!value) return 0;
+      let str = String(value).trim();
+      if (str.includes(',') && str.includes('.')) str = str.replace(/\./g, '').replace(',', '.');
+      else if (str.includes(',')) str = str.replace(',', '.');
+      const num = parseFloat(str);
+      return isNaN(num) ? 0 : num;
+    };
+
+    const amount = parseAmountBR(contributionAmount);
     if (!amount || amount <= 0) return;
 
     setIsSubmittingContribution(true);
@@ -304,15 +322,15 @@ export default function GoalsPage() {
                               <div className="space-y-4">
                                 <div className="text-center">
                                   <p className="text-3xl font-bold text-white">
-                                    R$ {goal.current_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    {goal.current_amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                   </p>
                                   <p className="text-sm text-purple-300">
-                                    de R$ {goal.target_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    de {goal.target_amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                   </p>
                                 </div>
                                 <div>
                                   <Progress value={progress} className={`[&>*]:bg-gradient-to-r ${goal.color}`} />
-                                  <p className="text-center text-sm font-bold mt-2" style={{ color: `var(--tw-gradient-from)` }}>{progress.toFixed(1)}%</p>
+                                  <p className="text-center text-sm font-bold text-white mt-2">{progress.toFixed(1)}%</p>
                                 </div>
                                 <div className="flex justify-between text-xs text-purple-400">
                                   <div className="flex items-center gap-1">
@@ -372,7 +390,7 @@ export default function GoalsPage() {
                           </div>
                           <div className="flex items-center gap-2 text-green-400 font-bold">
                             <CheckCircle className="w-5 h-5" />
-                            R$ {goal.target_amount.toLocaleString('pt-BR')}
+                            {goal.target_amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                           </div>
                         </CardContent>
                       </Card>
@@ -406,12 +424,53 @@ export default function GoalsPage() {
                 </div>
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
-                    <Label className="text-purple-200">Valor Alvo (R$)</Label>
-                    <Input type="number" step="0.01" value={formData.target_amount} onChange={e => setFormData({...formData, target_amount: e.target.value})} required className="bg-purple-900/20 border-purple-700/50 text-white" />
+                    <Label className="text-purple-200">Valor Alvo</Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-300 font-bold text-sm">R$</span>
+                      <Input
+                        type="text"
+                        inputMode="decimal"
+                        value={formData.target_amount}
+                        onChange={(e) => {
+                          let raw = e.target.value.replace(/\D/g, '');
+                          if (raw === '') {
+                            setFormData({ ...formData, target_amount: '' });
+                            return;
+                          }
+                          raw = raw.slice(0, 12);
+                          const cents = parseInt(raw, 10);
+                          const formatted = (cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                          setFormData({ ...formData, target_amount: formatted });
+                        }}
+                        required
+                        placeholder="0,00"
+                        className="bg-purple-900/20 border-purple-700/50 text-white pl-10"
+                      />
+                    </div>
                   </div>
                   <div>
-                    <Label className="text-purple-200">Valor Inicial (R$)</Label>
-                    <Input type="number" step="0.01" value={formData.current_amount} onChange={e => setFormData({...formData, current_amount: e.target.value})} className="bg-purple-900/20 border-purple-700/50 text-white" />
+                    <Label className="text-purple-200">Valor Inicial</Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-300 font-bold text-sm">R$</span>
+                      <Input
+                        type="text"
+                        inputMode="decimal"
+                        value={formData.current_amount}
+                        onChange={(e) => {
+                          let raw = e.target.value.replace(/\D/g, '');
+                          if (raw === '') {
+                            setFormData({ ...formData, current_amount: '' });
+                            return;
+                          }
+                          raw = raw.slice(0, 12);
+                          const cents = parseInt(raw, 10);
+                          const formatted = (cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                          setFormData({ ...formData, current_amount: formatted });
+                        }}
+                        placeholder="0,00"
+                        className="bg-purple-900/20 border-purple-700/50 text-white pl-10"
+                      />
+                    </div>
                   </div>
                 </div>
                 <div>
@@ -498,12 +557,32 @@ export default function GoalsPage() {
                    <DialogDescription>Quanto você quer adicionar à sua meta "{contributingGoal?.title}"?</DialogDescription>
                 </DialogHeader>
                 <div className="py-4 space-y-2">
-                   <Label>Valor do Aporte (R$)</Label>
-                   <Input type="number" value={contributionAmount} onChange={e => setContributionAmount(e.target.value)} placeholder="Ex: 150.00" className="bg-purple-900/20 border-purple-700/50 text-white" />
-                   <div className="p-3 bg-blue-900/20 border border-blue-700/30 rounded-lg text-xs text-blue-200 flex items-start gap-2">
-                      <Info className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                      <span>Este valor será adicionado ao montante atual da sua meta, mas não criará uma transação de "saída" em suas contas.</span>
-                   </div>
+                  <Label>Valor do Aporte</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-300 font-bold text-sm">R$</span>
+                    <Input
+                      type="text"
+                      inputMode="decimal"
+                      value={contributionAmount}
+                      onChange={(e) => {
+                        let raw = e.target.value.replace(/\D/g, '');
+                        if (raw === '') {
+                          setContributionAmount('');
+                          return;
+                        }
+                        raw = raw.slice(0, 12);
+                        const cents = parseInt(raw, 10);
+                        const formatted = (cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        setContributionAmount(formatted);
+                      }}
+                      placeholder="0,00"
+                      className="bg-purple-900/20 border-purple-700/50 text-white pl-10"
+                    />
+                  </div>
+                  <div className="p-3 bg-blue-900/20 border border-blue-700/30 rounded-lg text-xs text-blue-200 flex items-start gap-2">
+                     <Info className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                     <span>Este valor será adicionado ao montante atual da sua meta, mas não criará uma transação de "saída" em suas contas.</span>
+                  </div>
                 </div>
                 <DialogFooter>
                    <Button 
