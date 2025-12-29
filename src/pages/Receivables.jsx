@@ -614,6 +614,8 @@ Agradecemos pela atenção e confiança!
                       type="month"
                       value={selectedMonth}
                       onChange={(e) => setSelectedMonth(e.target.value)}
+                      min="2020-01"
+                      max="2030-12"
                       className="w-auto text-xs bg-purple-900/20 border-purple-700/50 text-white"
                     />
                   </div>
