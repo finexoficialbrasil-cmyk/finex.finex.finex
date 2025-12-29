@@ -71,17 +71,41 @@ export default function Dashboard() {
   // Dashboard customization state
   const [visibleWidgets, setVisibleWidgets] = useState(() => {
     const saved = localStorage.getItem('dashboard_widgets');
-    return saved ? JSON.parse(saved) : [
-      'stats', 'bills-summary', 'expenses-pie', 'category-bar', 'balance-evolution', 
-      'cashflow', 'accounts', 'quick-actions', 'goals', 'transactions'
+    const defaultWidgets = [
+      'stats', 'quick-actions', 'bills-summary', 'expenses-pie', 'category-bar', 
+      'balance-evolution', 'cashflow', 'accounts', 'goals', 'transactions'
     ];
+    
+    // Se tem widgets salvos mas não tem quick-actions, adiciona
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (!parsed.includes('quick-actions')) {
+        parsed.push('quick-actions');
+        localStorage.setItem('dashboard_widgets', JSON.stringify(parsed));
+        return parsed;
+      }
+      return parsed;
+    }
+    return defaultWidgets;
   });
   const [widgetOrder, setWidgetOrder] = useState(() => {
     const saved = localStorage.getItem('dashboard_widget_order');
-    return saved ? JSON.parse(saved) : [
-      'stats', 'bills-summary', 'expenses-pie', 'category-bar', 'balance-evolution', 
-      'cashflow', 'accounts', 'quick-actions', 'goals', 'transactions'
+    const defaultOrder = [
+      'stats', 'quick-actions', 'bills-summary', 'expenses-pie', 'category-bar', 
+      'balance-evolution', 'cashflow', 'accounts', 'goals', 'transactions'
     ];
+    
+    // Se tem ordem salva mas não tem quick-actions, adiciona
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (!parsed.includes('quick-actions')) {
+        parsed.splice(1, 0, 'quick-actions');
+        localStorage.setItem('dashboard_widget_order', JSON.stringify(parsed));
+        return parsed;
+      }
+      return parsed;
+    }
+    return defaultOrder;
   });
   const [dashboardPeriod, setDashboardPeriod] = useState('month');
   const [chartType, setChartType] = useState('all');
