@@ -1,12 +1,15 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowDownCircle, ArrowUpCircle, Calendar, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ArrowDownCircle, ArrowUpCircle, Calendar, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { differenceInDays } from "date-fns";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 
 export default function BillsSummary({ bills, categories }) {
+  const [showPayablesList, setShowPayablesList] = useState(false);
+  const [showReceivablesList, setShowReceivablesList] = useState(false);
   const billsData = useMemo(() => {
     const payables = bills.filter(b => b.type === "payable" && b.status === "pending");
     const receivables = bills.filter(b => b.type === "receivable" && b.status === "pending");
@@ -115,10 +118,25 @@ export default function BillsSummary({ bills, categories }) {
           </div>
 
           {/* Lista de Contas */}
-          {billsData.payables.items.length > 0 ? (
-            <div className="space-y-2">
-              <p className="text-purple-300 text-xs font-semibold">Próximas Contas:</p>
-              {billsData.payables.items.map(bill => {
+          {billsData.payables.items.length > 0 && (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowPayablesList(!showPayablesList)}
+                className="w-full text-purple-300 hover:text-purple-200 hover:bg-purple-900/20 flex items-center justify-between"
+              >
+                <span className="text-xs font-semibold">Próximas Contas ({billsData.payables.items.length})</span>
+                {showPayablesList ? (
+                  <ChevronUp className="w-4 h-4" />
+                ) : (
+                  <ChevronDown className="w-4 h-4" />
+                )}
+              </Button>
+
+              {showPayablesList && (
+                <div className="space-y-2">
+                  {billsData.payables.items.map(bill => {
                 const category = getCategoryInfo(bill.category_id);
                 return (
                   <div key={bill.id} className="p-3 rounded-lg bg-purple-900/20 border border-purple-700/30 hover:bg-purple-900/30 transition-all">
@@ -150,8 +168,11 @@ export default function BillsSummary({ bills, categories }) {
                   </div>
                 );
               })}
-            </div>
-          ) : (
+                </div>
+              )}
+            </>
+          )}
+          {billsData.payables.items.length === 0 && (
             <div className="text-center py-6 text-purple-300 text-sm">
               <p>Nenhuma conta a pagar pendente</p>
             </div>
@@ -194,10 +215,25 @@ export default function BillsSummary({ bills, categories }) {
           </div>
 
           {/* Lista de Contas */}
-          {billsData.receivables.items.length > 0 ? (
-            <div className="space-y-2">
-              <p className="text-purple-300 text-xs font-semibold">Próximos Recebimentos:</p>
-              {billsData.receivables.items.map(bill => {
+          {billsData.receivables.items.length > 0 && (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowReceivablesList(!showReceivablesList)}
+                className="w-full text-purple-300 hover:text-purple-200 hover:bg-purple-900/20 flex items-center justify-between"
+              >
+                <span className="text-xs font-semibold">Próximos Recebimentos ({billsData.receivables.items.length})</span>
+                {showReceivablesList ? (
+                  <ChevronUp className="w-4 h-4" />
+                ) : (
+                  <ChevronDown className="w-4 h-4" />
+                )}
+              </Button>
+
+              {showReceivablesList && (
+                <div className="space-y-2">
+                  {billsData.receivables.items.map(bill => {
                 const category = getCategoryInfo(bill.category_id);
                 return (
                   <div key={bill.id} className="p-3 rounded-lg bg-purple-900/20 border border-purple-700/30 hover:bg-purple-900/30 transition-all">
@@ -229,8 +265,11 @@ export default function BillsSummary({ bills, categories }) {
                   </div>
                 );
               })}
-            </div>
-          ) : (
+                </div>
+              )}
+            </>
+          )}
+          {billsData.receivables.items.length === 0 && (
             <div className="text-center py-6 text-purple-300 text-sm">
               <p>Nenhuma conta a receber pendente</p>
             </div>
