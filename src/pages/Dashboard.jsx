@@ -31,6 +31,7 @@ import {
 import { motion } from "framer-motion";
 import { format, differenceInDays, isBefore } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import ExpensesPieChart from "../components/dashboard/ExpensesPieChart";
 import CategoryBarChart from "../components/dashboard/CategoryBarChart";
 import BalanceEvolutionChart from "../components/dashboard/BalanceEvolutionChart";
@@ -70,6 +71,13 @@ export default function Dashboard() {
   // Dashboard customization state
   const [visibleWidgets, setVisibleWidgets] = useState(() => {
     const saved = localStorage.getItem('dashboard_widgets');
+    return saved ? JSON.parse(saved) : [
+      'stats', 'bills-summary', 'expenses-pie', 'category-bar', 'balance-evolution', 
+      'cashflow', 'accounts', 'goals', 'transactions'
+    ];
+  });
+  const [widgetOrder, setWidgetOrder] = useState(() => {
+    const saved = localStorage.getItem('dashboard_widget_order');
     return saved ? JSON.parse(saved) : [
       'stats', 'bills-summary', 'expenses-pie', 'category-bar', 'balance-evolution', 
       'cashflow', 'accounts', 'goals', 'transactions'
@@ -253,6 +261,185 @@ export default function Dashboard() {
     localStorage.setItem('dashboard_widgets', JSON.stringify(newWidgets));
   };
 
+  const handleDragEnd = (result) => {
+    if (!result.destination) return;
+    
+    const items = Array.from(widgetOrder);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+    
+    setWidgetOrder(items);
+    localStorage.setItem('dashboard_widget_order', JSON.stringify(items));
+  };
+
+  const renderWidget = (widgetId) => {
+    if (!visibleWidgets.includes(widgetId)) return null;
+
+    switch (widgetId) {
+      case 'stats':
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <React.Suspense fallback={<div className="h-32 bg-purple-900/20 animate-pulse rounded-lg" />}>
+              <StatsCard
+                title="Saldo Total"
+                value={formatCurrencyBR(stats.balance)}
+                icon={Wallet}
+                gradient="from-purple-600 to-purple-400"
+                trend="+5.2%"
+              />
+            </React.Suspense>
+            <React.Suspense fallback={<div className="h-32 bg-purple-900/20 animate-pulse rounded-lg" />}>
+              <StatsCard
+                title="Entradas do Mês"
+                value={formatCurrencyBR(stats.totalIncome)}
+                icon={ArrowUpRight}
+                gradient="from-green-600 to-emerald-400"
+                trend="+12.3%"
+              />
+            </React.Suspense>
+            <React.Suspense fallback={<div className="h-32 bg-purple-900/20 animate-pulse rounded-lg" />}>
+              <StatsCard
+                title="Saídas do Mês"
+                value={formatCurrencyBR(stats.totalExpense)}
+                icon={ArrowDownRight}
+                gradient="from-red-600 to-pink-400"
+                trend="-3.1%"
+              />
+            </React.Suspense>
+            <React.Suspense fallback={<div className="h-32 bg-purple-900/20 animate-pulse rounded-lg" />}>
+              <StatsCard
+                title="Economia"
+                value={formatCurrencyBR(stats.totalIncome - stats.totalExpense)}
+                icon={Target}
+                gradient="from-cyan-600 to-blue-400"
+                trend="+8.7%"
+              />
+            </React.Suspense>
+          </div>
+        );
+      case 'bills-summary':
+        return <BillsSummary bills={bills} categories={categories} />;
+      case 'expenses-pie':
+        return <ExpensesPieChart transactions={transactions} categories={categories} />;
+      case 'category-bar':
+        return <CategoryBarChart transactions={transactions} categories={categories} type={chartType} />;
+      case 'balance-evolution':
+        return <BalanceEvolutionChart transactions={transactions} initialBalance={totalBalance} period={dashboardPeriod} />;
+      case 'cashflow':
+        return (
+          <React.Suspense fallback={<div className="h-96 bg-purple-900/20 animate-pulse rounded-lg" />}>
+            <CashFlowChart transactions={transactions} />
+          </React.Suspense>
+        );
+      case 'accounts':
+        return (
+          <Card className="glass-card border-0 neon-glow overflow-hidden">
+            <CardContent className="p-4">
+              {accounts.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-purple-900/30 flex items-center justify-center">
+                    <Wallet className="w-8 h-8 text-purple-400" />
+                  </div>
+                  <p className="text-purple-300 text-sm mb-1">Nenhuma carteira cadastrada</p>
+                  <p className="text-purple-400 text-xs mb-4">Crie sua primeira carteira!</p>
+                  <Link to={createPageUrl("Accounts")}>
+                    <Button size="sm" className="bg-gradient-to-r from-purple-600 to-pink-600">
+                      <Plus className="w-4 h-4 mr-1" />
+                      Criar
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                  {accounts.map((acc, index) => (
+                    <Link key={acc.id} to={createPageUrl("Accounts")}>
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: index * 0.03 }}
+                        whileHover={{ scale: 1.05 }}
+                        className="group cursor-pointer"
+                      >
+                        <div className="p-4 rounded-xl glass-card border border-purple-700/30 group-hover:border-purple-600/60 transition-all duration-300">
+                          <div className="flex flex-col items-center text-center gap-3">
+                            <div 
+                              className="w-14 h-14 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300 overflow-hidden"
+                              style={{ 
+                                backgroundColor: (acc.color || '#a855f7') + '20',
+                                border: `2px solid ${acc.color || '#a855f7'}60`
+                              }}
+                            >
+                              {acc.logo_url ? (
+                                <img 
+                                  src={acc.logo_url} 
+                                  alt={acc.name}
+                                  className="w-full h-full object-contain p-1"
+                                  onError={(e) => {
+                                    if (e.target && e.target.parentElement) {
+                                      e.target.parentElement.innerHTML = `<span class="text-3xl">${acc.icon || '🏦'}</span>`;
+                                    }
+                                  }}
+                                />
+                              ) : (
+                                <span className="text-3xl">{acc.icon || '🏦'}</span>
+                              )}
+                            </div>
+                            <div className="w-full">
+                              <h4 className="text-white font-bold text-sm mb-1 truncate">
+                                {acc.name}
+                              </h4>
+                              <p className={`text-lg font-bold ${acc.balance >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                {formatCurrencyBR(acc.balance)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    </Link>
+                  ))}
+                  <Link to={createPageUrl("Accounts")}>
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: accounts.length * 0.03 }}
+                      whileHover={{ scale: 1.05 }}
+                      className="group cursor-pointer h-full min-h-[120px]"
+                    >
+                      <div className="h-full p-4 rounded-xl glass-card border-2 border-dashed border-purple-700/40 group-hover:border-purple-600/70 transition-all duration-300 flex flex-col items-center justify-center gap-2">
+                        <div className="p-3 rounded-xl bg-gradient-to-br from-purple-600/20 to-pink-600/20 group-hover:from-purple-600/30 group-hover:to-pink-600/30 transition-all">
+                          <Plus className="w-6 h-6 text-purple-400 group-hover:text-purple-300 transition-colors" />
+                        </div>
+                        <p className="text-white font-bold text-sm">Adicionar</p>
+                      </div>
+                    </motion.div>
+                  </Link>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        );
+      case 'goals':
+        return (
+          <React.Suspense fallback={<div className="h-96 bg-purple-900/20 animate-pulse rounded-lg" />}>
+            <GoalsProgress goals={goals} />
+          </React.Suspense>
+        );
+      case 'transactions':
+        return (
+          <React.Suspense fallback={<div className="h-96 bg-purple-900/20 animate-pulse rounded-lg" />}>
+            <TransactionList
+              transactions={transactions}
+              categories={categories}
+              accounts={accounts}
+              isLoading={isLoading}
+            />
+          </React.Suspense>
+        );
+      default:
+        return null;
+    }
+  };
+
   if (hasError) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#0a0a0f] via-[#1a1a2e] to-[#0a0a0f] flex items-center justify-center p-4">
@@ -412,195 +599,47 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Stats Cards */}
-        {visibleWidgets.includes('stats') && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <React.Suspense fallback={<div className="h-32 bg-purple-900/20 animate-pulse rounded-lg" />}>
-              <StatsCard
-                title="Saldo Total"
-                value={formatCurrencyBR(stats.balance)}
-                icon={Wallet}
-                gradient="from-purple-600 to-purple-400"
-                trend="+5.2%"
-              />
-            </React.Suspense>
-            <React.Suspense fallback={<div className="h-32 bg-purple-900/20 animate-pulse rounded-lg" />}>
-              <StatsCard
-                title="Entradas do Mês"
-                value={formatCurrencyBR(stats.totalIncome)}
-                icon={ArrowUpRight}
-                gradient="from-green-600 to-emerald-400"
-                trend="+12.3%"
-              />
-            </React.Suspense>
-            <React.Suspense fallback={<div className="h-32 bg-purple-900/20 animate-pulse rounded-lg" />}>
-              <StatsCard
-                title="Saídas do Mês"
-                value={formatCurrencyBR(stats.totalExpense)}
-                icon={ArrowDownRight}
-                gradient="from-red-600 to-pink-400"
-                trend="-3.1%"
-              />
-            </React.Suspense>
-            <React.Suspense fallback={<div className="h-32 bg-purple-900/20 animate-pulse rounded-lg" />}>
-              <StatsCard
-                title="Economia"
-                value={formatCurrencyBR(stats.totalIncome - stats.totalExpense)}
-                icon={Target}
-                gradient="from-cyan-600 to-blue-400"
-                trend="+8.7%"
-              />
-            </React.Suspense>
-          </div>
-        )}
+        {/* Widgets com Drag and Drop */}
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <Droppable droppableId="dashboard-widgets">
+            {(provided) => (
+              <div
+                {...provided.droppableProps}
+                ref={provided.innerRef}
+                className="space-y-6"
+              >
+                {widgetOrder.map((widgetId, index) => {
+                  const widgetContent = renderWidget(widgetId);
+                  if (!widgetContent) return null;
 
-        {/* Graficos Personalizaveis */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {visibleWidgets.includes('expenses-pie') && (
-            <ExpensesPieChart 
-              transactions={transactions} 
-              categories={categories} 
-            />
-          )}
-          
-          {visibleWidgets.includes('category-bar') && (
-            <CategoryBarChart 
-              transactions={transactions} 
-              categories={categories}
-              type={chartType}
-            />
-          )}
-          
-          {visibleWidgets.includes('balance-evolution') && (
-            <BalanceEvolutionChart 
-              transactions={transactions}
-              initialBalance={totalBalance}
-              period={dashboardPeriod}
-            />
-          )}
-          
-          {visibleWidgets.includes('cashflow') && (
-            <React.Suspense fallback={<div className="h-96 bg-purple-900/20 animate-pulse rounded-lg" />}>
-              <CashFlowChart transactions={transactions} />
-            </React.Suspense>
-          )}
-        </div>
-
-        {/* ✅ CARTEIRAS SUPER COMPACTAS */}
-        {visibleWidgets.includes('accounts') && (
-          <Card className="glass-card border-0 neon-glow overflow-hidden">
-            <CardContent className="p-4">
-              {accounts.length === 0 ? (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-purple-900/30 flex items-center justify-center">
-                    <Wallet className="w-8 h-8 text-purple-400" />
-                  </div>
-                  <p className="text-purple-300 text-sm mb-1">Nenhuma carteira cadastrada</p>
-                  <p className="text-purple-400 text-xs mb-4">Crie sua primeira carteira!</p>
-                  <Link to={createPageUrl("Accounts")}>
-                    <Button size="sm" className="bg-gradient-to-r from-purple-600 to-pink-600">
-                      <Plus className="w-4 h-4 mr-1" />
-                      Criar
-                    </Button>
-                  </Link>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                  {accounts.map((acc, index) => (
-                    <Link key={acc.id} to={createPageUrl("Accounts")}>
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: index * 0.03 }}
-                        whileHover={{ scale: 1.05 }}
-                        className="group cursor-pointer"
-                      >
-                        <div className="p-4 rounded-xl glass-card border border-purple-700/30 group-hover:border-purple-600/60 transition-all duration-300">
-                          <div className="flex flex-col items-center text-center gap-3">
-                            <div 
-                              className="w-14 h-14 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300 overflow-hidden"
-                              style={{ 
-                                backgroundColor: (acc.color || '#a855f7') + '20',
-                                border: `2px solid ${acc.color || '#a855f7'}60`
-                              }}
-                            >
-                              {acc.logo_url ? (
-                                <img 
-                                  src={acc.logo_url} 
-                                  alt={acc.name}
-                                  className="w-full h-full object-contain p-1"
-                                  onError={(e) => {
-                                    if (e.target && e.target.parentElement) {
-                                      e.target.parentElement.innerHTML = `<span class="text-3xl">${acc.icon || '🏦'}</span>`;
-                                    }
-                                  }}
-                                />
-                              ) : (
-                                <span className="text-3xl">{acc.icon || '🏦'}</span>
-                              )}
-                            </div>
-
-                            <div className="w-full">
-                              <h4 className="text-white font-bold text-sm mb-1 truncate">
-                                {acc.name}
-                              </h4>
-                              <p className={`text-lg font-bold ${acc.balance >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                {formatCurrencyBR(acc.balance)}
-                              </p>
-                            </div>
-                          </div>
+                  return (
+                    <Draggable key={widgetId} draggableId={widgetId} index={index}>
+                      {(provided, snapshot) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          {...provided.dragHandleProps}
+                          className={`transition-all ${
+                            snapshot.isDragging 
+                              ? 'opacity-50 scale-95 rotate-2' 
+                              : 'opacity-100 scale-100'
+                          }`}
+                        >
+                          {widgetContent}
                         </div>
-                      </motion.div>
-                    </Link>
-                  ))}
-
-                  <Link to={createPageUrl("Accounts")}>
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: accounts.length * 0.03 }}
-                      whileHover={{ scale: 1.05 }}
-                      className="group cursor-pointer h-full min-h-[120px]"
-                    >
-                      <div className="h-full p-4 rounded-xl glass-card border-2 border-dashed border-purple-700/40 group-hover:border-purple-600/70 transition-all duration-300 flex flex-col items-center justify-center gap-2">
-                        <div className="p-3 rounded-xl bg-gradient-to-br from-purple-600/20 to-pink-600/20 group-hover:from-purple-600/30 group-hover:to-pink-600/30 transition-all">
-                          <Plus className="w-6 h-6 text-purple-400 group-hover:text-purple-300 transition-colors" />
-                        </div>
-                        <p className="text-white font-bold text-sm">Adicionar</p>
-                      </div>
-                    </motion.div>
-                  </Link>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
+                      )}
+                    </Draggable>
+                  );
+                })}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
 
         <React.Suspense fallback={<div className="h-48 bg-purple-900/20 animate-pulse rounded-lg" />}>
           <QuickActions />
         </React.Suspense>
-
-        {/* Contas a Pagar e Receber */}
-        {visibleWidgets.includes('bills-summary') && (
-          <BillsSummary bills={bills} categories={categories} />
-        )}
-
-        {visibleWidgets.includes('goals') && (
-          <React.Suspense fallback={<div className="h-96 bg-purple-900/20 animate-pulse rounded-lg" />}>
-            <GoalsProgress goals={goals} />
-          </React.Suspense>
-        )}
-
-        {visibleWidgets.includes('transactions') && (
-          <React.Suspense fallback={<div className="h-96 bg-purple-900/20 animate-pulse rounded-lg" />}>
-            <TransactionList
-              transactions={transactions}
-              categories={categories}
-              accounts={accounts}
-              isLoading={isLoading}
-            />
-          </React.Suspense>
-        )}
       </div>
 
       <React.Suspense fallback={null}>
