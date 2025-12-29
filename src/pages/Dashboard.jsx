@@ -35,6 +35,7 @@ import ExpensesPieChart from "../components/dashboard/ExpensesPieChart";
 import CategoryBarChart from "../components/dashboard/CategoryBarChart";
 import BalanceEvolutionChart from "../components/dashboard/BalanceEvolutionChart";
 import DashboardCustomizer from "../components/dashboard/DashboardCustomizer";
+import BillsSummary from "../components/dashboard/BillsSummary";
 
 // Formata número para moeda brasileira (R$ 1.234,56)
 const formatCurrencyBR = (value) => {
@@ -70,7 +71,7 @@ export default function Dashboard() {
   const [visibleWidgets, setVisibleWidgets] = useState(() => {
     const saved = localStorage.getItem('dashboard_widgets');
     return saved ? JSON.parse(saved) : [
-      'stats', 'expenses-pie', 'category-bar', 'balance-evolution', 
+      'stats', 'bills-summary', 'expenses-pie', 'category-bar', 'balance-evolution', 
       'cashflow', 'accounts', 'goals', 'transactions'
     ];
   });
@@ -578,6 +579,11 @@ export default function Dashboard() {
         <React.Suspense fallback={<div className="h-48 bg-purple-900/20 animate-pulse rounded-lg" />}>
           <QuickActions />
         </React.Suspense>
+
+        {/* Contas a Pagar e Receber */}
+        {visibleWidgets.includes('bills-summary') && (
+          <BillsSummary bills={bills} categories={categories} />
+        )}
 
         {visibleWidgets.includes('goals') && (
           <React.Suspense fallback={<div className="h-96 bg-purple-900/20 animate-pulse rounded-lg" />}>

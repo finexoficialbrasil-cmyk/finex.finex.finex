@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label";
 
 const AVAILABLE_WIDGETS = [
   { id: "stats", name: "Resumo Financeiro", icon: DollarSign, description: "Cards com valores totais" },
+  { id: "bills-summary", name: "Contas a Pagar/Receber", icon: Calendar, description: "Previsao de contas pendentes" },
   { id: "expenses-pie", name: "Despesas (Pizza)", icon: PieChart, description: "Grafico de pizza por categoria" },
   { id: "category-bar", name: "Categorias (Barras)", icon: BarChart3, description: "Comparativo de categorias" },
   { id: "balance-evolution", name: "Evolucao do Saldo", icon: TrendingUp, description: "Linha do tempo do saldo" },
