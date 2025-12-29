@@ -65,6 +65,8 @@ export default function Payables() {
     status: "pending",
     is_recurring: false,
     recurring_type: "monthly",
+    is_variable_amount: false,
+    variable_months_count: 1,
     notes: "",
     contact_name: "",
     contact_phone: "",
@@ -76,6 +78,7 @@ export default function Payables() {
     supplier_bank_agency: "",
     supplier_bank_account: ""
   });
+  const [variableAmounts, setVariableAmounts] = useState([]);
 
   useEffect(() => {
     loadData();
@@ -125,15 +128,15 @@ export default function Payables() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // ✅ BLOQUEAR cliques duplos
     if (isSubmitting) {
       console.log("⚠️ Já está processando, ignorando clique duplo");
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
       const parseAmountBR = (value) => {
         if (!value) return 0;
@@ -152,10 +155,50 @@ export default function Payables() {
         amount: parseAmountBR(formData.amount)
       };
 
-      if (editingBill) {
-        await Bill.update(editingBill.id, data);
+      // ✅ NOVO: Se for recorrência com valor variável, criar múltiplas contas
+      if (formData.is_recurring && formData.is_variable_amount && !editingBill) {
+        const monthsCount = parseInt(formData.variable_months_count) || 1;
+
+        if (variableAmounts.length !== monthsCount) {
+          alert(`Por favor, preencha os valores para todos os ${monthsCount} meses!`);
+          setIsSubmitting(false);
+          return;
+        }
+
+        // Criar contas para cada mês com valores diferentes
+        const startDate = new Date(formData.due_date);
+
+        for (let i = 0; i < monthsCount; i++) {
+          const monthDate = new Date(startDate);
+
+          if (formData.recurring_type === "monthly") {
+            monthDate.setMonth(monthDate.getMonth() + i);
+          } else if (formData.recurring_type === "weekly") {
+            monthDate.setDate(monthDate.getDate() + (i * 7));
+          } else if (formData.recurring_type === "yearly") {
+            monthDate.setFullYear(monthDate.getFullYear() + i);
+          }
+
+          const dueDate = monthDate.toISOString().split('T')[0];
+          const amount = parseAmountBR(variableAmounts[i]);
+
+          await Bill.create({
+            ...data,
+            amount: amount,
+            due_date: dueDate,
+            is_recurring: false, // Não criar mais recorrências automaticamente
+            notes: `${data.notes || ''} (Mês ${i + 1}/${monthsCount} - Valor Variável)`.trim()
+          });
+        }
+
+        alert(`✅ ${monthsCount} contas criadas com sucesso!`);
       } else {
-        await Bill.create(data);
+        // Criar/atualizar normalmente
+        if (editingBill) {
+          await Bill.update(editingBill.id, data);
+        } else {
+          await Bill.create(data);
+        }
       }
 
       resetForm();
@@ -171,6 +214,7 @@ export default function Payables() {
   const resetForm = () => {
     setShowForm(false);
     setEditingBill(null);
+    setVariableAmounts([]);
     setFormData({
       description: "",
       amount: "",
@@ -181,6 +225,8 @@ export default function Payables() {
       status: "pending",
       is_recurring: false,
       recurring_type: "monthly",
+      is_variable_amount: false,
+      variable_months_count: 1,
       notes: "",
       contact_name: "",
       contact_phone: "",
@@ -209,6 +255,8 @@ export default function Payables() {
       status: bill.status,
       is_recurring: bill.is_recurring || false,
       recurring_type: bill.recurring_type || "monthly",
+      is_variable_amount: bill.is_variable_amount || false,
+      variable_months_count: bill.variable_months_count || 1,
       notes: bill.notes || "",
       contact_name: bill.contact_name || "",
       contact_phone: bill.contact_phone || "",
@@ -944,7 +992,7 @@ export default function Payables() {
                       type="checkbox"
                       id="is_recurring"
                       checked={formData.is_recurring}
-                      onChange={(e) => setFormData({ ...formData, is_recurring: e.target.checked })}
+                      onChange={(e) => setFormData({ ...formData, is_recurring: e.target.checked, is_variable_amount: false })}
                       className="w-4 h-4 rounded border-purple-700 bg-purple-900/20"
                       disabled={isSubmitting}
                     />
@@ -955,25 +1003,117 @@ export default function Payables() {
                   </div>
 
                   {formData.is_recurring && (
-                    <div>
-                      <Label className="text-purple-200 text-sm">Frequência</Label>
-                      <Select
-                        value={formData.recurring_type}
-                        onValueChange={(value) => setFormData({ ...formData, recurring_type: value })}
-                        disabled={isSubmitting}
-                      >
-                        <SelectTrigger className="bg-purple-900/20 border-purple-700/50 text-white mt-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="weekly">Semanal</SelectItem>
-                          <SelectItem value="monthly">Mensal</SelectItem>
-                          <SelectItem value="yearly">Anual</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <p className="text-xs text-purple-400 mt-1">
-                        Após o pagamento, uma nova conta será criada automaticamente
-                      </p>
+                    <div className="space-y-3">
+                      <div>
+                        <Label className="text-purple-200 text-sm">Frequência</Label>
+                        <Select
+                          value={formData.recurring_type}
+                          onValueChange={(value) => setFormData({ ...formData, recurring_type: value })}
+                          disabled={isSubmitting}
+                        >
+                          <SelectTrigger className="bg-purple-900/20 border-purple-700/50 text-white mt-1">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="weekly">Semanal</SelectItem>
+                            <SelectItem value="monthly">Mensal</SelectItem>
+                            <SelectItem value="yearly">Anual</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* ✅ NOVO: Valor Variável */}
+                      {!editingBill && (
+                        <>
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="checkbox"
+                              id="is_variable_amount"
+                              checked={formData.is_variable_amount}
+                              onChange={(e) => {
+                                setFormData({ ...formData, is_variable_amount: e.target.checked });
+                                if (!e.target.checked) {
+                                  setVariableAmounts([]);
+                                }
+                              }}
+                              className="w-4 h-4 rounded border-purple-700 bg-purple-900/20"
+                              disabled={isSubmitting}
+                            />
+                            <Label htmlFor="is_variable_amount" className="text-purple-200 text-sm cursor-pointer">
+                              Valor Variável (cada mês valor diferente)
+                            </Label>
+                          </div>
+
+                          {formData.is_variable_amount ? (
+                            <>
+                              <div>
+                                <Label className="text-purple-200 text-sm">Quantos meses?</Label>
+                                <Input
+                                  type="number"
+                                  min="1"
+                                  max="24"
+                                  value={formData.variable_months_count}
+                                  onChange={(e) => {
+                                    const count = parseInt(e.target.value) || 1;
+                                    setFormData({ ...formData, variable_months_count: count });
+                                    setVariableAmounts(Array(count).fill(''));
+                                  }}
+                                  className="bg-purple-900/20 border-purple-700/50 text-white mt-1"
+                                  disabled={isSubmitting}
+                                />
+                                <p className="text-xs text-purple-400 mt-1">
+                                  Máximo 24 meses
+                                </p>
+                              </div>
+
+                              {formData.variable_months_count > 0 && (
+                                <div className="bg-purple-900/10 p-4 rounded-lg border border-purple-700/30 max-h-64 overflow-y-auto">
+                                  <Label className="text-purple-200 text-sm mb-3 block font-bold">
+                                    💰 Valores de Cada Mês
+                                  </Label>
+                                  <div className="grid grid-cols-2 gap-3">
+                                    {Array.from({ length: formData.variable_months_count }).map((_, index) => (
+                                      <div key={index}>
+                                        <Label className="text-purple-300 text-xs">Mês {index + 1}</Label>
+                                        <Input
+                                          type="text"
+                                          inputMode="decimal"
+                                          value={variableAmounts[index] || ''}
+                                          onChange={(e) => {
+                                            let raw = e.target.value.replace(/\D/g, '');
+                                            if (raw === '') {
+                                              const newAmounts = [...variableAmounts];
+                                              newAmounts[index] = '';
+                                              setVariableAmounts(newAmounts);
+                                              return;
+                                            }
+                                            raw = raw.slice(0, 12);
+                                            const cents = parseInt(raw, 10);
+                                            const formatted = (cents / 100).toLocaleString('pt-BR', {
+                                              minimumFractionDigits: 2,
+                                              maximumFractionDigits: 2
+                                            });
+                                            const newAmounts = [...variableAmounts];
+                                            newAmounts[index] = formatted;
+                                            setVariableAmounts(newAmounts);
+                                          }}
+                                          placeholder="0,00"
+                                          className="bg-purple-900/20 border-purple-700/50 text-white mt-1"
+                                          disabled={isSubmitting}
+                                        />
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <p className="text-xs text-purple-400">
+                              ✅ Valor fixo: Após o pagamento, uma nova conta será criada automaticamente com o mesmo valor
+                            </p>
+                          )}
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
