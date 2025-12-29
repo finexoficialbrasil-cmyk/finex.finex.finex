@@ -73,14 +73,14 @@ export default function Dashboard() {
     const saved = localStorage.getItem('dashboard_widgets');
     return saved ? JSON.parse(saved) : [
       'stats', 'bills-summary', 'expenses-pie', 'category-bar', 'balance-evolution', 
-      'cashflow', 'accounts', 'goals', 'transactions'
+      'cashflow', 'accounts', 'quick-actions', 'goals', 'transactions'
     ];
   });
   const [widgetOrder, setWidgetOrder] = useState(() => {
     const saved = localStorage.getItem('dashboard_widget_order');
     return saved ? JSON.parse(saved) : [
       'stats', 'bills-summary', 'expenses-pie', 'category-bar', 'balance-evolution', 
-      'cashflow', 'accounts', 'goals', 'transactions'
+      'cashflow', 'accounts', 'quick-actions', 'goals', 'transactions'
     ];
   });
   const [dashboardPeriod, setDashboardPeriod] = useState('month');
@@ -418,6 +418,12 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         );
+      case 'quick-actions':
+        return (
+          <React.Suspense fallback={<div className="h-48 bg-purple-900/20 animate-pulse rounded-lg" />}>
+            <QuickActions />
+          </React.Suspense>
+        );
       case 'goals':
         return (
           <React.Suspense fallback={<div className="h-96 bg-purple-900/20 animate-pulse rounded-lg" />}>
@@ -636,10 +642,6 @@ export default function Dashboard() {
             )}
           </Droppable>
         </DragDropContext>
-
-        <React.Suspense fallback={<div className="h-48 bg-purple-900/20 animate-pulse rounded-lg" />}>
-          <QuickActions />
-        </React.Suspense>
       </div>
 
       <React.Suspense fallback={null}>

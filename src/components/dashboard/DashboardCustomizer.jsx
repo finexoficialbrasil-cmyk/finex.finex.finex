@@ -8,7 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Settings, Eye, EyeOff, Grid3x3, Calendar, BarChart3, PieChart, TrendingUp, DollarSign } from "lucide-react";
+import { Settings, Eye, EyeOff, Grid3x3, Calendar, BarChart3, PieChart, TrendingUp, DollarSign, Zap } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -26,6 +26,7 @@ const AVAILABLE_WIDGETS = [
   { id: "balance-evolution", name: "Evolucao do Saldo", icon: TrendingUp, description: "Linha do tempo do saldo" },
   { id: "cashflow", name: "Fluxo de Caixa", icon: Calendar, description: "Entradas vs Saidas" },
   { id: "accounts", name: "Minhas Contas", icon: Grid3x3, description: "Lista de contas" },
+  { id: "quick-actions", name: "Acoes Rapidas", icon: Zap, description: "Atalhos para acoes comuns" },
   { id: "goals", name: "Metas Financeiras", icon: TrendingUp, description: "Progresso das metas" },
   { id: "transactions", name: "Ultimas Transacoes", icon: BarChart3, description: "Historico recente" }
 ];
