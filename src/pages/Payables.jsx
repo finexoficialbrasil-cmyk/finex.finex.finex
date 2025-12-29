@@ -510,7 +510,7 @@ export default function Payables() {
               <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">
                 Contas a Pagar
               </h1>
-              <p className="text-purple-300 mt-1 text-sm">Gerencie seus compromissos financeiros</p>
+              <p className="text-purple-300 mt-1 text-sm">Gerencie seus compromissos financeiros.</p>
             </div>
             <div className="flex gap-2">
               <ExportBillsPDF 
