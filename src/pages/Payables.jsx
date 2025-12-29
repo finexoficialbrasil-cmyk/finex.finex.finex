@@ -1054,12 +1054,25 @@ export default function Payables() {
                                   max="24"
                                   value={formData.variable_months_count}
                                   onChange={(e) => {
-                                    const count = parseInt(e.target.value) || 1;
+                                    const value = e.target.value;
+                                    if (value === '' || value === '0') {
+                                      setFormData({ ...formData, variable_months_count: 1 });
+                                      setVariableAmounts([]);
+                                      return;
+                                    }
+                                    const count = Math.min(24, Math.max(1, parseInt(value) || 1));
                                     setFormData({ ...formData, variable_months_count: count });
                                     setVariableAmounts(Array(count).fill(''));
                                   }}
+                                  onBlur={(e) => {
+                                    if (e.target.value === '' || parseInt(e.target.value) < 1) {
+                                      setFormData({ ...formData, variable_months_count: 1 });
+                                      setVariableAmounts(['']);
+                                    }
+                                  }}
                                   className="bg-purple-900/20 border-purple-700/50 text-white mt-1"
                                   disabled={isSubmitting}
+                                  placeholder="1"
                                 />
                                 <p className="text-xs text-purple-400 mt-1">
                                   Máximo 24 meses
