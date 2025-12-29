@@ -69,6 +69,10 @@ export default function Receivables() {
     contact_name: "",
     contact_phone: ""
   });
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
 
   useEffect(() => {
     loadData();
@@ -455,9 +459,19 @@ Agradecemos pela atenção e confiança!
       return 0;
     });
 
+  // Calcular totais por período
+  const currentMonthBills = bills.filter(bill => {
+    if (!bill.due_date) return false;
+    const billMonth = bill.due_date.substring(0, 7);
+    return billMonth === selectedMonth;
+  });
+
   const totals = {
-    pending: filteredAndSortedBills.filter(b => b.status === "pending").reduce((sum, b) => sum + b.amount, 0),
-    overdue: filteredAndSortedBills.filter(b => b.status === "overdue").reduce((sum, b) => sum + b.amount, 0),
+    total: bills.reduce((sum, b) => sum + b.amount, 0),
+    overdue: bills.filter(b => b.status === "overdue").reduce((sum, b) => sum + b.amount, 0),
+    monthTotal: currentMonthBills.reduce((sum, b) => sum + b.amount, 0),
+    monthPending: currentMonthBills.filter(b => b.status === "pending").reduce((sum, b) => sum + b.amount, 0),
+    monthReceived: currentMonthBills.filter(b => b.status === "paid").reduce((sum, b) => sum + b.amount, 0),
   };
 
   const selectContact = async () => {
@@ -560,16 +574,17 @@ Agradecemos pela atenção e confiança!
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card className="glass-card border-0 neon-glow">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-purple-300 mb-1">Pendentes</p>
-                    <p className="text-2xl font-bold text-yellow-400">R$ {totals.pending.toFixed(2)}</p>
+                    <p className="text-sm text-purple-300 mb-1">Saldo Total</p>
+                    <p className="text-2xl font-bold text-green-400">R$ {totals.total.toFixed(2)}</p>
+                    <p className="text-xs text-green-400 mt-1">{bills.length} conta(s)</p>
                   </div>
-                  <div className="p-3 rounded-xl bg-yellow-600/20">
-                    <Clock className="w-6 h-6 text-yellow-400" />
+                  <div className="p-3 rounded-xl bg-green-600/20">
+                    <DollarSign className="w-6 h-6 text-green-400" />
                   </div>
                 </div>
               </CardContent>
@@ -581,9 +596,40 @@ Agradecemos pela atenção e confiança!
                   <div>
                     <p className="text-sm text-purple-300 mb-1">Atrasadas</p>
                     <p className="text-2xl font-bold text-red-400">R$ {totals.overdue.toFixed(2)}</p>
+                    <p className="text-xs text-red-400 mt-1">{bills.filter(b => b.status === "overdue").length} conta(s)</p>
                   </div>
                   <div className="p-3 rounded-xl bg-red-600/20">
                     <AlertCircle className="w-6 h-6 text-red-400" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="glass-card border-0 neon-glow">
+              <CardContent className="p-6">
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm text-purple-300">Mês Selecionado</p>
+                    <Input
+                      type="month"
+                      value={selectedMonth}
+                      onChange={(e) => setSelectedMonth(e.target.value)}
+                      className="w-auto text-xs bg-purple-900/20 border-purple-700/50 text-white"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-purple-300">Total:</span>
+                      <span className="text-sm font-bold text-white">R$ {totals.monthTotal.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-yellow-300">Pendente:</span>
+                      <span className="text-sm font-bold text-yellow-400">R$ {totals.monthPending.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-green-300">Recebido:</span>
+                      <span className="text-sm font-bold text-green-400">R$ {totals.monthReceived.toFixed(2)}</span>
+                    </div>
                   </div>
                 </div>
               </CardContent>
