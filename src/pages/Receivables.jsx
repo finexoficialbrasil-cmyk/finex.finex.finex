@@ -467,7 +467,7 @@ Agradecemos pela atenção e confiança!
   });
 
   const totals = {
-    total: bills.reduce((sum, b) => sum + b.amount, 0),
+    total: bills.filter(b => b.status !== "paid" && b.status !== "cancelled").reduce((sum, b) => sum + b.amount, 0),
     overdue: bills.filter(b => b.status === "overdue").reduce((sum, b) => sum + b.amount, 0),
     monthTotal: currentMonthBills.reduce((sum, b) => sum + b.amount, 0),
     monthPending: currentMonthBills.filter(b => b.status === "pending").reduce((sum, b) => sum + b.amount, 0),
@@ -579,9 +579,9 @@ Agradecemos pela atenção e confiança!
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-purple-300 mb-1">Saldo Total</p>
+                    <p className="text-sm text-purple-300 mb-1">Saldo Pendente</p>
                     <p className="text-2xl font-bold text-green-400">R$ {totals.total.toFixed(2)}</p>
-                    <p className="text-xs text-green-400 mt-1">{bills.length} conta(s)</p>
+                    <p className="text-xs text-green-400 mt-1">{bills.filter(b => b.status !== "paid" && b.status !== "cancelled").length} conta(s)</p>
                   </div>
                   <div className="p-3 rounded-xl bg-green-600/20">
                     <DollarSign className="w-6 h-6 text-green-400" />
