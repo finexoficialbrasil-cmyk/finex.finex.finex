@@ -209,7 +209,19 @@ export default function Payables() {
       loadData();
     } catch (error) {
       console.error("❌ Erro ao salvar conta:", error);
-      alert("Erro ao salvar conta. Tente novamente.");
+      console.error("Detalhes do erro:", error.response?.data || error.message);
+
+      let errorMessage = "Erro ao salvar conta. ";
+
+      if (error.response?.data?.message) {
+        errorMessage += error.response.data.message;
+      } else if (error.message) {
+        errorMessage += error.message;
+      } else {
+        errorMessage += "Tente novamente.";
+      }
+
+      alert(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
