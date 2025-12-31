@@ -158,37 +158,8 @@ export default function Receivables() {
       resetForm();
       await loadData();
     } catch (error) {
-      console.error("❌ Erro completo ao salvar conta:", {
-        error,
-        errorString: JSON.stringify(error, Object.getOwnPropertyNames(error)),
-        response: error?.response,
-        data: error?.response?.data,
-        message: error?.message,
-        stack: error?.stack
-      });
-      
-      let errorMessage = "Erro ao salvar conta.\n\n";
-      
-      // Extrair mensagem de erro de forma segura
-      try {
-        if (error?.response?.data?.message) {
-          errorMessage += String(error.response.data.message);
-        } else if (error?.response?.data?.error) {
-          errorMessage += String(error.response.data.error);
-        } else if (error?.response?.data) {
-          errorMessage += JSON.stringify(error.response.data);
-        } else if (error?.message && typeof error.message === 'string') {
-          errorMessage += error.message;
-        } else if (typeof error === 'string') {
-          errorMessage += error;
-        } else {
-          errorMessage += "Verifique:\n- Todos os campos obrigatórios estão preenchidos?\n- A conta para recebimento foi selecionada?\n- O valor está correto?";
-        }
-      } catch (e) {
-        errorMessage += "Erro desconhecido. Tente novamente.";
-      }
-      
-      alert(errorMessage);
+      console.error("Erro ao salvar conta:", error);
+      alert("❌ Erro ao salvar conta. Tente novamente.");
     } finally {
       setIsSubmitting(false);
     }
