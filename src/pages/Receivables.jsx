@@ -43,6 +43,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { format, differenceInDays, isBefore } from "date-fns";
 import ExportBillsPDF from "../components/bills/ExportBillsPDF";
 
+const formatCurrencyBR = (value) => {
+  return new Intl.NumberFormat('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(value);
+};
+
 export default function Receivables() {
   const [bills, setBills] = useState([]);
   const [accounts, setAccounts] = useState([]);
@@ -580,7 +587,7 @@ Agradecemos pela atenção e confiança!
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-purple-300 mb-1">Saldo Pendente</p>
-                    <p className="text-2xl font-bold text-green-400">R$ {totals.total.toFixed(2)}</p>
+                    <p className="text-2xl font-bold text-green-400">R$ {formatCurrencyBR(totals.total)}</p>
                     <p className="text-xs text-green-400 mt-1">{bills.filter(b => b.status !== "paid" && b.status !== "cancelled").length} conta(s)</p>
                   </div>
                   <div className="p-3 rounded-xl bg-green-600/20">
@@ -595,7 +602,7 @@ Agradecemos pela atenção e confiança!
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-purple-300 mb-1">Atrasadas</p>
-                    <p className="text-2xl font-bold text-red-400">R$ {totals.overdue.toFixed(2)}</p>
+                    <p className="text-2xl font-bold text-red-400">R$ {formatCurrencyBR(totals.overdue)}</p>
                     <p className="text-xs text-red-400 mt-1">{bills.filter(b => b.status === "overdue").length} conta(s)</p>
                   </div>
                   <div className="p-3 rounded-xl bg-red-600/20">
@@ -622,15 +629,15 @@ Agradecemos pela atenção e confiança!
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-purple-300">Total:</span>
-                      <span className="text-sm font-bold text-white">R$ {totals.monthTotal.toFixed(2)}</span>
+                      <span className="text-sm font-bold text-white">R$ {formatCurrencyBR(totals.monthTotal)}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-yellow-300">Pendente:</span>
-                      <span className="text-sm font-bold text-yellow-400">R$ {totals.monthPending.toFixed(2)}</span>
+                      <span className="text-sm font-bold text-yellow-400">R$ {formatCurrencyBR(totals.monthPending)}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-green-300">Recebido:</span>
-                      <span className="text-sm font-bold text-green-400">R$ {totals.monthReceived.toFixed(2)}</span>
+                      <span className="text-sm font-bold text-green-400">R$ {formatCurrencyBR(totals.monthReceived)}</span>
                     </div>
                   </div>
                 </div>
@@ -936,7 +943,7 @@ Agradecemos pela atenção e confiança!
                     <SelectContent>
                       {accounts.map(acc => (
                         <SelectItem key={acc.id} value={acc.id}>
-                          {acc.name} - R$ {acc.balance.toFixed(2)}
+                          {acc.name} - R$ {formatCurrencyBR(acc.balance)}
                         </SelectItem>
                       ))}
                     </SelectContent>

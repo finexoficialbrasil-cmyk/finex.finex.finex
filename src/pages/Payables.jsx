@@ -43,6 +43,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { format, differenceInDays, isBefore } from "date-fns";
 import ExportBillsPDF from "../components/bills/ExportBillsPDF";
 
+const formatCurrencyBR = (value) => {
+  return new Intl.NumberFormat('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(value);
+};
+
 export default function Payables() {
   const [bills, setBills] = useState([]);
   const [accounts, setAccounts] = useState([]);
@@ -344,7 +351,7 @@ export default function Payables() {
 
     // Verificar saldo
     if (account.balance < bill.amount) {
-      if (!confirm(`Saldo insuficiente! Saldo atual: R$ ${account.balance.toFixed(2)}. Deseja continuar mesmo assim?`)) {
+      if (!confirm(`Saldo insuficiente! Saldo atual: R$ ${formatCurrencyBR(account.balance)}. Deseja continuar mesmo assim?`)) {
         return;
       }
     }
@@ -598,7 +605,7 @@ export default function Payables() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-purple-300 mb-1">Saldo Pendente</p>
-                    <p className="text-2xl font-bold text-purple-400">R$ {totals.total.toFixed(2)}</p>
+                    <p className="text-2xl font-bold text-purple-400">R$ {formatCurrencyBR(totals.total)}</p>
                     <p className="text-xs text-purple-400 mt-1">{bills.filter(b => b.status !== "paid" && b.status !== "cancelled").length} conta(s)</p>
                   </div>
                   <div className="p-3 rounded-xl bg-purple-600/20">
@@ -613,7 +620,7 @@ export default function Payables() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-purple-300 mb-1">Atrasadas</p>
-                    <p className="text-2xl font-bold text-red-400">R$ {totals.overdue.toFixed(2)}</p>
+                    <p className="text-2xl font-bold text-red-400">R$ {formatCurrencyBR(totals.overdue)}</p>
                     <p className="text-xs text-red-400 mt-1">{bills.filter(b => b.status === "overdue").length} conta(s)</p>
                   </div>
                   <div className="p-3 rounded-xl bg-red-600/20">
@@ -640,15 +647,15 @@ export default function Payables() {
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-purple-300">Total:</span>
-                      <span className="text-sm font-bold text-white">R$ {totals.monthTotal.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-bold text-white">R$ {formatCurrencyBR(totals.monthTotal)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
                       <span className="text-xs text-yellow-300">Pendente:</span>
-                      <span className="text-sm font-bold text-yellow-400">R$ {totals.monthPending.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-bold text-yellow-400">R$ {formatCurrencyBR(totals.monthPending)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
                       <span className="text-xs text-green-300">Pago:</span>
-                      <span className="text-sm font-bold text-green-400">R$ {totals.monthPaid.toFixed(2)}</span>
+                      <span className="text-sm font-bold text-green-400">R$ {formatCurrencyBR(totals.monthPaid)}</span>
                     </div>
                   </div>
                 </div>
@@ -762,7 +769,7 @@ export default function Payables() {
                           <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
                             <div className="text-right w-full sm:w-auto">
                               <p className="font-bold text-lg text-red-400">
-                                R$ {bill.amount.toFixed(2)}
+                                R$ {formatCurrencyBR(bill.amount)}
                               </p>
                               <p className="text-xs text-purple-400">{account.name}</p>
                             </div>
@@ -1025,7 +1032,7 @@ export default function Payables() {
                     <SelectContent>
                       {accounts.map(acc => (
                         <SelectItem key={acc.id} value={acc.id}>
-                          {acc.name} - R$ {acc.balance.toFixed(2)}
+                          {acc.name} - R$ {formatCurrencyBR(acc.balance)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1291,7 +1298,7 @@ export default function Payables() {
                         Valor Pago
                       </p>
                       <p className="text-5xl font-black bg-gradient-to-r from-red-600 via-orange-600 to-pink-600 bg-clip-text text-transparent print:text-4xl print:text-red-700">
-                        R$ {receiptData.bill.amount.toFixed(2)}
+                        R$ {formatCurrencyBR(receiptData.bill.amount)}
                       </p>
                     </div>
                     {/* Brilho decorativo */}
