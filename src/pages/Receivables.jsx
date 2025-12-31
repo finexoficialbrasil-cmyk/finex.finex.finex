@@ -159,16 +159,20 @@ export default function Receivables() {
       await loadData();
     } catch (error) {
       console.error("❌ Erro ao salvar conta:", error);
-      console.error("Detalhes do erro:", error.response?.data || error.message);
       
       let errorMessage = "Erro ao salvar conta. ";
       
-      if (error.response?.data?.message) {
-        errorMessage += error.response.data.message;
-      } else if (error.message) {
+      // Extrair mensagem de erro de forma segura
+      if (error?.response?.data?.message) {
+        errorMessage += String(error.response.data.message);
+      } else if (error?.response?.data?.error) {
+        errorMessage += String(error.response.data.error);
+      } else if (error?.message && typeof error.message === 'string') {
         errorMessage += error.message;
+      } else if (typeof error === 'string') {
+        errorMessage += error;
       } else {
-        errorMessage += "Tente novamente.";
+        errorMessage += "Verifique os campos e tente novamente.";
       }
       
       alert(errorMessage);
