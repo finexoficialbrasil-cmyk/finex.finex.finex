@@ -695,7 +695,7 @@ export default function Payables() {
                   <TabsList className="bg-purple-900/20 w-full">
                     <TabsTrigger value="all" className="flex-1">Todas</TabsTrigger>
                     <TabsTrigger value="pending" className="flex-1">Pendentes</TabsTrigger>
-                    <TabsTrigger value="overdue" className="flex-1">Vencidas</TabsTrigger>
+                    <TabsTrigger value="overdue" className="flex-1">Atrasadas</TabsTrigger>
                     <TabsTrigger value="paid" className="flex-1">Pagas</TabsTrigger>
                   </TabsList>
                 </Tabs>
