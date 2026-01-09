@@ -397,7 +397,7 @@ export default function Statement() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-purple-300 mb-1">Entradas</p>
-                      <p className="text-2xl font-bold text-green-400">R$ {totals.income.toFixed(2)}</p>
+                      <p className="text-2xl font-bold text-purple-400">R$ {formatCurrencyBR(totals.total)}</p>
                     </div>
                     <div className="p-3 rounded-xl bg-green-600/20">
                       <TrendingUp className="w-6 h-6 text-green-400" />
