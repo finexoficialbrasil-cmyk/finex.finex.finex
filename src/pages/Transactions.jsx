@@ -75,7 +75,7 @@ export default function TransactionsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false); // ✅ NOVO: Estado de submissão
   const [isLoading, setIsLoading] = useState(true); // ✅ NOVO: Estado de carregamento inicial
   const [currentPage, setCurrentPage] = useState(1); // ✅ NOVO: Estado para paginação
-  const [itemsPerPage] = useState(20); // 20 itens por página
+  const [itemsPerPage] = useState(2000); // 2000 itens por página
 
   const [formData, setFormData] = useState({
     description: "",
@@ -128,9 +128,9 @@ export default function TransactionsPage() {
       console.log("🔄 Carregando transações com ordenação:", sortBy);
 
       const [txs, accs, userCats, sysCats] = await Promise.all([
-        Transaction.list(sortBy, 50), // ✅ REDUZIDO: 100 → 50
-        Account.list("-created_date", 20), // ✅ LIMITE: 20 contas
-        Category.list("-created_date", 30), // ✅ REDUZIDO: 50 → 30
+        Transaction.list(sortBy, 5000), // ✅ REDUZIDO: 1000 → 5000
+        Account.list("-created_date", 2000), // ✅ LIMITE: 2000 contas
+        Category.list("-created_date", 3000), // ✅ REDUZIDO: 5000 → 3000
         SystemCategory.list() // Sem limite (poucas categorias)
       ]);
       const endTime = performance.now();
