@@ -57,9 +57,9 @@ export default function Statement() {
       // ✅ OTIMIZADO: Carregar com LIMITES
       const [userData, txs, accs, userCats] = await Promise.all([
         User.me(),
-        Transaction.list(sortBy, 200), // ✅ LIMITE de 200 transações
-        Account.list("-created_date", 50), // ✅ LIMITE de 50 contas
-        Category.list("-created_date", 100) // ✅ LIMITE de 100 categorias
+        Transaction.list(sortBy, 20000), // ✅ LIMITE de 20000 transações
+        Account.list("-created_date", 5000), // ✅ LIMITE de 5000 contas
+        Category.list("-created_date", 10000) // ✅ LIMITE de 1000 categorias
       ]);
       
       setUser(userData);
