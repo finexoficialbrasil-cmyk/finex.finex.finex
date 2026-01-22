@@ -723,42 +723,32 @@ export default function Payables() {
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-6">
             <Card className="glass-card border-0 neon-glow">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-purple-300 mb-1">Saldo Pendente</p>
-                    <p className="text-2xl font-bold text-purple-400">R$ {formatCurrencyBR(totals.total)}</p>
-                    <p className="text-xs text-purple-400 mt-1">{bills.filter(b => b.status !== "paid" && b.status !== "cancelled").length} conta(s)</p>
-                  </div>
-                  <div className="p-3 rounded-xl bg-purple-600/20">
-                    <DollarSign className="w-6 h-6 text-purple-400" />
-                  </div>
+              <CardContent className="p-3 lg:p-6">
+                <div className="flex flex-col gap-2">
+                  <p className="text-xs lg:text-sm text-purple-300">Saldo Pendente</p>
+                  <p className="text-lg lg:text-2xl font-bold text-purple-400">R$ {formatCurrencyBR(totals.total)}</p>
+                  <p className="text-xs text-purple-400">{bills.filter(b => b.status !== "paid" && b.status !== "cancelled").length} conta(s)</p>
                 </div>
               </CardContent>
             </Card>
 
             <Card className="glass-card border-0 neon-glow">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-purple-300 mb-1">Atrasadas</p>
-                    <p className="text-2xl font-bold text-red-400">R$ {formatCurrencyBR(totals.overdue)}</p>
-                    <p className="text-xs text-red-400 mt-1">{bills.filter(b => b.status === "overdue").length} conta(s)</p>
-                  </div>
-                  <div className="p-3 rounded-xl bg-red-600/20">
-                    <AlertCircle className="w-6 h-6 text-red-400" />
-                  </div>
+              <CardContent className="p-3 lg:p-6">
+                <div className="flex flex-col gap-2">
+                  <p className="text-xs lg:text-sm text-purple-300">Atrasadas</p>
+                  <p className="text-lg lg:text-2xl font-bold text-red-400">R$ {formatCurrencyBR(totals.overdue)}</p>
+                  <p className="text-xs text-red-400">{bills.filter(b => b.status === "overdue").length} conta(s)</p>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="glass-card border-0 neon-glow">
-              <CardContent className="p-6">
+            <Card className="glass-card border-0 neon-glow col-span-2 lg:col-span-1">
+              <CardContent className="p-3 lg:p-6">
                 <div>
-                 <div className="flex items-center justify-between mb-3">
-                   <p className="text-sm text-purple-300">
+                 <div className="flex flex-col gap-2 mb-2">
+                   <p className="text-xs lg:text-sm text-purple-300">
                      {selectedMonth === "todos" ? "Todos os Meses" : "Mês Selecionado"}
                    </p>
                    {selectedMonth !== "todos" && (
@@ -768,22 +758,22 @@ export default function Payables() {
                        onChange={(e) => setSelectedMonth(e.target.value)}
                        min="2020-01"
                        max="2030-12"
-                       className="w-auto text-xs bg-purple-900/20 border-purple-700/50 text-white"
+                       className="w-full text-xs bg-purple-900/20 border-purple-700/50 text-white"
                      />
                    )}
                  </div>
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-purple-300">Total:</span>
-                      <span className="text-sm font-bold text-white">R$ {formatCurrencyBR(totals.monthTotal)}</span>
+                      <span className="text-xs lg:text-sm font-bold text-white">R$ {formatCurrencyBR(totals.monthTotal)}</span>
                       </div>
                       <div className="flex justify-between items-center">
                       <span className="text-xs text-yellow-300">Pendente:</span>
-                      <span className="text-sm font-bold text-yellow-400">R$ {formatCurrencyBR(totals.monthPending)}</span>
+                      <span className="text-xs lg:text-sm font-bold text-yellow-400">R$ {formatCurrencyBR(totals.monthPending)}</span>
                       </div>
                       <div className="flex justify-between items-center">
                       <span className="text-xs text-green-300">Pago:</span>
-                      <span className="text-sm font-bold text-green-400">R$ {formatCurrencyBR(totals.monthPaid)}</span>
+                      <span className="text-xs lg:text-sm font-bold text-green-400">R$ {formatCurrencyBR(totals.monthPaid)}</span>
                     </div>
                   </div>
                 </div>
@@ -795,14 +785,14 @@ export default function Payables() {
           <Card className="glass-card border-0 neon-glow">
             <CardHeader className="border-b border-purple-900/30">
               {/* Title and Sort Section */}
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
-                <CardTitle className="text-white">Contas a Pagar</CardTitle>
+              <div className="flex flex-col gap-3 mb-4">
+                <CardTitle className="text-lg lg:text-xl text-white">Contas a Pagar</CardTitle>
 
                 {/* ✅ NOVO: Ordenação */}
-                <div className="flex items-center gap-2">
-                  <Label className="text-purple-300 text-sm">Ordenar:</Label>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Label className="text-purple-300 text-xs lg:text-sm flex-shrink-0">Ordenar:</Label>
                   <Select value={sortBy} onValueChange={setSortBy}>
-                    <SelectTrigger className="w-[180px] bg-purple-900/20 border-purple-700/50 text-white">
+                    <SelectTrigger className="w-full md:w-[180px] bg-purple-900/20 border-purple-700/50 text-white text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -837,16 +827,16 @@ export default function Payables() {
               </div>
 
               {/* Tabs for status filtering */}
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {/* Month selector and view toggle */}
-                <div className="flex items-center gap-3">
-                  <Label className="text-purple-300 text-sm flex-shrink-0">Ver:</Label>
-                  <div className="flex gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Label className="text-purple-300 text-xs lg:text-sm flex-shrink-0">Ver:</Label>
+                  <div className="flex gap-1 flex-wrap">
                     <Button
                       variant={selectedMonth !== "todos" ? "default" : "outline"}
                       size="sm"
                       onClick={() => setSelectedMonth(new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0'))}
-                      className="bg-purple-600/30 text-purple-200 border-purple-600/50 hover:bg-purple-600/50"
+                      className="text-xs bg-purple-600/30 text-purple-200 border-purple-600/50 hover:bg-purple-600/50 px-2 py-1 h-8"
                     >
                       Mês Selecionado
                     </Button>
@@ -854,30 +844,30 @@ export default function Payables() {
                       variant={selectedMonth === "todos" ? "default" : "outline"}
                       size="sm"
                       onClick={() => setSelectedMonth("todos")}
-                      className="bg-purple-600/30 text-purple-200 border-purple-600/50 hover:bg-purple-600/50"
+                      className="text-xs bg-purple-600/30 text-purple-200 border-purple-600/50 hover:bg-purple-600/50 px-2 py-1 h-8"
                     >
                       Todos os Meses
                     </Button>
                   </div>
                 </div>
 
-                <Tabs value={filterStatus} onValueChange={setFilterStatus} className="flex-1">
-                  <TabsList className="bg-purple-900/20 w-full">
-                    <TabsTrigger value="all" className="flex-1">
+                <Tabs value={filterStatus} onValueChange={setFilterStatus} className="w-full">
+                  <TabsList className="bg-purple-900/20 w-full grid grid-cols-2 lg:grid-cols-4 h-auto">
+                    <TabsTrigger value="all" className="flex-1 text-xs lg:text-sm py-2">
                       Todas
-                      <Badge className="ml-2 bg-purple-600/30 text-purple-200 text-xs">{counts.all}</Badge>
+                      <Badge className="ml-1 bg-purple-600/30 text-purple-200 text-xs hidden sm:inline-block">{counts.all}</Badge>
                     </TabsTrigger>
-                    <TabsTrigger value="pending" className="flex-1">
+                    <TabsTrigger value="pending" className="flex-1 text-xs lg:text-sm py-2">
                       A Vencer
-                      <Badge className="ml-2 bg-yellow-600/30 text-yellow-200 text-xs">{counts.pending}</Badge>
+                      <Badge className="ml-1 bg-yellow-600/30 text-yellow-200 text-xs hidden sm:inline-block">{counts.pending}</Badge>
                     </TabsTrigger>
-                    <TabsTrigger value="overdue" className="flex-1">
+                    <TabsTrigger value="overdue" className="flex-1 text-xs lg:text-sm py-2">
                       Atrasadas
-                      <Badge className="ml-2 bg-red-600/30 text-red-200 text-xs">{counts.overdue}</Badge>
+                      <Badge className="ml-1 bg-red-600/30 text-red-200 text-xs hidden sm:inline-block">{counts.overdue}</Badge>
                     </TabsTrigger>
-                    <TabsTrigger value="paid" className="flex-1">
+                    <TabsTrigger value="paid" className="flex-1 text-xs lg:text-sm py-2">
                       Pagas
-                      <Badge className="ml-2 bg-green-600/30 text-green-200 text-xs">{counts.paid}</Badge>
+                      <Badge className="ml-1 bg-green-600/30 text-green-200 text-xs hidden sm:inline-block">{counts.paid}</Badge>
                     </TabsTrigger>
                   </TabsList>
                 </Tabs>
