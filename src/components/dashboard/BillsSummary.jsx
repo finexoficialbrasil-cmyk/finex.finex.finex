@@ -1,8 +1,7 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { ArrowDownCircle, ArrowUpCircle, Calendar, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, Calendar } from "lucide-react";
 import { differenceInDays } from "date-fns";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -15,8 +14,6 @@ const formatCurrencyBR = (value) => {
 };
 
 export default function BillsSummary({ bills, categories }) {
-  const [showPayablesList, setShowPayablesList] = useState(false);
-  const [showReceivablesList, setShowReceivablesList] = useState(false);
   const billsData = useMemo(() => {
     const payables = bills.filter(b => b.type === "payable" && b.status === "pending");
     const receivables = bills.filter(b => b.type === "receivable" && b.status === "pending");
@@ -182,62 +179,7 @@ export default function BillsSummary({ bills, categories }) {
             </div>
           </div>
 
-          {/* Lista de Contas */}
-          {billsData.payables.items.length > 0 && (
-            <>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowPayablesList(!showPayablesList)}
-                className="w-full text-purple-300 hover:text-purple-200 hover:bg-purple-900/20 flex items-center justify-between"
-              >
-                <span className="text-xs font-semibold">Próximas Contas ({billsData.payables.items.length})</span>
-                {showPayablesList ? (
-                  <ChevronUp className="w-4 h-4" />
-                ) : (
-                  <ChevronDown className="w-4 h-4" />
-                )}
-              </Button>
-
-              {showPayablesList && (
-                <div className="space-y-2">
-                  {billsData.payables.items.map(bill => {
-                const category = getCategoryInfo(bill.category_id);
-                return (
-                  <div key={bill.id} className="p-3 rounded-lg bg-purple-900/20 border border-purple-700/30 hover:bg-purple-900/30 transition-all">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-white text-sm font-medium truncate">{bill.description}</p>
-                        <div className="flex items-center gap-2 mt-1 flex-wrap">
-                          <Badge
-                            className="text-xs"
-                            style={{
-                              backgroundColor: category.color + '20',
-                              color: category.color,
-                              borderColor: category.color + '40'
-                            }}
-                          >
-                            {category.name}
-                          </Badge>
-                          {getStatusBadge(bill)}
-                        </div>
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <p className="text-red-400 font-bold text-sm">R$ {formatCurrencyBR(bill.amount)}</p>
-                        <p className="text-purple-400 text-xs flex items-center gap-1 justify-end">
-                          <Calendar className="w-3 h-3" />
-                          {bill.due_date.split('-').reverse().join('/')}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-                </div>
-              )}
-            </>
-          )}
-          {billsData.payables.items.length === 0 && (
+          {billsData.payables.count === 0 && (
             <div className="text-center py-6 text-purple-300 text-sm">
               <p>Nenhuma conta a pagar pendente</p>
             </div>
@@ -314,62 +256,7 @@ export default function BillsSummary({ bills, categories }) {
             </div>
           </div>
 
-          {/* Lista de Contas */}
-          {billsData.receivables.items.length > 0 && (
-            <>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowReceivablesList(!showReceivablesList)}
-                className="w-full text-purple-300 hover:text-purple-200 hover:bg-purple-900/20 flex items-center justify-between"
-              >
-                <span className="text-xs font-semibold">Próximos Recebimentos ({billsData.receivables.items.length})</span>
-                {showReceivablesList ? (
-                  <ChevronUp className="w-4 h-4" />
-                ) : (
-                  <ChevronDown className="w-4 h-4" />
-                )}
-              </Button>
-
-              {showReceivablesList && (
-                <div className="space-y-2">
-                  {billsData.receivables.items.map(bill => {
-                const category = getCategoryInfo(bill.category_id);
-                return (
-                  <div key={bill.id} className="p-3 rounded-lg bg-purple-900/20 border border-purple-700/30 hover:bg-purple-900/30 transition-all">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-white text-sm font-medium truncate">{bill.description}</p>
-                        <div className="flex items-center gap-2 mt-1 flex-wrap">
-                          <Badge
-                            className="text-xs"
-                            style={{
-                              backgroundColor: category.color + '20',
-                              color: category.color,
-                              borderColor: category.color + '40'
-                            }}
-                          >
-                            {category.name}
-                          </Badge>
-                          {getStatusBadge(bill)}
-                        </div>
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <p className="text-green-400 font-bold text-sm">R$ {formatCurrencyBR(bill.amount)}</p>
-                        <p className="text-purple-400 text-xs flex items-center gap-1 justify-end">
-                          <Calendar className="w-3 h-3" />
-                          {bill.due_date.split('-').reverse().join('/')}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-                </div>
-              )}
-            </>
-          )}
-          {billsData.receivables.items.length === 0 && (
+          {billsData.receivables.count === 0 && (
             <div className="text-center py-6 text-purple-300 text-sm">
               <p>Nenhuma conta a receber pendente</p>
             </div>
