@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { Transaction, Account, Category, SystemCategory } from "@/entities/all";
+import { Transaction, Account, Category, SystemCategory, User } from "@/entities/all";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -88,6 +88,7 @@ export default function TransactionsPage() {
   const [filterCategory, setFilterCategory] = useState(""); // NEW: Filter by category
   const [filterAccount, setFilterAccount] = useState("");   // NEW: Filter by account
   const [sortBy, setSortBy] = useState("-created_date"); // NEW: Default sorting by latest creation date
+  const [showDeleted, setShowDeleted] = useState(false); // ✅ NOVO: Mostrar excluídas
   const [showForm, setShowForm] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false); // ✅ NOVO: Estado de submissão
@@ -287,12 +288,25 @@ export default function TransactionsPage() {
 
   const handleDelete = async (tx) => { // Changed from (id) to (tx) to get account_id
     if (confirm("Tem certeza que deseja excluir esta transação?")) {
-      await Transaction.delete(tx.id);
-      
-      // ✅ ATUALIZAR SALDO APÓS EXCLUSÃO
-      await updateAccountBalance(tx.account_id);
+      try {
+        const user = await User.me();
+        
+        // ✅ Soft delete: marcar como excluída
+        await Transaction.update(tx.id, {
+          ...tx,
+          deleted: true,
+          deleted_at: new Date().toISOString(),
+          deleted_by: user.email
+        });
+        
+        // ✅ ATUALIZAR SALDO APÓS EXCLUSÃO
+        await updateAccountBalance(tx.account_id);
 
-      loadData(); // Reload data after deletion
+        loadData(); // Reload data after deletion
+      } catch (error) {
+        console.error("Erro ao excluir transação:", error);
+        alert("Erro ao excluir transação");
+      }
     }
   };
 
@@ -307,8 +321,24 @@ export default function TransactionsPage() {
 
   // ✅ NOVO: Filtrar e paginar transações
   const { paginatedTransactions, totalPages } = useMemo(() => {
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    
     // Filtrar
     let filtered = transactions.filter(tx => {
+      // ✅ Filtrar excluídas ou não excluídas
+      if (showDeleted) {
+        // Mostrar apenas excluídas do mês atual
+        if (!tx.deleted) return false;
+        if (!tx.deleted_at) return false;
+        
+        const deletedMonth = tx.deleted_at.substring(0, 7);
+        if (deletedMonth !== currentMonth) return false;
+      } else {
+        // Não mostrar excluídas
+        if (tx.deleted) return false;
+      }
+      
       const matchesSearch = !searchQuery ||
         tx.description.toLowerCase().includes(searchQuery.toLowerCase());
       
@@ -376,7 +406,7 @@ export default function TransactionsPage() {
     console.log("📊 Transações - Calculando totais para:", currentMonth + 1, "/", currentYear);
     
     const monthTransactions = transactions.filter(tx => {
-      if (!tx.date || tx.status !== 'completed') return false;
+      if (!tx.date || tx.status !== 'completed' || tx.deleted) return false;
       
       try {
         const [year, month] = tx.date.split('-').map(Number);
@@ -552,10 +582,25 @@ export default function TransactionsPage() {
 
             <Card className="glass-card border-0 neon-glow">
               <CardHeader className="border-b border-purple-900/30">
-                <CardTitle className="flex items-center gap-2 text-white">
+                <CardTitle className="flex items-center gap-2 text-white mb-4">
                   <FileText className="w-5 h-5 text-indigo-400" />
                   Movimentações ({paginatedTransactions.length})
                 </CardTitle>
+                
+                {/* ✅ Checkbox para mostrar excluídas */}
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-purple-900/20 border border-purple-700/30">
+                  <input
+                    type="checkbox"
+                    id="showDeleted"
+                    checked={showDeleted}
+                    onChange={(e) => setShowDeleted(e.target.checked)}
+                    className="w-4 h-4 rounded border-purple-700 bg-purple-900/20"
+                  />
+                  <Label htmlFor="showDeleted" className="text-purple-200 text-sm cursor-pointer flex items-center gap-2">
+                    <Trash2 className="w-4 h-4 text-red-400" />
+                    Mostrar apenas transações excluídas este mês
+                  </Label>
+                </div>
               </CardHeader>
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
@@ -592,9 +637,14 @@ export default function TransactionsPage() {
 
                           return (
                             <TableRow key={tx.id} className="border-b border-purple-900/20 hover:bg-purple-900/10">
-                              <TableCell className="text-purple-200">
-                                {formatDateBR(tx.date)}
-                              </TableCell>
+                             <TableCell className="text-purple-200">
+                               {formatDateBR(tx.date)}
+                               {tx.deleted && tx.deleted_at && (
+                                 <div className="text-xs text-red-400 mt-1">
+                                   🗑️ Excluída: {format(new Date(tx.deleted_at), "dd/MM/yyyy HH:mm")}
+                                 </div>
+                               )}
+                             </TableCell>
                               <TableCell className="text-white font-medium">{tx.description}</TableCell>
                               <TableCell>
                                 <Badge
@@ -618,22 +668,31 @@ export default function TransactionsPage() {
                               </TableCell>
                               <TableCell className="text-right">
                                 <div className="flex gap-2 justify-end">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleEdit(tx)}
-                                    className="h-8 w-8"
-                                  >
-                                    <Edit className="w-4 h-4 text-purple-400" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleDelete(tx)}
-                                    className="h-8 w-8"
-                                  >
-                                    <Trash2 className="w-4 h-4 text-red-400" />
-                                  </Button>
+                                  {!tx.deleted && (
+                                    <>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => handleEdit(tx)}
+                                        className="h-8 w-8"
+                                      >
+                                        <Edit className="w-4 h-4 text-purple-400" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => handleDelete(tx)}
+                                        className="h-8 w-8"
+                                      >
+                                        <Trash2 className="w-4 h-4 text-red-400" />
+                                      </Button>
+                                    </>
+                                  )}
+                                  {tx.deleted && (
+                                    <span className="text-xs text-red-400 px-2 py-1 rounded bg-red-900/20">
+                                      Excluída
+                                    </span>
+                                  )}
                                 </div>
                               </TableCell>
                             </TableRow>
