@@ -283,13 +283,33 @@ export default function Payables() {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm("Tem certeza que deseja excluir esta conta?")) {
+    if (!confirm("Tem certeza que deseja excluir esta conta?\n\n⚠️ As transações relacionadas também serão excluídas!")) {
       return;
     }
 
     try {
+      // ✅ Buscar a conta antes de deletar
+      const bill = bills.find(b => b.id === id);
+      
+      // ✅ Buscar transações relacionadas pela descrição
+      const relatedTransactions = await Transaction.filter({ 
+        description: bill?.description 
+      });
+      
+      console.log(`🗑️ Excluindo conta a pagar e ${relatedTransactions.length} transação(ões) relacionada(s)`);
+      
+      // ✅ Deletar transações relacionadas
+      if (relatedTransactions.length > 0) {
+        await Promise.all(
+          relatedTransactions.map(tx => Transaction.delete(tx.id))
+        );
+      }
+      
+      // ✅ Deletar a conta
       await Bill.delete(id);
+      
       loadData();
+      alert(`✅ Conta e ${relatedTransactions.length} transação(ões) excluídas!`);
     } catch (error) {
       console.error("❌ Erro ao deletar conta:", error);
 
