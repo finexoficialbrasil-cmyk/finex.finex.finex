@@ -940,9 +940,14 @@ export default function Payables() {
                           </div>
                           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
                             <div className="text-left sm:text-right order-2 sm:order-none">
-                              <p className="font-bold text-sm sm:text-lg text-red-400">
-                                R$ {formatCurrencyBR(bill.amount)}
-                              </p>
+                              <div className="flex items-center gap-2 justify-between sm:justify-end">
+                                <p className="font-bold text-sm sm:text-lg text-red-400">
+                                  R$ {formatCurrencyBR(bill.amount)}
+                                </p>
+                                {bill.status === "paid" && (
+                                  <Badge className="bg-green-600/20 text-green-400 border-green-600/40 text-xs">Pago</Badge>
+                                )}
+                              </div>
                               <p className="text-xs text-purple-400 truncate">{account.name}</p>
                             </div>
                             <div className="flex gap-1 sm:gap-2 justify-end order-1 sm:order-none">
@@ -951,10 +956,10 @@ export default function Payables() {
                                   variant="ghost"
                                   size="icon"
                                   onClick={() => handlePay(bill)}
-                                  className="h-7 w-7 sm:h-8 sm:w-8 text-green-400 hover:bg-green-900/20"
+                                  className="h-9 w-9 sm:h-10 sm:w-10 text-green-400 hover:bg-green-900/20 flex-shrink-0"
                                   title="Pagar"
                                 >
-                                  <Check className="w-3 h-3 sm:w-4 sm:h-4" />
+                                  <Check className="w-5 h-5 sm:w-6 sm:h-6" />
                                 </Button>
                               ) : null}
                               <Button
