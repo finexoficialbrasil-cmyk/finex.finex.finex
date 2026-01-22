@@ -115,59 +115,53 @@ export default function BillsSummary({ bills, categories }) {
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Contas a Pagar HOJE */}
-          <div className={`p-4 rounded-xl border-2 shadow-lg ${
+          <div className={`relative p-6 rounded-2xl overflow-hidden transition-all duration-300 ${
             billsData.payables.today > 0 
-              ? 'bg-gradient-to-br from-yellow-900/40 to-orange-900/40 border-yellow-500/60 shadow-yellow-500/20' 
-              : 'bg-gradient-to-br from-gray-900/40 to-slate-900/40 border-gray-600/40 shadow-gray-500/10'
+              ? 'bg-gradient-to-br from-red-500/20 via-orange-500/20 to-yellow-500/20 border-2 border-red-500/40 shadow-xl shadow-red-500/10' 
+              : 'bg-gradient-to-br from-gray-800/30 to-slate-800/30 border-2 border-gray-700/30 shadow-lg'
           }`}>
-            <div className="flex flex-col gap-2 mb-2">
-              <p className={`text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
-                billsData.payables.today > 0 ? 'text-yellow-100' : 'text-gray-300'
-              }`}>
-                <Calendar className="w-4 h-4" />
-                📅 Contas a Pagar HOJE
-              </p>
-              <p className={`text-sm font-semibold ${
-                billsData.payables.today > 0 ? 'text-yellow-300' : 'text-gray-400'
+            {/* Efeito de brilho de fundo */}
+            {billsData.payables.today > 0 && (
+              <div className="absolute inset-0 bg-gradient-to-tr from-red-600/10 via-transparent to-yellow-600/10 animate-pulse"></div>
+            )}
+            
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-3">
+                <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${
+                  billsData.payables.today > 0 
+                    ? 'bg-red-500/20 border border-red-500/30' 
+                    : 'bg-gray-700/30 border border-gray-600/30'
+                }`}>
+                  <Calendar className={`w-4 h-4 ${billsData.payables.today > 0 ? 'text-red-300' : 'text-gray-400'}`} />
+                  <span className={`text-xs font-bold uppercase tracking-wider ${
+                    billsData.payables.today > 0 ? 'text-red-200' : 'text-gray-400'
+                  }`}>
+                    📅 CONTAS A PAGAR HOJE
+                  </span>
+                </div>
+              </div>
+              
+              <p className={`text-sm font-semibold mb-4 ${
+                billsData.payables.today > 0 ? 'text-orange-300' : 'text-gray-500'
               }`}>
                 {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
               </p>
-            </div>
-            <p className={`text-3xl font-bold mb-1 ${
-              billsData.payables.today > 0 ? 'text-yellow-100' : 'text-gray-400'
-            }`}>
-              R$ {formatCurrencyBR(billsData.payables.todayTotal)}
-            </p>
-            <Badge className={`text-xs font-bold ${
-              billsData.payables.today > 0 
-                ? 'bg-yellow-600 text-white' 
-                : 'bg-gray-600 text-gray-300'
-            }`}>
-              {billsData.payables.today} conta(s) vencendo hoje
-            </Badge>
-          </div>
-
-          {/* Total Card */}
-          <div className="p-4 rounded-xl bg-gradient-to-br from-red-900/30 to-orange-900/30 border border-red-700/30">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-red-300 text-sm font-semibold">Total Pendente</p>
-              {billsData.payables.overdue > 0 && (
-                <Badge className="bg-red-600 text-white text-xs flex items-center gap-1">
-                  <AlertCircle className="w-3 h-3" />
-                  {billsData.payables.overdue} vencida(s)
+              
+              <div className="flex items-end justify-between">
+                <p className={`text-4xl font-black tracking-tight ${
+                  billsData.payables.today > 0 ? 'text-white' : 'text-gray-400'
+                }`}>
+                  R$ {formatCurrencyBR(billsData.payables.todayTotal)}
+                </p>
+                
+                <Badge className={`text-xs font-bold px-3 py-1 ${
+                  billsData.payables.today > 0 
+                    ? 'bg-red-600 text-white border-red-500/50' 
+                    : 'bg-gray-700 text-gray-300 border-gray-600/50'
+                }`}>
+                  {billsData.payables.today} conta(s)
                 </Badge>
-              )}
-            </div>
-            <p className="text-3xl font-bold text-white mb-1">
-              R$ {formatCurrencyBR(billsData.payables.total)}
-            </p>
-            <div className="flex items-center gap-3 text-xs">
-              <span className="text-red-400">{billsData.payables.count} conta(s)</span>
-              {billsData.payables.urgent > 0 && (
-                <Badge className="bg-yellow-600/20 text-yellow-400 border-yellow-600/40 text-xs">
-                  {billsData.payables.urgent} urgente(s)
-                </Badge>
-              )}
+              </div>
             </div>
           </div>
 
@@ -253,51 +247,53 @@ export default function BillsSummary({ bills, categories }) {
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Contas a Receber HOJE */}
-          <div className={`p-4 rounded-xl border-2 shadow-lg ${
+          <div className={`relative p-6 rounded-2xl overflow-hidden transition-all duration-300 ${
             billsData.receivables.today > 0 
-              ? 'bg-gradient-to-br from-emerald-900/40 to-green-900/40 border-green-500/60 shadow-green-500/20' 
-              : 'bg-gradient-to-br from-gray-900/40 to-slate-900/40 border-gray-600/40 shadow-gray-500/10'
+              ? 'bg-gradient-to-br from-green-500/20 via-emerald-500/20 to-teal-500/20 border-2 border-green-500/40 shadow-xl shadow-green-500/10' 
+              : 'bg-gradient-to-br from-gray-800/30 to-slate-800/30 border-2 border-gray-700/30 shadow-lg'
           }`}>
-            <div className="flex flex-col gap-2 mb-2">
-              <p className={`text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
-                billsData.receivables.today > 0 ? 'text-green-100' : 'text-gray-300'
-              }`}>
-                <Calendar className="w-4 h-4" />
-                📅 Contas a Receber HOJE
-              </p>
-              <p className={`text-sm font-semibold ${
-                billsData.receivables.today > 0 ? 'text-green-300' : 'text-gray-400'
+            {/* Efeito de brilho de fundo */}
+            {billsData.receivables.today > 0 && (
+              <div className="absolute inset-0 bg-gradient-to-tr from-green-600/10 via-transparent to-teal-600/10 animate-pulse"></div>
+            )}
+            
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-3">
+                <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${
+                  billsData.receivables.today > 0 
+                    ? 'bg-green-500/20 border border-green-500/30' 
+                    : 'bg-gray-700/30 border border-gray-600/30'
+                }`}>
+                  <Calendar className={`w-4 h-4 ${billsData.receivables.today > 0 ? 'text-green-300' : 'text-gray-400'}`} />
+                  <span className={`text-xs font-bold uppercase tracking-wider ${
+                    billsData.receivables.today > 0 ? 'text-green-200' : 'text-gray-400'
+                  }`}>
+                    📅 CONTAS A RECEBER HOJE
+                  </span>
+                </div>
+              </div>
+              
+              <p className={`text-sm font-semibold mb-4 ${
+                billsData.receivables.today > 0 ? 'text-emerald-300' : 'text-gray-500'
               }`}>
                 {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
               </p>
-            </div>
-            <p className={`text-3xl font-bold mb-1 ${
-              billsData.receivables.today > 0 ? 'text-green-100' : 'text-gray-400'
-            }`}>
-              R$ {formatCurrencyBR(billsData.receivables.todayTotal)}
-            </p>
-            <Badge className={`text-xs font-bold ${
-              billsData.receivables.today > 0 
-                ? 'bg-green-600 text-white' 
-                : 'bg-gray-600 text-gray-300'
-            }`}>
-              {billsData.receivables.today} conta(s) vencendo hoje
-            </Badge>
-          </div>
-
-          {/* Total Card */}
-          <div className="p-4 rounded-xl bg-gradient-to-br from-green-900/30 to-emerald-900/30 border border-green-700/30">
-            <p className="text-green-300 text-sm font-semibold mb-2">Previsão de Entrada</p>
-            <p className="text-3xl font-bold text-white mb-1">
-              R$ {formatCurrencyBR(billsData.receivables.total)}
-            </p>
-            <div className="flex items-center gap-3 text-xs">
-              <span className="text-green-400">{billsData.receivables.count} conta(s)</span>
-              {billsData.receivables.urgent > 0 && (
-                <Badge className="bg-yellow-600/20 text-yellow-400 border-yellow-600/40 text-xs">
-                  {billsData.receivables.urgent} próxima(s)
+              
+              <div className="flex items-end justify-between">
+                <p className={`text-4xl font-black tracking-tight ${
+                  billsData.receivables.today > 0 ? 'text-white' : 'text-gray-400'
+                }`}>
+                  R$ {formatCurrencyBR(billsData.receivables.todayTotal)}
+                </p>
+                
+                <Badge className={`text-xs font-bold px-3 py-1 ${
+                  billsData.receivables.today > 0 
+                    ? 'bg-green-600 text-white border-green-500/50' 
+                    : 'bg-gray-700 text-gray-300 border-gray-600/50'
+                }`}>
+                  {billsData.receivables.today} conta(s)
                 </Badge>
-              )}
+              </div>
             </div>
           </div>
 
