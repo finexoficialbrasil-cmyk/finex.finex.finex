@@ -115,25 +115,37 @@ export default function BillsSummary({ bills, categories }) {
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Contas a Pagar HOJE */}
-          {billsData.payables.today > 0 && (
-            <div className="p-4 rounded-xl bg-gradient-to-br from-yellow-900/40 to-orange-900/40 border-2 border-yellow-500/60 shadow-lg shadow-yellow-500/20">
-              <div className="flex flex-col gap-2 mb-2">
-                <p className="text-yellow-100 text-xs font-bold uppercase tracking-wider flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  📅 Contas a Pagar HOJE
-                </p>
-                <p className="text-yellow-300 text-sm font-semibold">
-                  {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
-                </p>
-              </div>
-              <p className="text-3xl font-bold text-yellow-100 mb-1">
-                R$ {formatCurrencyBR(billsData.payables.todayTotal)}
+          <div className={`p-4 rounded-xl border-2 shadow-lg ${
+            billsData.payables.today > 0 
+              ? 'bg-gradient-to-br from-yellow-900/40 to-orange-900/40 border-yellow-500/60 shadow-yellow-500/20' 
+              : 'bg-gradient-to-br from-gray-900/40 to-slate-900/40 border-gray-600/40 shadow-gray-500/10'
+          }`}>
+            <div className="flex flex-col gap-2 mb-2">
+              <p className={`text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
+                billsData.payables.today > 0 ? 'text-yellow-100' : 'text-gray-300'
+              }`}>
+                <Calendar className="w-4 h-4" />
+                📅 Contas a Pagar HOJE
               </p>
-              <Badge className="bg-yellow-600 text-white text-xs font-bold">
-                {billsData.payables.today} conta(s) vencendo hoje
-              </Badge>
+              <p className={`text-sm font-semibold ${
+                billsData.payables.today > 0 ? 'text-yellow-300' : 'text-gray-400'
+              }`}>
+                {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
+              </p>
             </div>
-          )}
+            <p className={`text-3xl font-bold mb-1 ${
+              billsData.payables.today > 0 ? 'text-yellow-100' : 'text-gray-400'
+            }`}>
+              R$ {formatCurrencyBR(billsData.payables.todayTotal)}
+            </p>
+            <Badge className={`text-xs font-bold ${
+              billsData.payables.today > 0 
+                ? 'bg-yellow-600 text-white' 
+                : 'bg-gray-600 text-gray-300'
+            }`}>
+              {billsData.payables.today} conta(s) vencendo hoje
+            </Badge>
+          </div>
 
           {/* Total Card */}
           <div className="p-4 rounded-xl bg-gradient-to-br from-red-900/30 to-orange-900/30 border border-red-700/30">
@@ -241,25 +253,37 @@ export default function BillsSummary({ bills, categories }) {
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Contas a Receber HOJE */}
-          {billsData.receivables.today > 0 && (
-            <div className="p-4 rounded-xl bg-gradient-to-br from-emerald-900/40 to-green-900/40 border-2 border-green-500/60 shadow-lg shadow-green-500/20">
-              <div className="flex flex-col gap-2 mb-2">
-                <p className="text-green-100 text-xs font-bold uppercase tracking-wider flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  📅 Contas a Receber HOJE
-                </p>
-                <p className="text-green-300 text-sm font-semibold">
-                  {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
-                </p>
-              </div>
-              <p className="text-3xl font-bold text-green-100 mb-1">
-                R$ {formatCurrencyBR(billsData.receivables.todayTotal)}
+          <div className={`p-4 rounded-xl border-2 shadow-lg ${
+            billsData.receivables.today > 0 
+              ? 'bg-gradient-to-br from-emerald-900/40 to-green-900/40 border-green-500/60 shadow-green-500/20' 
+              : 'bg-gradient-to-br from-gray-900/40 to-slate-900/40 border-gray-600/40 shadow-gray-500/10'
+          }`}>
+            <div className="flex flex-col gap-2 mb-2">
+              <p className={`text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
+                billsData.receivables.today > 0 ? 'text-green-100' : 'text-gray-300'
+              }`}>
+                <Calendar className="w-4 h-4" />
+                📅 Contas a Receber HOJE
               </p>
-              <Badge className="bg-green-600 text-white text-xs font-bold">
-                {billsData.receivables.today} conta(s) vencendo hoje
-              </Badge>
+              <p className={`text-sm font-semibold ${
+                billsData.receivables.today > 0 ? 'text-green-300' : 'text-gray-400'
+              }`}>
+                {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
+              </p>
             </div>
-          )}
+            <p className={`text-3xl font-bold mb-1 ${
+              billsData.receivables.today > 0 ? 'text-green-100' : 'text-gray-400'
+            }`}>
+              R$ {formatCurrencyBR(billsData.receivables.todayTotal)}
+            </p>
+            <Badge className={`text-xs font-bold ${
+              billsData.receivables.today > 0 
+                ? 'bg-green-600 text-white' 
+                : 'bg-gray-600 text-gray-300'
+            }`}>
+              {billsData.receivables.today} conta(s) vencendo hoje
+            </Badge>
+          </div>
 
           {/* Total Card */}
           <div className="p-4 rounded-xl bg-gradient-to-br from-green-900/30 to-emerald-900/30 border border-green-700/30">
