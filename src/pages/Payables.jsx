@@ -810,7 +810,7 @@ export default function Payables() {
                       <Badge className="ml-2 bg-purple-600/30 text-purple-200 text-xs">{counts.all}</Badge>
                     </TabsTrigger>
                     <TabsTrigger value="pending" className="flex-1">
-                      Pendentes
+                      A Vencer
                       <Badge className="ml-2 bg-yellow-600/30 text-yellow-200 text-xs">{counts.pending}</Badge>
                     </TabsTrigger>
                     <TabsTrigger value="overdue" className="flex-1">
