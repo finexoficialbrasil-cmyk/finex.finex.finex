@@ -42,7 +42,8 @@ import {
   ChevronLeft,
   ChevronRight,
   FileText,
-  Download
+  Download,
+  AlertCircle
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
@@ -587,19 +588,47 @@ export default function TransactionsPage() {
                   Movimentações ({paginatedTransactions.length})
                 </CardTitle>
                 
-                {/* ✅ Checkbox para mostrar excluídas */}
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-purple-900/20 border border-purple-700/30">
-                  <input
-                    type="checkbox"
-                    id="showDeleted"
-                    checked={showDeleted}
-                    onChange={(e) => setShowDeleted(e.target.checked)}
-                    className="w-4 h-4 rounded border-purple-700 bg-purple-900/20"
-                  />
-                  <Label htmlFor="showDeleted" className="text-purple-200 text-sm cursor-pointer flex items-center gap-2">
-                    <Trash2 className="w-4 h-4 text-red-400" />
-                    Mostrar apenas transações excluídas este mês
-                  </Label>
+                {/* ✅ Toggle para mostrar excluídas - VISUAL MELHORADO */}
+                <div className={`relative p-4 rounded-xl border-2 transition-all cursor-pointer ${
+                  showDeleted 
+                    ? 'bg-gradient-to-r from-red-900/40 to-orange-900/40 border-red-500/50 shadow-lg shadow-red-500/20' 
+                    : 'bg-purple-900/10 border-purple-700/30 hover:border-purple-600/50'
+                }`}
+                onClick={() => setShowDeleted(!showDeleted)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-lg ${showDeleted ? 'bg-red-500/20' : 'bg-purple-600/20'}`}>
+                        <Trash2 className={`w-5 h-5 ${showDeleted ? 'text-red-400' : 'text-purple-400'}`} />
+                      </div>
+                      <div>
+                        <p className={`font-semibold ${showDeleted ? 'text-red-300' : 'text-purple-200'}`}>
+                          Transações Excluídas
+                        </p>
+                        <p className="text-xs text-purple-400">
+                          {showDeleted ? 'Exibindo apenas excluídas deste mês' : 'Clique para ver as excluídas'}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Toggle Switch */}
+                    <div className={`relative w-14 h-7 rounded-full transition-colors ${
+                      showDeleted ? 'bg-red-500' : 'bg-purple-700/50'
+                    }`}>
+                      <div className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-transform ${
+                        showDeleted ? 'translate-x-7' : 'translate-x-0'
+                      }`} />
+                    </div>
+                  </div>
+                  
+                  {showDeleted && (
+                    <div className="mt-3 pt-3 border-t border-red-500/30">
+                      <p className="text-xs text-red-300 flex items-center gap-2">
+                        <AlertCircle className="w-3 h-3" />
+                        Você está visualizando apenas transações excluídas do mês atual
+                      </p>
+                    </div>
+                  )}
                 </div>
               </CardHeader>
               <CardContent className="p-0">
