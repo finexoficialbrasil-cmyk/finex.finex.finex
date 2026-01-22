@@ -367,15 +367,36 @@ export default function TransactionsPage() {
     setCurrentPage(1);
   }, [searchQuery, filterType, filterStatus, filterCategory, filterAccount, sortBy]);
 
-  // ✅ Calcular totais de entrada e saída
+  // ✅ Calcular totais de entrada e saída - APENAS MÊS ATUAL
   const totals = useMemo(() => {
-    const income = transactions
-      .filter(tx => tx.type === 'income' && tx.status === 'completed')
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    console.log("📊 Transações - Calculando totais para:", currentMonth + 1, "/", currentYear);
+    
+    const monthTransactions = transactions.filter(tx => {
+      if (!tx.date || tx.status !== 'completed') return false;
+      
+      try {
+        const [year, month] = tx.date.split('-').map(Number);
+        return month === (currentMonth + 1) && year === currentYear;
+      } catch (e) {
+        return false;
+      }
+    });
+
+    console.log("📊 Transações filtradas do mês:", monthTransactions.length);
+    
+    const income = monthTransactions
+      .filter(tx => tx.type === 'income')
       .reduce((sum, tx) => sum + (tx.amount || 0), 0);
     
-    const expense = transactions
-      .filter(tx => tx.type === 'expense' && tx.status === 'completed')
+    const expense = monthTransactions
+      .filter(tx => tx.type === 'expense')
       .reduce((sum, tx) => sum + (tx.amount || 0), 0);
+
+    console.log("📊 Transações - Entradas:", income, "| Saídas:", expense);
 
     return { income, expense, balance: income - expense };
   }, [transactions]);
