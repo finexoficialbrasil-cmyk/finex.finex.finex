@@ -354,6 +354,37 @@ export default function Payables() {
         loadData();
         return;
       }
+
+      // ✅ NOVO: Verificar duplicação de transação
+      const existingTransactions = await Transaction.filter({
+        description: bill.description,
+        amount: bill.amount,
+        type: "expense",
+        status: "completed"
+      });
+
+      // Verificar se existe transação nos últimos 5 minutos
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+      const recentDuplicate = existingTransactions.find(tx => {
+        const txDate = new Date(tx.created_date);
+        return txDate > fiveMinutesAgo;
+      });
+
+      if (recentDuplicate) {
+        const confirmPay = confirm(
+          `⚠️ ATENÇÃO: Duplicação Detectada!\n\n` +
+          `Já existe uma transação igual paga recentemente:\n` +
+          `📄 ${bill.description}\n` +
+          `💰 R$ ${formatCurrencyBR(bill.amount)}\n` +
+          `⏰ Paga há ${Math.floor((Date.now() - new Date(recentDuplicate.created_date).getTime()) / 60000)} minuto(s)\n\n` +
+          `Deseja REALMENTE pagar novamente?`
+        );
+        
+        if (!confirmPay) {
+          console.log("⚠️ Pagamento cancelado pelo usuário - duplicação detectada");
+          return;
+        }
+      }
     } catch (error) {
       console.error("Erro ao verificar status da conta:", error);
       alert("❌ Erro ao verificar o status da conta. Tente novamente.");

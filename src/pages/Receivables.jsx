@@ -286,6 +286,39 @@ export default function Receivables() {
         await loadData();
         return;
       }
+
+      // ✅ NOVO: Verificar duplicação de transação
+      const existingTransactions = await Transaction.filter({
+        description: bill.description,
+        amount: bill.amount,
+        type: "income",
+        status: "completed"
+      });
+
+      // Verificar se existe transação nos últimos 5 minutos
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+      const recentDuplicate = existingTransactions.find(tx => {
+        const txDate = new Date(tx.created_date);
+        return txDate > fiveMinutesAgo;
+      });
+
+      if (recentDuplicate) {
+        setIsLoading(false);
+        const confirmReceive = confirm(
+          `⚠️ ATENÇÃO: Duplicação Detectada!\n\n` +
+          `Já existe uma transação igual recebida recentemente:\n` +
+          `📄 ${bill.description}\n` +
+          `💰 R$ ${formatCurrencyBR(bill.amount)}\n` +
+          `⏰ Recebida há ${Math.floor((Date.now() - new Date(recentDuplicate.created_date).getTime()) / 60000)} minuto(s)\n\n` +
+          `Deseja REALMENTE receber novamente?`
+        );
+        
+        if (!confirmReceive) {
+          console.log("⚠️ Recebimento cancelado pelo usuário - duplicação detectada");
+          return;
+        }
+        setIsLoading(true);
+      }
     } catch (error) {
       console.error("Erro ao verificar status da conta:", error);
       alert("❌ Erro ao verificar o status da conta. Tente novamente.");
