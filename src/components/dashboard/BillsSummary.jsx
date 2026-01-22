@@ -15,8 +15,8 @@ const formatCurrencyBR = (value) => {
 
 export default function BillsSummary({ bills, categories }) {
   const billsData = useMemo(() => {
-    const payables = bills.filter(b => b.type === "payable" && b.status === "pending");
-    const receivables = bills.filter(b => b.type === "receivable" && b.status === "pending");
+    const payables = bills.filter(b => b.type === "payable" && (b.status === "pending" || b.status === "overdue"));
+    const receivables = bills.filter(b => b.type === "receivable" && (b.status === "pending" || b.status === "overdue"));
     
     const totalPayable = payables.reduce((sum, b) => sum + b.amount, 0);
     const totalReceivable = receivables.reduce((sum, b) => sum + b.amount, 0);
