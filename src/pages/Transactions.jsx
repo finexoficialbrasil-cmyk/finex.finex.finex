@@ -582,12 +582,84 @@ export default function TransactionsPage() {
             </div>
 
             <Card className="glass-card border-0 neon-glow">
-              <CardHeader className="border-b border-purple-900/30">
-                <CardTitle className="flex items-center gap-2 text-white mb-4">
-                  <FileText className="w-5 h-5 text-indigo-400" />
-                  Movimentações ({paginatedTransactions.length})
-                </CardTitle>
+              <CardHeader className="border-b border-purple-900/30 pb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <CardTitle className="flex items-center gap-2 text-white">
+                    <FileText className="w-5 h-5 text-indigo-400" />
+                    Movimentações ({paginatedTransactions.length})
+                  </CardTitle>
+                  
+                  {!showDeleted && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-purple-400">Páginas:</span>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                          disabled={currentPage === 1}
+                          className="h-8 w-8 text-purple-300"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </Button>
+                        <span className="px-3 py-1 bg-purple-900/30 rounded-lg text-purple-200 text-sm">
+                          {currentPage} / {totalPages || 1}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                          disabled={currentPage === totalPages}
+                          className="h-8 w-8 text-purple-300"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
                 
+                {/* ✅ Filtros e Busca */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                  {/* Busca */}
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-400" />
+                    <Input
+                      placeholder="Buscar transações..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10 bg-purple-900/20 border-purple-700/50 text-white"
+                    />
+                  </div>
+
+                  {/* Filtro Tipo */}
+                  <Select value={filterType} onValueChange={setFilterType}>
+                    <SelectTrigger className="bg-purple-900/20 border-purple-700/50 text-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas</SelectItem>
+                      <SelectItem value="income">Entradas</SelectItem>
+                      <SelectItem value="expense">Saídas</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {/* Ordenação */}
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger className="bg-purple-900/20 border-purple-700/50 text-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="-created_date">Mais recentes</SelectItem>
+                      <SelectItem value="created_date">Mais antigas</SelectItem>
+                      <SelectItem value="-amount">Maior valor</SelectItem>
+                      <SelectItem value="amount">Menor valor</SelectItem>
+                      <SelectItem value="description">A-Z</SelectItem>
+                      <SelectItem value="-description">Z-A</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 {/* ✅ Toggle para mostrar excluídas - VISUAL MELHORADO */}
                 <div className={`relative p-4 rounded-xl border-2 transition-all cursor-pointer ${
                   showDeleted 
@@ -606,7 +678,7 @@ export default function TransactionsPage() {
                           Transações Excluídas
                         </p>
                         <p className="text-xs text-purple-400">
-                          {showDeleted ? 'Exibindo apenas excluídas deste mês' : 'Clique para ver as excluídas'}
+                          {showDeleted ? 'Clique para voltar às transações normais' : 'Clique para ver as excluídas'}
                         </p>
                       </div>
                     </div>
