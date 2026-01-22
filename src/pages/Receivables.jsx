@@ -879,9 +879,14 @@ Agradecemos pela atenção e confiança!
                           </div>
                           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
                             <div className="text-left sm:text-right order-2 sm:order-none">
-                              <p className="font-bold text-sm sm:text-lg text-green-400">
-                                R$ {bill.amount.toFixed(2)}
-                              </p>
+                              <div className="flex items-center gap-2 justify-between sm:justify-end">
+                                <p className="font-bold text-sm sm:text-lg text-green-400">
+                                  R$ {bill.amount.toFixed(2)}
+                                </p>
+                                {bill.status === "paid" && (
+                                  <Badge className="bg-green-600/20 text-green-400 border-green-600/40 text-xs">Recebido</Badge>
+                                )}
+                              </div>
                               <p className="text-xs text-purple-400 truncate">{account.name}</p>
                             </div>
                             <div className="flex gap-1 sm:gap-2 justify-end order-1 sm:order-none">
@@ -892,20 +897,19 @@ Agradecemos pela atenção e confiança!
                                       variant="ghost"
                                       size="icon"
                                       onClick={() => sendWhatsAppReminder(bill)}
-                                      className="h-7 w-7 sm:h-8 sm:w-8 text-green-400 hover:bg-green-900/20"
+                                      className="h-9 w-9 sm:h-10 sm:w-10 text-green-400 hover:bg-green-900/20 flex-shrink-0"
                                       title="Enviar cobrança WhatsApp"
                                     >
-                                      <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+                                      <MessageCircle className="w-5 h-5 sm:w-5 sm:h-5" />
                                     </Button>
                                   )}
                                   <Button
-                                    variant="ghost"
-                                    size="icon"
                                     onClick={() => handleReceive(bill)}
-                                    className="h-7 w-7 sm:h-8 sm:w-8 text-green-400 hover:bg-green-900/20"
-                                    title="Marcar como recebido"
+                                    className="h-10 sm:h-11 px-4 sm:px-6 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all flex items-center gap-2 flex-shrink-0"
+                                    title="Confirmar Recebimento"
                                   >
-                                    <Check className="w-3 h-3 sm:w-4 sm:h-4" />
+                                    <Check className="w-5 h-5 sm:w-5 sm:h-5" />
+                                    <span className="hidden sm:inline text-sm">Receber</span>
                                   </Button>
                                 </>
                               ) : null}
