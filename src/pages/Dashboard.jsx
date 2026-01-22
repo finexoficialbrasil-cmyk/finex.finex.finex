@@ -127,11 +127,11 @@ export default function Dashboard() {
     try {
       console.log("⚡ Dashboard - Início do carregamento...");
       
-      // ✅ Carregar transações suficientes para estatísticas do mês
+      // ✅ Carregar transações ILIMITADAS para cálculo correto do mês
       const [userData, txs, accs] = await Promise.all([
         User.me(),
-        Transaction.list("-created_date", 100), // ✅ Carregar transações do mês atual
-        Account.list("-created_date", 20) // ✅ Todas as contas do usuário
+        Transaction.list("-created_date", 50000), // ✅ ILIMITADO - pegar TODAS as transações
+        Account.list("-created_date", 50) // ✅ Todas as contas do usuário
       ]);
       
       const loadTime = performance.now() - startTime;
