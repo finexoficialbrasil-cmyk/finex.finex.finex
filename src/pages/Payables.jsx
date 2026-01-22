@@ -622,7 +622,12 @@ export default function Payables() {
       bill.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       bill.contact_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       bill.supplier_full_name?.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesStatus && matchesSearch;
+    
+    // ✅ Filtrar por mês selecionado
+    const billMonth = bill.due_date.substring(0, 7); // YYYY-MM
+    const matchesMonth = billMonth === selectedMonth;
+    
+    return matchesStatus && matchesSearch && matchesMonth;
   });
 
   // ✅ Calcular quantidades para cada aba
