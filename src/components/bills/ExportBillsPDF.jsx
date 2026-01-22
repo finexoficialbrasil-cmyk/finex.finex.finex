@@ -748,7 +748,7 @@ export default function ExportBillsPDF({ bills, categories, accounts, type = "pa
                      type="date"
                      value={filters.startDate}
                      onChange={(e) => setFilters({...filters, startDate: e.target.value})}
-                     className="w-full px-3 py-2 bg-purple-900/40 border border-purple-600/50 rounded-md text-purple-100 text-sm"
+                     className="w-full px-3 py-2 bg-purple-900/50 border border-purple-600/70 rounded-md text-white text-sm [color-scheme:dark]"
                    />
                  </div>
 
@@ -758,7 +758,7 @@ export default function ExportBillsPDF({ bills, categories, accounts, type = "pa
                      type="date"
                      value={filters.endDate}
                      onChange={(e) => setFilters({...filters, endDate: e.target.value})}
-                     className="w-full px-3 py-2 bg-purple-900/40 border border-purple-600/50 rounded-md text-purple-100 text-sm"
+                     className="w-full px-3 py-2 bg-purple-900/50 border border-purple-600/70 rounded-md text-white text-sm [color-scheme:dark]"
                    />
                  </div>
               </div>
