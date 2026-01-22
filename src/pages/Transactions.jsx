@@ -325,6 +325,10 @@ export default function TransactionsPage() {
     const now = new Date();
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     
+    console.log("🔍 Filtrando transações. showDeleted:", showDeleted);
+    console.log("📊 Total de transações carregadas:", transactions.length);
+    console.log("🗑️ Transações com deleted=true:", transactions.filter(tx => tx.deleted).length);
+    
     // Filtrar
     let filtered = transactions.filter(tx => {
       // ✅ Filtrar excluídas ou não excluídas
@@ -335,6 +339,9 @@ export default function TransactionsPage() {
         
         const deletedMonth = tx.deleted_at.substring(0, 7);
         if (deletedMonth !== currentMonth) return false;
+        
+        console.log("✅ Transação excluída encontrada:", tx.description, tx.deleted_at);
+        return true;
       } else {
         // Não mostrar excluídas
         if (tx.deleted) return false;
@@ -384,6 +391,8 @@ export default function TransactionsPage() {
       return direction === 'desc' ? -result : result;
     });
 
+    console.log("📋 Total após filtros:", filtered.length);
+    
     // Paginar
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
@@ -391,7 +400,7 @@ export default function TransactionsPage() {
     const totalPages = Math.ceil(filtered.length / itemsPerPage);
 
     return { paginatedTransactions: paginated, totalPages };
-  }, [transactions, searchQuery, filterType, filterStatus, filterCategory, filterAccount, sortBy, currentPage, itemsPerPage, getCategoryInfo]);
+  }, [transactions, searchQuery, filterType, filterStatus, filterCategory, filterAccount, sortBy, currentPage, itemsPerPage, showDeleted, getCategoryInfo]);
 
   // ✅ NOVO: Resetar página ao mudar filtros
   useEffect(() => {

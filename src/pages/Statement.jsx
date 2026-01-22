@@ -101,6 +101,9 @@ export default function Statement() {
     console.log(`📊 Total de transações carregadas: ${transactions.length}`);
     
     let filtered = transactions.filter(tx => {
+      // ✅ NOVA REGRA: Não mostrar transações excluídas no extrato
+      if (tx.deleted) return false;
+      
       // ✅ IMPORTANTE: Parsear data corretamente (formato YYYY-MM-DD)
       const [txYear, txMonth, txDay] = tx.date.split('-').map(Number);
       const [startYear, startMonth, startDay] = filters.startDate.split('-').map(Number);
