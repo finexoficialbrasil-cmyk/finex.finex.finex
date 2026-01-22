@@ -55,6 +55,8 @@ export default function Payables() {
   const [accounts, setAccounts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [filterStatus, setFilterStatus] = useState("all");
+  const [filterCategory, setFilterCategory] = useState("all");
+  const [filterAccount, setFilterAccount] = useState("all");
   const [sortBy, setSortBy] = useState("-created_date");
   const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(false);
@@ -620,6 +622,8 @@ export default function Payables() {
 
   const filteredBills = bills.filter(bill => {
     const matchesStatus = filterStatus === "all" || bill.status === filterStatus;
+    const matchesCategory = filterCategory === "all" || bill.category_id === filterCategory;
+    const matchesAccount = filterAccount === "all" || bill.account_id === filterAccount;
     const matchesSearch = searchTerm === "" || 
       bill.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       bill.contact_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -629,7 +633,7 @@ export default function Payables() {
     const billMonth = bill.due_date.substring(0, 7); // YYYY-MM
     const matchesMonth = selectedMonth === "todos" ? true : billMonth === selectedMonth;
     
-    return matchesStatus && matchesSearch && matchesMonth;
+    return matchesStatus && matchesCategory && matchesAccount && matchesSearch && matchesMonth;
   });
 
   // ✅ Calcular quantidades para cada aba
@@ -824,6 +828,39 @@ export default function Payables() {
                     ×
                   </button>
                 )}
+              </div>
+
+              {/* ✅ NOVO: Filtros de Categoria e Conta */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                <div>
+                  <Label className="text-purple-300 text-xs mb-1 block">Categoria</Label>
+                  <Select value={filterCategory} onValueChange={setFilterCategory}>
+                    <SelectTrigger className="w-full bg-purple-900/20 border-purple-700/50 text-white text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas as Categorias</SelectItem>
+                      {categories.map(cat => (
+                        <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="text-purple-300 text-xs mb-1 block">Conta</Label>
+                  <Select value={filterAccount} onValueChange={setFilterAccount}>
+                    <SelectTrigger className="w-full bg-purple-900/20 border-purple-700/50 text-white text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas as Contas</SelectItem>
+                      {accounts.map(acc => (
+                        <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               {/* Tabs for status filtering */}
