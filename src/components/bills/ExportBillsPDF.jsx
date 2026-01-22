@@ -663,6 +663,14 @@ export default function ExportBillsPDF({ bills, categories, accounts, type = "pa
           filter: invert(1);
           cursor: pointer;
         }
+        button[variant="outline"] {
+          background-color: transparent !important;
+          color: #d8b4fe !important;
+          border-color: #a855f7 !important;
+        }
+        button[variant="outline"]:hover {
+          background-color: rgba(168, 85, 247, 0.2) !important;
+        }
       `}</style>
       <Button
         onClick={() => setShowModal(true)}
@@ -745,7 +753,7 @@ export default function ExportBillsPDF({ bills, categories, accounts, type = "pa
                   variant={filters.periodMode === "specific" ? "default" : "outline"}
                   size="sm"
                   onClick={() => setFilters({...filters, periodMode: "specific"})}
-                  className="flex-1"
+                  className={`flex-1 ${filters.periodMode === "specific" ? "bg-gradient-to-r from-purple-600 to-pink-600" : "bg-transparent border-purple-700 text-purple-300 hover:bg-purple-900/30"}`}
                 >
                   Mês Específico
                 </Button>
@@ -753,7 +761,7 @@ export default function ExportBillsPDF({ bills, categories, accounts, type = "pa
                   variant={filters.periodMode === "all" ? "default" : "outline"}
                   size="sm"
                   onClick={() => setFilters({...filters, periodMode: "all"})}
-                  className="flex-1"
+                  className={`flex-1 ${filters.periodMode === "all" ? "bg-gradient-to-r from-purple-600 to-pink-600" : "bg-transparent border-purple-700 text-purple-300 hover:bg-purple-900/30"}`}
                 >
                   Todos os Meses
                 </Button>
@@ -789,7 +797,7 @@ export default function ExportBillsPDF({ bills, categories, accounts, type = "pa
                 type="button"
                 variant="outline"
                 onClick={resetFilters}
-                className="flex-1 border-purple-700 text-purple-300"
+                className="flex-1 bg-transparent border-purple-700 text-purple-300 hover:bg-purple-900/30"
                 disabled={isGenerating}
               >
                 Limpar Filtros
