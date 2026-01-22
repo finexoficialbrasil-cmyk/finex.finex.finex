@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Account } from "@/entities/all";
+import { Account, Transaction } from "@/entities/all";
 import { UploadFile } from "@/integrations/Core";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -282,7 +282,23 @@ export default function Accounts() {
       };
 
       if (editingAccount) {
+        // ✅ Se está editando, verificar se o nome mudou
+        const nameChanged = editingAccount.name !== data.name;
+        
         await Account.update(editingAccount.id, data);
+        
+        // ✅ Se o nome da conta mudou, atualizar todas as transações relacionadas
+        if (nameChanged) {
+          const transactions = await Transaction.filter({ account_id: editingAccount.id });
+          console.log(`🔄 Atualizando ${transactions.length} transações da conta "${editingAccount.name}" para "${data.name}"`);
+          
+          // Atualizar cada transação em paralelo
+          await Promise.all(
+            transactions.map(tx => 
+              Transaction.update(tx.id, { ...tx })
+            )
+          );
+        }
       } else {
         await Account.create(data);
       }
@@ -329,11 +345,26 @@ export default function Accounts() {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm("Tem certeza que deseja excluir esta conta?")) return;
+    if (!confirm("Tem certeza que deseja excluir esta conta?\n\n⚠️ ATENÇÃO: Todas as transações relacionadas a esta conta também serão excluídas!")) return;
     
     try {
+      // ✅ Primeiro, buscar todas as transações relacionadas a esta conta
+      const transactions = await Transaction.filter({ account_id: id });
+      
+      console.log(`🗑️ Excluindo conta e ${transactions.length} transações relacionadas`);
+      
+      // ✅ Deletar todas as transações em paralelo
+      if (transactions.length > 0) {
+        await Promise.all(
+          transactions.map(tx => Transaction.delete(tx.id))
+        );
+      }
+      
+      // ✅ Deletar a conta
       await Account.delete(id);
+      
       loadAccounts();
+      alert(`✅ Conta e ${transactions.length} transação(ões) excluídas com sucesso!`);
     } catch (error) {
       console.error("Erro ao excluir conta:", error);
       alert("Erro ao excluir conta");
