@@ -332,10 +332,74 @@ function LayoutContent({ children }) {
 
   if (isLoadingLayout) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0a0a0f] via-[#1a1a2e] to-[#0a0a0f] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <Sparkles className="w-12 h-12 text-purple-400 animate-spin" />
-          <p className="text-purple-300">Carregando FINEX...</p>
+      <div className="min-h-screen bg-gradient-to-br from-[#0a0a0f] via-[#1a1a2e] to-[#0a0a0f] flex items-center justify-center p-4">
+        <style>{`
+          @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+          }
+          @keyframes glow-pulse {
+            0%, 100% { filter: drop-shadow(0 0 20px rgba(168, 85, 247, 0.5)); }
+            50% { filter: drop-shadow(0 0 40px rgba(168, 85, 247, 0.8)); }
+          }
+          @keyframes coin-rotate {
+            0% { transform: rotateY(0deg) rotateX(0deg); }
+            100% { transform: rotateY(360deg) rotateX(10deg); }
+          }
+          @keyframes scale-in {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+          }
+          .float-coin { animation: float 3s ease-in-out infinite, glow-pulse 2s ease-in-out infinite; }
+          .rotate-coin { animation: coin-rotate 8s linear infinite; }
+        `}</style>
+        <div className="flex flex-col items-center gap-6">
+          {/* Moedas flutuantes */}
+          <div className="relative w-32 h-32 flex items-center justify-center">
+            {/* Moeda central */}
+            <div className="absolute float-coin" style={{ animation: 'float 3s ease-in-out infinite, glow-pulse 2s ease-in-out infinite' }}>
+              <div className="w-24 h-24 bg-gradient-to-br from-yellow-400 via-yellow-500 to-orange-600 rounded-full flex items-center justify-center shadow-2xl rotate-coin" style={{ animation: 'coin-rotate 8s linear infinite' }}>
+                <DollarSign className="w-12 h-12 text-white drop-shadow-lg" />
+              </div>
+            </div>
+            
+            {/* Moedas satélites */}
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="absolute w-16 h-16 float-coin"
+                style={{
+                  animation: `float 3.5s ease-in-out infinite`,
+                  animationDelay: `${i * 0.3}s`,
+                  transform: `rotate(${i * 120}deg) translateX(50px)`,
+                }}
+              >
+                <div className="w-full h-full bg-gradient-to-br from-purple-400 to-pink-600 rounded-full flex items-center justify-center shadow-lg" style={{ animation: `coin-rotate 6s linear infinite`, animationDirection: i % 2 === 0 ? 'reverse' : 'normal' }}>
+                  <Sparkles className="w-6 h-6 text-white" />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Texto */}
+          <div className="text-center space-y-2">
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent animate-pulse">
+              FINEX
+            </h2>
+            <p className="text-sm text-purple-300">Inteligência Financeira</p>
+            
+            {/* Barra de progresso */}
+            <div className="w-48 h-1 bg-purple-900/30 rounded-full mt-4 overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 rounded-full"
+                style={{
+                  animation: `scale-in 2s ease-in-out infinite`,
+                  transformOrigin: 'left',
+                  width: '40%'
+                }}
+              />
+            </div>
+          </div>
         </div>
       </div>
     );
