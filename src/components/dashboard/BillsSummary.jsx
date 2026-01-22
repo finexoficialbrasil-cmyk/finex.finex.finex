@@ -24,16 +24,12 @@ export default function BillsSummary({ bills, categories }) {
     const totalPayable = payables.reduce((sum, b) => sum + b.amount, 0);
     const totalReceivable = receivables.reduce((sum, b) => sum + b.amount, 0);
     
-    // Data de hoje no fuso horário brasileiro (UTC-3)
+    // Data de hoje sem conversão de timezone
     const today = new Date();
-    const brazilOffset = -3 * 60; // UTC-3 em minutos
-    const localOffset = today.getTimezoneOffset();
-    const brazilTime = new Date(today.getTime() + (localOffset + brazilOffset) * 60 * 1000);
-    
-    const year = brazilTime.getFullYear();
-    const month = String(brazilTime.getMonth() + 1).padStart(2, '0');
-    const day = String(brazilTime.getDate()).padStart(2, '0');
-    const todayStr = `${year}-${month}-${day}`; // YYYY-MM-DD no horário brasileiro
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const todayStr = `${year}-${month}-${day}`; // YYYY-MM-DD no horário local
     
     // Contas que vencem HOJE
     const todayPayables = payables.filter(b => b.due_date === todayStr);
@@ -42,17 +38,25 @@ export default function BillsSummary({ bills, categories }) {
     const todayPayableTotal = todayPayables.reduce((sum, b) => sum + b.amount, 0);
     const todayReceivableTotal = todayReceivables.reduce((sum, b) => sum + b.amount, 0);
     
+    const todayLocal = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    
     const urgentPayables = payables.filter(b => {
-      const daysUntil = differenceInDays(new Date(b.due_date), today);
+      const [year, month, day] = b.due_date.split('-').map(Number);
+      const billDate = new Date(year, month - 1, day);
+      const daysUntil = differenceInDays(billDate, todayLocal);
       return daysUntil <= 3 && daysUntil >= 0;
     });
     
-    const overduePayables = payables.filter(b => 
-      differenceInDays(new Date(b.due_date), today) < 0
-    );
+    const overduePayables = payables.filter(b => {
+      const [year, month, day] = b.due_date.split('-').map(Number);
+      const billDate = new Date(year, month - 1, day);
+      return differenceInDays(billDate, todayLocal) < 0;
+    });
     
     const urgentReceivables = receivables.filter(b => {
-      const daysUntil = differenceInDays(new Date(b.due_date), today);
+      const [year, month, day] = b.due_date.split('-').map(Number);
+      const billDate = new Date(year, month - 1, day);
+      const daysUntil = differenceInDays(billDate, todayLocal);
       return daysUntil <= 3 && daysUntil >= 0;
     });
     
@@ -78,7 +82,13 @@ export default function BillsSummary({ bills, categories }) {
   }, [bills]);
 
   const getDaysUntilDue = (dueDate) => {
-    const days = differenceInDays(new Date(dueDate), new Date());
+    const [year, month, day] = dueDate.split('-').map(Number);
+    const billDate = new Date(year, month - 1, day);
+    
+    const today = new Date();
+    const todayLocal = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    
+    const days = differenceInDays(billDate, todayLocal);
     return days;
   };
 
