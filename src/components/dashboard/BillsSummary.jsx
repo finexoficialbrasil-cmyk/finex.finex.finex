@@ -36,14 +36,8 @@ export default function BillsSummary({ bills, categories }) {
     console.log('💵 Contas a receber pendentes:', receivables.length);
     
     // Contas que vencem HOJE
-    const todayPayables = payables.filter(b => {
-      console.log(`Verificando conta: ${b.description}, vencimento: ${b.due_date}, hoje: ${todayStr}, match: ${b.due_date === todayStr}`);
-      return b.due_date === todayStr;
-    });
+    const todayPayables = payables.filter(b => b.due_date === todayStr);
     const todayReceivables = receivables.filter(b => b.due_date === todayStr);
-    
-    console.log('🔴 Contas a pagar HOJE:', todayPayables.length, todayPayables);
-    console.log('🟢 Contas a receber HOJE:', todayReceivables.length, todayReceivables);
     
     const todayPayableTotal = todayPayables.reduce((sum, b) => sum + b.amount, 0);
     const todayReceivableTotal = todayReceivables.reduce((sum, b) => sum + b.amount, 0);
