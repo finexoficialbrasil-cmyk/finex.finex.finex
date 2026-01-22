@@ -553,6 +553,11 @@ function LayoutContent({ children }) {
           background: ${theme === 'light' ? '#f3f4f6' : 'rgba(168, 85, 247, 0.2)'} !important;
         }
 
+        [data-radix-select-item][data-state="checked"] {
+          background: ${theme === 'light' ? '#e0e7ff' : 'rgba(147, 51, 234, 0.4)'} !important;
+          color: #ffffff !important;
+        }
+
         input, textarea, select {
           color: ${theme === 'light' ? '#1f2937' : '#ffffff'} !important;
           font-weight: 500 !important;
