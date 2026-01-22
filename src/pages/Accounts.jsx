@@ -18,7 +18,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Wallet, Plus, Edit, Trash2, TrendingUp, TrendingDown, Building2, Loader2, Upload, Search, X } from "lucide-react";
+import { Wallet, Plus, Edit, Trash2, TrendingUp, TrendingDown, Building2, Loader2, Upload, X } from "lucide-react";
+import { Search } from "lucide-react";
 import { motion } from "framer-motion";
 import FeatureGuard from "../components/FeatureGuard";
 
