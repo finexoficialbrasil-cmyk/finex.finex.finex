@@ -34,6 +34,14 @@ const formatDateBR = (dateString) => {
   return `${day}/${month}/${year}`;
 };
 
+// ✅ Formatação de moeda brasileira
+const formatCurrencyBR = (value) => {
+  return new Intl.NumberFormat('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(value);
+};
+
 export default function Statement() {
   const [user, setUser] = useState(null);
   const [transactions, setTransactions] = useState([]);
@@ -305,15 +313,15 @@ export default function Statement() {
         <div class="totals">
           <div class="total-card income">
             <h3>ENTRADAS TOTAIS</h3>
-            <p>R$ ${totals.income.toFixed(2)}</p>
+            <p>R$ ${totals.income.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
           </div>
           <div class="total-card expense">
             <h3>SAIDAS TOTAIS</h3>
-            <p>R$ ${totals.expense.toFixed(2)}</p>
+            <p>R$ ${totals.expense.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
           </div>
           <div class="total-card">
             <h3>SALDO DO PERIODO</h3>
-            <p>R$ ${totals.balance.toFixed(2)}</p>
+            <p>R$ ${totals.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
           </div>
         </div>
 
@@ -342,7 +350,7 @@ export default function Statement() {
                   <td>${account?.name || "-"}</td>
                   <td>${isIncome ? "Entrada" : "Saida"}</td>
                   <td class="${isIncome ? "income-amount" : "expense-amount"}">
-                    ${isIncome ? "+" : "-"} R$ ${tx.amount.toFixed(2)}
+                    ${isIncome ? "+" : "-"} R$ ${tx.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
                 </tr>
               `;
@@ -411,7 +419,7 @@ export default function Statement() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-purple-300 mb-1">Entradas</p>
-                       <p className="text-2xl font-bold text-green-400">R$ {totals.income.toFixed(2)}</p>
+                       <p className="text-2xl font-bold text-green-400">R$ {formatCurrencyBR(totals.income)}</p>
                     </div>
                     <div className="p-3 rounded-xl bg-green-600/20">
                       <TrendingUp className="w-6 h-6 text-green-400" />
@@ -431,7 +439,7 @@ export default function Statement() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-purple-300 mb-1">Saídas</p>
-                      <p className="text-2xl font-bold text-red-400">R$ {totals.expense.toFixed(2)}</p>
+                      <p className="text-2xl font-bold text-red-400">R$ {formatCurrencyBR(totals.expense)}</p>
                     </div>
                     <div className="p-3 rounded-xl bg-red-600/20">
                       <TrendingDown className="w-6 h-6 text-red-400" />
@@ -452,7 +460,7 @@ export default function Statement() {
                     <div>
                       <p className="text-sm text-purple-300 mb-1">Saldo do Período</p>
                       <p className={`text-2xl font-bold ${totals.balance >= 0 ? "text-green-400" : "text-red-400"}`}>
-                        R$ {totals.balance.toFixed(2)}
+                        R$ {formatCurrencyBR(totals.balance)}
                       </p>
                     </div>
                     <div className="p-3 rounded-xl bg-purple-600/20">
@@ -631,7 +639,7 @@ export default function Statement() {
                               </Badge>
                             </TableCell>
                             <TableCell className={`text-right font-bold ${isIncome ? "text-green-400" : "text-red-400"}`}>
-                              {isIncome ? "+" : "-"} R$ {tx.amount.toFixed(2)}
+                              {isIncome ? "+" : "-"} R$ {formatCurrencyBR(tx.amount)}
                             </TableCell>
                           </TableRow>
                         );
