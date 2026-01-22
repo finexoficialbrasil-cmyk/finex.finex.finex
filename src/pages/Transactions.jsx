@@ -40,6 +40,14 @@ import { ptBR } from "date-fns/locale";
 import SubscriptionGuard from "../components/SubscriptionGuard";
 import FeatureGuard from "../components/FeatureGuard"; // Added import
 import { trackPerformance } from "../components/PerformanceMonitor"; // Added import
+import { TrendingUp, TrendingDown } from "lucide-react";
+
+const formatCurrencyBR = (value) => {
+  return new Intl.NumberFormat('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(value);
+};
 
 // ✅ NOVA FUNÇÃO: Obter data atual no timezone do Brasil
 const getBrazilDate = () => {
@@ -349,6 +357,19 @@ export default function TransactionsPage() {
     setCurrentPage(1);
   }, [searchQuery, filterType, filterStatus, filterCategory, filterAccount, sortBy]);
 
+  // ✅ Calcular totais de entrada e saída
+  const totals = useMemo(() => {
+    const income = transactions
+      .filter(tx => tx.type === 'income' && tx.status === 'completed')
+      .reduce((sum, tx) => sum + (tx.amount || 0), 0);
+    
+    const expense = transactions
+      .filter(tx => tx.type === 'expense' && tx.status === 'completed')
+      .reduce((sum, tx) => sum + (tx.amount || 0), 0);
+
+    return { income, expense, balance: income - expense };
+  }, [transactions]);
+
   return (
     <FeatureGuard pageName="Transactions">
       <SubscriptionGuard requireActive={true}>
@@ -368,6 +389,37 @@ export default function TransactionsPage() {
                 <Plus className="w-4 h-4 mr-2" />
                 Nova Transação
               </Button>
+            </div>
+
+            {/* Cards de Entrada e Saída */}
+            <div className="grid md:grid-cols-2 gap-4">
+              <Card className="glass-card border-0 neon-glow">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-purple-300 mb-1">Entradas</p>
+                      <p className="text-2xl font-bold text-green-400">R$ {formatCurrencyBR(totals.income)}</p>
+                    </div>
+                    <div className="p-3 rounded-xl bg-green-600/20">
+                      <TrendingUp className="w-6 h-6 text-green-400" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="glass-card border-0 neon-glow">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-purple-300 mb-1">Saídas</p>
+                      <p className="text-2xl font-bold text-red-400">R$ {formatCurrencyBR(totals.expense)}</p>
+                    </div>
+                    <div className="p-3 rounded-xl bg-red-600/20">
+                      <TrendingDown className="w-6 h-6 text-red-400" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
 
             <Card className="glass-card border-0 neon-glow">
@@ -523,7 +575,7 @@ export default function TransactionsPage() {
                               </div>
                               <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
                                 <p className={`font-bold text-base sm:text-lg ${isIncome ? 'text-green-400' : 'text-red-400'}`}>
-                                  {isIncome ? '+' : '-'} R$ {tx.amount.toFixed(2)}
+                                  {isIncome ? '+' : '-'} R$ {formatCurrencyBR(tx.amount)}
                                 </p>
                                 <div className="flex gap-2">
                                   <Button
