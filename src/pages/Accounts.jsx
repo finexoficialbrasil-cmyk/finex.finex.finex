@@ -627,7 +627,7 @@ export default function Accounts() {
                   </label>
                   {formData.logo_url && (
                     <div className="flex flex-col gap-2">
-                      <div className="w-20 h-20 rounded-lg bg-white/95 p-2 flex items-center justify-center border-2 border-green-500">
+                      <div className="w-20 h-20 rounded-lg bg-purple-900/40 p-2 flex items-center justify-center border-2 border-green-500">
                         <img src={formData.logo_url} alt="Logo" className="max-w-full max-h-full object-contain" />
                       </div>
                       <Button
