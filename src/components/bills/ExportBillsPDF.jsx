@@ -29,6 +29,16 @@ export default function ExportBillsPDF({ bills, categories, accounts, type = "pa
     periodMode: "specific"
   });
 
+  const dateInputStyle = {
+    backgroundColor: "#5b21b6",
+    color: "#ffffff",
+    borderColor: "#a855f7",
+    padding: "8px 12px",
+    borderRadius: "6px",
+    fontSize: "14px",
+    border: "1px solid"
+  };
+
   const generatePDF = async () => {
     setIsGenerating(true);
     try {
@@ -644,6 +654,16 @@ export default function ExportBillsPDF({ bills, categories, accounts, type = "pa
 
   return (
     <>
+      <style>{`
+        input[type="date"] {
+          background-color: #5b21b6 !important;
+          color: #ffffff !important;
+        }
+        input[type="date"]::-webkit-calendar-picker-indicator {
+          filter: invert(1);
+          cursor: pointer;
+        }
+      `}</style>
       <Button
         onClick={() => setShowModal(true)}
         variant="outline"
@@ -742,26 +762,26 @@ export default function ExportBillsPDF({ bills, categories, accounts, type = "pa
 
             {filters.periodMode === "specific" && (
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                   <Label className="text-purple-200 text-sm mb-2 block">Data Inicial</Label>
-                   <input
-                     type="date"
-                     value={filters.startDate}
-                     onChange={(e) => setFilters({...filters, startDate: e.target.value})}
-                     className="w-full px-3 py-2 bg-purple-900/50 border border-purple-600/70 rounded-md text-white text-sm [color-scheme:dark]"
-                   />
-                 </div>
-
                  <div>
-                   <Label className="text-purple-200 text-sm mb-2 block">Data Final</Label>
-                   <input
-                     type="date"
-                     value={filters.endDate}
-                     onChange={(e) => setFilters({...filters, endDate: e.target.value})}
-                     className="w-full px-3 py-2 bg-purple-900/50 border border-purple-600/70 rounded-md text-white text-sm [color-scheme:dark]"
-                   />
-                 </div>
-              </div>
+                    <Label className="text-purple-200 text-sm mb-2 block">Data Inicial</Label>
+                    <input
+                      type="date"
+                      value={filters.startDate}
+                      onChange={(e) => setFilters({...filters, startDate: e.target.value})}
+                      style={dateInputStyle}
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-purple-200 text-sm mb-2 block">Data Final</Label>
+                    <input
+                      type="date"
+                      value={filters.endDate}
+                      onChange={(e) => setFilters({...filters, endDate: e.target.value})}
+                      style={dateInputStyle}
+                    />
+                  </div>
+               </div>
             )}
 
             <div className="flex gap-3 pt-4 border-t border-purple-700/30">
