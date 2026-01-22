@@ -96,19 +96,30 @@ export default function Statement() {
   }, [loadData]);
 
   const applyFilters = useCallback(() => {
+    console.log(`🔍 EXTRATO - Aplicando filtros...`);
+    console.log(`📅 Período: ${filters.startDate} até ${filters.endDate}`);
+    console.log(`📊 Total de transações carregadas: ${transactions.length}`);
+    
     let filtered = transactions.filter(tx => {
-      const txDate = new Date(tx.date);
-      const startDate = new Date(filters.startDate);
-      const endDate = new Date(filters.endDate);
+      // ✅ IMPORTANTE: Parsear data corretamente (formato YYYY-MM-DD)
+      const [txYear, txMonth, txDay] = tx.date.split('-').map(Number);
+      const [startYear, startMonth, startDay] = filters.startDate.split('-').map(Number);
+      const [endYear, endMonth, endDay] = filters.endDate.split('-').map(Number);
+      
+      const txDate = new Date(txYear, txMonth - 1, txDay);
+      const startDate = new Date(startYear, startMonth - 1, startDay);
+      const endDate = new Date(endYear, endMonth - 1, endDay);
       
       const matchesDate = txDate >= startDate && txDate <= endDate;
       const matchesAccount = filters.accountId === "all" || tx.account_id === filters.accountId;
       const matchesCategory = filters.categoryId === "all" || tx.category_id === filters.categoryId;
       const matchesType = filters.type === "all" || tx.type === filters.type;
+      const matchesStatus = tx.status === "completed"; // ✅ APENAS COMPLETADAS (igual Dashboard)
       
-      return matchesDate && matchesAccount && matchesCategory && matchesType;
+      return matchesDate && matchesAccount && matchesCategory && matchesType && matchesStatus;
     });
     
+    console.log(`✅ Transações filtradas: ${filtered.length}`);
     setFilteredTransactions(filtered);
   }, [transactions, filters]);
 
