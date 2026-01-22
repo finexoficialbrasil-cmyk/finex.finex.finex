@@ -7,6 +7,13 @@ import { differenceInDays } from "date-fns";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 
+const formatCurrencyBR = (value) => {
+  return new Intl.NumberFormat('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(value);
+};
+
 export default function BillsSummary({ bills, categories }) {
   const [showPayablesList, setShowPayablesList] = useState(false);
   const [showReceivablesList, setShowReceivablesList] = useState(false);
@@ -105,7 +112,7 @@ export default function BillsSummary({ bills, categories }) {
               )}
             </div>
             <p className="text-3xl font-bold text-white mb-1">
-              R$ {billsData.payables.total.toFixed(2)}
+              R$ {formatCurrencyBR(billsData.payables.total)}
             </p>
             <div className="flex items-center gap-3 text-xs">
               <span className="text-red-400">{billsData.payables.count} conta(s)</span>
@@ -158,7 +165,7 @@ export default function BillsSummary({ bills, categories }) {
                         </div>
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <p className="text-red-400 font-bold text-sm">R$ {bill.amount.toFixed(2)}</p>
+                        <p className="text-red-400 font-bold text-sm">R$ {formatCurrencyBR(bill.amount)}</p>
                         <p className="text-purple-400 text-xs flex items-center gap-1 justify-end">
                           <Calendar className="w-3 h-3" />
                           {new Date(bill.due_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
@@ -202,7 +209,7 @@ export default function BillsSummary({ bills, categories }) {
           <div className="p-4 rounded-xl bg-gradient-to-br from-green-900/30 to-emerald-900/30 border border-green-700/30">
             <p className="text-green-300 text-sm font-semibold mb-2">Previsão de Entrada</p>
             <p className="text-3xl font-bold text-white mb-1">
-              R$ {billsData.receivables.total.toFixed(2)}
+              R$ {formatCurrencyBR(billsData.receivables.total)}
             </p>
             <div className="flex items-center gap-3 text-xs">
               <span className="text-green-400">{billsData.receivables.count} conta(s)</span>
@@ -255,7 +262,7 @@ export default function BillsSummary({ bills, categories }) {
                         </div>
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <p className="text-green-400 font-bold text-sm">R$ {bill.amount.toFixed(2)}</p>
+                        <p className="text-green-400 font-bold text-sm">R$ {formatCurrencyBR(bill.amount)}</p>
                         <p className="text-purple-400 text-xs flex items-center gap-1 justify-end">
                           <Calendar className="w-3 h-3" />
                           {new Date(bill.due_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
