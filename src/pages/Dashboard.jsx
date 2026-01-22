@@ -130,8 +130,8 @@ export default function Dashboard() {
       // ✅ Carregar transações ILIMITADAS para cálculo correto do mês
       const [userData, txs, accs] = await Promise.all([
         User.me(),
-        Transaction.list("-created_date", 50000), // ✅ ILIMITADO - pegar TODAS as transações
-        Account.list("-created_date", 50) // ✅ Todas as contas do usuário
+        Transaction.list("-created_date"), // ✅ SEM LIMITE
+        Account.list("-created_date") // ✅ SEM LIMITE
       ]);
       
       const loadTime = performance.now() - startTime;
@@ -160,9 +160,9 @@ export default function Dashboard() {
     try {
       console.log("🔄 Carregando dados secundários...");
       const [cats, gls, billsData] = await Promise.all([
-        Category.list("-created_date", 15), // Reduzido
-        Goal.list("-created_date", 3), // Reduzido
-        Bill.list("due_date", 10000) // ✅ MAIOR LIMITE + ordenar por vencimento mais próximo
+        Category.list("-created_date"), // ✅ SEM LIMITE
+        Goal.list("-created_date"), // ✅ SEM LIMITE
+        Bill.list("due_date") // ✅ SEM LIMITE
       ]);
       
       setCategories(cats || []);

@@ -148,9 +148,9 @@ export default function TransactionsPage() {
       console.log("🔄 Carregando transações com ordenação:", sortBy);
 
       const [txs, accs, userCats, sysCats] = await Promise.all([
-        Transaction.list(sortBy, 5000), // ✅ REDUZIDO: 1000 → 5000
-        Account.list("-created_date", 2000), // ✅ LIMITE: 2000 contas
-        Category.list("-created_date", 3000), // ✅ REDUZIDO: 5000 → 3000
+        Transaction.list(sortBy), // ✅ SEM LIMITE
+        Account.list("-created_date"), // ✅ SEM LIMITE
+        Category.list("-created_date"), // ✅ SEM LIMITE
         SystemCategory.list() // Sem limite (poucas categorias)
       ]);
       const endTime = performance.now();

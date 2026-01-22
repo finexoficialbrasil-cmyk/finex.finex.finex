@@ -65,9 +65,9 @@ export default function Statement() {
       // ✅ OTIMIZADO: Carregar com LIMITES
       const [userData, txs, accs, userCats] = await Promise.all([
         User.me(),
-        Transaction.list(sortBy, 20000), // ✅ LIMITE de 20000 transações
-        Account.list("-created_date", 5000), // ✅ LIMITE de 5000 contas
-        Category.list("-created_date", 10000) // ✅ LIMITE de 1000 categorias
+        Transaction.list(sortBy), // ✅ SEM LIMITE
+        Account.list("-created_date"), // ✅ SEM LIMITE
+        Category.list("-created_date") // ✅ SEM LIMITE
       ]);
       
       setUser(userData);
@@ -81,7 +81,7 @@ export default function Statement() {
           setTimeout(() => reject(new Error('Timeout retrieving system categories')), 5000)
         );
         systemCategories = await Promise.race([
-          SystemCategory.list("-created_date", 50),
+          SystemCategory.list("-created_date"), // ✅ SEM LIMITE
           timeoutPromise
         ]);
       } catch (err) {

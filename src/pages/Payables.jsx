@@ -101,10 +101,10 @@ export default function Payables() {
     try {
       // ✅ OTIMIZADO: Carregar com limites e em paralelo
       const [billsData, accsData, userCats, sysCats] = await Promise.all([
-        Bill.list(sortBy, 10000), // ✅ LIMITE de 10000, usando o sortBy atual
-        Account.list("-created_date", 5000), // ✅ LIMITE de 5000
-        Category.list("-created_date", 10000), // ✅ LIMITE de 10000
-        SystemCategory.list() // Sempre bom ter as categorias de sistema
+        Bill.list(sortBy), // ✅ SEM LIMITE
+        Account.list("-created_date"), // ✅ SEM LIMITE
+        Category.list("-created_date"), // ✅ SEM LIMITE
+        SystemCategory.list() // ✅ SEM LIMITE
       ]);
 
       console.log(`✅ Contas a pagar carregadas: ${billsData.length}`);

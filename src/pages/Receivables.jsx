@@ -92,10 +92,10 @@ export default function Receivables() {
     try {
       // ✅ OTIMIZADO: Carregar com limites e em paralelo
       const [billsData, accsData, userCats, sysCats] = await Promise.all([
-        Bill.list("-due_date", 100), // ✅ LIMITE de 100, initial sort by due_date for server fetch
-        Account.list("-created_date", 50), // ✅ LIMITE de 50
-        Category.list("-created_date", 100), // ✅ LIMITE de 100
-        SystemCategory.list("-created_date", 100) // Fetch system categories as well
+        Bill.list("-due_date"), // ✅ SEM LIMITE
+        Account.list("-created_date"), // ✅ SEM LIMITE
+        Category.list("-created_date"), // ✅ SEM LIMITE
+        SystemCategory.list("-created_date") // ✅ SEM LIMITE
       ]);
       
       console.log(`✅ Contas a receber carregadas: ${billsData.length}`);
