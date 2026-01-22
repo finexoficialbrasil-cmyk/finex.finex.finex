@@ -108,12 +108,19 @@ export default function Receivables() {
       const receivableBills = billsData.filter(b => b.type === "receivable");
       
       const today = new Date();
+      const todayLocal = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      
       const updatedBills = await Promise.all(
         receivableBills.map(async (bill) => {
-          if (bill.status === "pending" && isBefore(new Date(bill.due_date), today)) {
-            // Update the status in the DB
-            await Bill.update(bill.id, { ...bill, status: "overdue" });
-            return { ...bill, status: "overdue" }; // Return the updated bill for local state
+          if (bill.status === "pending") {
+            const [year, month, day] = bill.due_date.split('-').map(Number);
+            const billDate = new Date(year, month - 1, day);
+            
+            if (isBefore(billDate, todayLocal)) {
+              // Update the status in the DB
+              await Bill.update(bill.id, { ...bill, status: "overdue" });
+              return { ...bill, status: "overdue" }; // Return the updated bill for local state
+            }
           }
           return bill;
         })
@@ -336,7 +343,12 @@ export default function Receivables() {
       return;
     }
 
-    const paymentDate = new Date().toISOString().split('T')[0];
+    // Obter data atual no timezone brasileiro
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const paymentDate = `${year}-${month}-${day}`;
 
     try {
       await Bill.update(bill.id, {
@@ -363,7 +375,8 @@ export default function Receivables() {
       });
 
       if (bill.is_recurring) {
-        const nextDueDate = new Date(bill.due_date);
+        const [year, month, day] = bill.due_date.split('-').map(Number);
+        const nextDueDate = new Date(year, month - 1, day);
         
         if (bill.recurring_type === "weekly") {
           nextDueDate.setDate(nextDueDate.getDate() + 7);
@@ -373,13 +386,18 @@ export default function Receivables() {
           nextDueDate.setFullYear(nextDueDate.getFullYear() + 1);
         }
 
+        const nextYear = nextDueDate.getFullYear();
+        const nextMonth = String(nextDueDate.getMonth() + 1).padStart(2, '0');
+        const nextDay = String(nextDueDate.getDate()).padStart(2, '0');
+        const nextDueDateStr = `${nextYear}-${nextMonth}-${nextDay}`;
+
         await Bill.create({
           description: bill.description,
           amount: bill.amount,
           type: bill.type,
           category_id: bill.category_id,
           account_id: bill.account_id,
-          due_date: nextDueDate.toISOString().split('T')[0],
+          due_date: nextDueDateStr,
           status: "pending",
           is_recurring: true,
           recurring_type: bill.recurring_type,
@@ -474,7 +492,14 @@ Agradecemos pela atenção e confiança!
   };
 
   const getDaysUntilDue = (dueDate) => {
-    return differenceInDays(new Date(dueDate), new Date());
+    // Parse date string YYYY-MM-DD sem conversão de timezone
+    const [year, month, day] = dueDate.split('-').map(Number);
+    const billDate = new Date(year, month - 1, day); // Cria data no timezone local
+    
+    const today = new Date();
+    const todayLocal = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    
+    return differenceInDays(billDate, todayLocal);
   };
 
   const getStatusBadge = (bill) => {
@@ -798,10 +823,10 @@ Agradecemos pela atenção e confiança!
                                 )}
                               </div>
                               <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                <span className="text-xs text-purple-300 flex items-center gap-1">
-                                  <Calendar className="w-3 h-3" />
-                                  Vence: {format(new Date(bill.due_date), "dd/MM/yyyy")}
-                                </span>
+                               <span className="text-xs text-purple-300 flex items-center gap-1">
+                                 <Calendar className="w-3 h-3" />
+                                 Vence: {bill.due_date.split('-').reverse().join('/')}
+                               </span>
                                 {bill.contact_name && (
                                   <span className="text-xs text-purple-300">
                                     👤 {bill.contact_name}

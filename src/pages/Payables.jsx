@@ -120,10 +120,17 @@ export default function Payables() {
       const today = new Date();
       const payableBills = billsData.filter(b => b.type === "payable"); // Only show payables in this component
 
+      const todayLocal = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      
       const updatedBills = await Promise.all(
         payableBills.map(async (bill) => {
-          if (bill.status === "pending" && isBefore(new Date(bill.due_date), today)) {
-            return { ...bill, status: "overdue" };
+          if (bill.status === "pending") {
+            const [year, month, day] = bill.due_date.split('-').map(Number);
+            const billDate = new Date(year, month - 1, day);
+            
+            if (isBefore(billDate, todayLocal)) {
+              return { ...bill, status: "overdue" };
+            }
           }
           return bill;
         })
@@ -178,7 +185,8 @@ export default function Payables() {
         }
 
         // Criar contas para cada mês com valores diferentes
-        const startDate = new Date(formData.due_date);
+        const [year, month, day] = formData.due_date.split('-').map(Number);
+        const startDate = new Date(year, month - 1, day);
 
         for (let i = 0; i < monthsCount; i++) {
           const monthDate = new Date(startDate);
@@ -191,7 +199,10 @@ export default function Payables() {
             monthDate.setFullYear(monthDate.getFullYear() + i);
           }
 
-          const dueDate = monthDate.toISOString().split('T')[0];
+          const yearNext = monthDate.getFullYear();
+          const monthNext = String(monthDate.getMonth() + 1).padStart(2, '0');
+          const dayNext = String(monthDate.getDate()).padStart(2, '0');
+          const dueDate = `${yearNext}-${monthNext}-${dayNext}`;
           const amount = parseAmountBR(variableAmounts[i]);
 
           await Bill.create({
@@ -428,7 +439,12 @@ export default function Payables() {
       return;
     }
 
-    const paymentDate = new Date().toISOString().split('T')[0];
+    // Obter data atual no timezone brasileiro
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const paymentDate = `${year}-${month}-${day}`;
 
     // Verificar saldo
     if (account.balance < bill.amount) {
@@ -466,7 +482,8 @@ export default function Payables() {
 
       // ✅ Se for recorrente, criar próxima conta
       if (bill.is_recurring) {
-        const nextDueDate = new Date(bill.due_date);
+        const [year, month, day] = bill.due_date.split('-').map(Number);
+        const nextDueDate = new Date(year, month - 1, day);
 
         if (bill.recurring_type === "weekly") {
           nextDueDate.setDate(nextDueDate.getDate() + 7);
@@ -476,13 +493,18 @@ export default function Payables() {
           nextDueDate.setFullYear(nextDueDate.getFullYear() + 1);
         }
 
+        const nextYear = nextDueDate.getFullYear();
+        const nextMonth = String(nextDueDate.getMonth() + 1).padStart(2, '0');
+        const nextDay = String(nextDueDate.getDate()).padStart(2, '0');
+        const nextDueDateStr = `${nextYear}-${nextMonth}-${nextDay}`;
+
         await Bill.create({
           description: bill.description,
           amount: bill.amount,
           type: bill.type,
           category_id: bill.category_id,
           account_id: bill.account_id,
-          due_date: nextDueDate.toISOString().split('T')[0],
+          due_date: nextDueDateStr,
           status: "pending",
           is_recurring: true,
           recurring_type: bill.recurring_type,
@@ -620,12 +642,14 @@ export default function Payables() {
   };
 
   const getDaysUntilDue = (dueDate) => {
-    // Ensure dueDate is a valid Date object
-    const date = new Date(dueDate);
-    if (isNaN(date.getTime())) {
-      return Infinity; // Or handle as an error / unknown state
-    }
-    return differenceInDays(date, new Date());
+    // Parse date string YYYY-MM-DD sem conversão de timezone
+    const [year, month, day] = dueDate.split('-').map(Number);
+    const billDate = new Date(year, month - 1, day); // Cria data no timezone local
+    
+    const today = new Date();
+    const todayLocal = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    
+    return differenceInDays(billDate, todayLocal);
   };
 
   const getStatusBadge = (bill) => {
@@ -872,10 +896,10 @@ export default function Payables() {
                                 </Badge>
                               </div>
                               <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                <span className="text-xs text-purple-300 flex items-center gap-1">
-                                  <Calendar className="w-3 h-3" />
-                                  Vence: {format(new Date(bill.due_date), "dd/MM/yyyy")}
-                                </span>
+                               <span className="text-xs text-purple-300 flex items-center gap-1">
+                                 <Calendar className="w-3 h-3" />
+                                 Vence: {bill.due_date.split('-').reverse().join('/')}
+                               </span>
                                 <Badge
                                   className="text-xs"
                                   style={{
