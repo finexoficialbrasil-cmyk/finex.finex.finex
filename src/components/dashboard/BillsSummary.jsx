@@ -31,10 +31,6 @@ export default function BillsSummary({ bills, categories }) {
     const day = String(today.getDate()).padStart(2, '0');
     const todayStr = `${year}-${month}-${day}`; // YYYY-MM-DD no horário local
     
-    console.log('📅 Data de hoje:', todayStr);
-    console.log('💰 Contas a pagar pendentes:', payables.length);
-    console.log('💵 Contas a receber pendentes:', receivables.length);
-    
     // Contas que vencem HOJE
     const todayPayables = payables.filter(b => b.due_date === todayStr);
     const todayReceivables = receivables.filter(b => b.due_date === todayStr);
