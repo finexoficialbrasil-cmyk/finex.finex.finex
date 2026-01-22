@@ -208,6 +208,35 @@ export default function Payables() {
         // Criar/atualizar normalmente
         if (editingBill) {
           await Bill.update(editingBill.id, data);
+          
+          // ✅ SINCRONIZAR: Atualizar transação relacionada se existir
+          if (editingBill.status === "paid") {
+            try {
+              const relatedTransactions = await Transaction.filter({ 
+                description: editingBill.description 
+              });
+              
+              if (relatedTransactions.length > 0) {
+                // Atualizar a transação mais recente relacionada
+                const latestTx = relatedTransactions.sort((a, b) => 
+                  new Date(b.created_date) - new Date(a.created_date)
+                )[0];
+                
+                await Transaction.update(latestTx.id, {
+                  description: data.description,
+                  amount: data.amount,
+                  category_id: data.category_id,
+                  account_id: data.account_id,
+                  date: data.due_date || latestTx.date,
+                  notes: data.notes || latestTx.notes
+                });
+                
+                console.log("✅ Transação sincronizada com a conta editada");
+              }
+            } catch (error) {
+              console.warn("⚠️ Erro ao sincronizar transação:", error);
+            }
+          }
         } else {
           await Bill.create(data);
         }
