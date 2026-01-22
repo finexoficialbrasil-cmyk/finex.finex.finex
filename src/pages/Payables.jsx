@@ -953,13 +953,12 @@ export default function Payables() {
                             <div className="flex gap-1 sm:gap-2 justify-end order-1 sm:order-none">
                               {bill.status === "pending" || bill.status === "overdue" ? (
                                 <Button
-                                  variant="ghost"
-                                  size="icon"
                                   onClick={() => handlePay(bill)}
-                                  className="h-9 w-9 sm:h-10 sm:w-10 text-green-400 hover:bg-green-900/20 flex-shrink-0"
-                                  title="Pagar"
+                                  className="h-10 sm:h-11 px-4 sm:px-6 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all flex items-center gap-2 flex-shrink-0"
+                                  title="Confirmar Pagamento"
                                 >
-                                  <Check className="w-5 h-5 sm:w-6 sm:h-6" />
+                                  <Check className="w-5 h-5 sm:w-5 sm:h-5" />
+                                  <span className="hidden sm:inline text-sm">Pagar</span>
                                 </Button>
                               ) : null}
                               <Button
