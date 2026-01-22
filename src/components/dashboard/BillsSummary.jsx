@@ -226,7 +226,7 @@ export default function BillsSummary({ bills, categories }) {
                         <p className="text-red-400 font-bold text-sm">R$ {formatCurrencyBR(bill.amount)}</p>
                         <p className="text-purple-400 text-xs flex items-center gap-1 justify-end">
                           <Calendar className="w-3 h-3" />
-                          {new Date(bill.due_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                          {bill.due_date.split('-').reverse().join('/')}
                         </p>
                       </div>
                     </div>
@@ -358,7 +358,7 @@ export default function BillsSummary({ bills, categories }) {
                         <p className="text-green-400 font-bold text-sm">R$ {formatCurrencyBR(bill.amount)}</p>
                         <p className="text-purple-400 text-xs flex items-center gap-1 justify-end">
                           <Calendar className="w-3 h-3" />
-                          {new Date(bill.due_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                          {bill.due_date.split('-').reverse().join('/')}
                         </p>
                       </div>
                     </div>
