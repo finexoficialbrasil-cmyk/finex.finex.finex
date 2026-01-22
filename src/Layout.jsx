@@ -333,7 +333,7 @@ function LayoutContent({ children }) {
 
   if (isLoadingLayout) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0a0a0f] via-[#1a1a2e] to-[#0a0a0f] flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-gradient-to-br from-[#0a0a0f] via-[#1a1a2e] to-[#0a0a0f] flex items-center justify-center z-50">
         <style>{`
           @keyframes float {
             0%, 100% { transform: translateY(0px); }
