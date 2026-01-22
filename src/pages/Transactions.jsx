@@ -423,161 +423,73 @@ export default function TransactionsPage() {
             </div>
 
             <Card className="glass-card border-0 neon-glow">
-              <CardHeader className="border-b border-purple-900/30 p-4">
-                <div className="flex flex-col gap-4">
-                  {/* NEW: Sorting bar */}
-                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                    <CardTitle className="text-white">Todas as Transações</CardTitle>
-                    <div className="flex items-center gap-2 w-full md:w-auto justify-end">
-                      <Label className="text-purple-300 text-sm flex-shrink-0">Ordenar por:</Label>
-                      <Select value={sortBy} onValueChange={setSortBy}>
-                        <SelectTrigger className="w-[180px] sm:w-[200px] bg-purple-900/20 border-purple-700/50 text-white">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="-created_date">🆕 Mais Recente</SelectItem>
-                          <SelectItem value="created_date">⏰ Mais Antigo</SelectItem>
-                          <SelectItem value="-amount">💰 Maior Valor</SelectItem>
-                          <SelectItem value="amount">💵 Menor Valor</SelectItem>
-                          <SelectItem value="description">🔤 A-Z</SelectItem>
-                          <SelectItem value="-description">🔠 Z-A</SelectItem>
-                          <SelectItem value="-date">📅 Data Mais Recente</SelectItem>
-                          <SelectItem value="date">📆 Data Mais Antiga</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400 w-4 h-4" />
-                    <Input
-                      placeholder="Buscar transações..."
-                      value={searchQuery} // Changed to searchQuery
-                      onChange={(e) => setSearchQuery(e.target.value)} // Changed to setSearchQuery
-                      className="pl-10 bg-purple-900/20 border-purple-700/50 text-white"
-                    />
-                  </div>
-                  <Tabs value={filterType} onValueChange={setFilterType} className="w-full">
-                    <TabsList className="bg-purple-900/20 w-full grid grid-cols-3">
-                      <TabsTrigger value="all" className="text-xs sm:text-sm">Todas</TabsTrigger>
-                      <TabsTrigger value="income" className="text-xs sm:text-sm">Entradas</TabsTrigger>
-                      <TabsTrigger value="expense" className="text-xs sm:text-sm">Saídas</TabsTrigger>
-                    </TabsList>
-                  </Tabs>
-
-                  {/* NEW: Category and Account Filters */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                          <Label htmlFor="filterCategory" className="text-purple-300 text-sm mb-1 block">Filtrar por Categoria</Label>
-                          <Select value={filterCategory} onValueChange={setFilterCategory}>
-                              <SelectTrigger id="filterCategory" className="bg-purple-900/20 border-purple-700/50 text-white">
-                                  <SelectValue placeholder="Todas as Categorias" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                  <SelectItem value={null}>Todas as Categorias</SelectItem>
-                                  {categories.map(cat => (
-                                      <SelectItem key={cat.id} value={cat.id}>
-                                          {cat.name} {cat.isSystem && "(Sistema)"}
-                                      </SelectItem>
-                                  ))}
-                              </SelectContent>
-                          </Select>
-                      </div>
-                      <div>
-                          <Label htmlFor="filterAccount" className="text-purple-300 text-sm mb-1 block">Filtrar por Conta</Label>
-                          <Select value={filterAccount} onValueChange={setFilterAccount}>
-                              <SelectTrigger id="filterAccount" className="bg-purple-900/20 border-purple-700/50 text-white">
-                                  <SelectValue placeholder="Todas as Contas" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                  <SelectItem value={null}>Todas as Contas</SelectItem>
-                                  {accounts.map(acc => (
-                                      <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>
-                                  ))}
-                              </SelectContent>
-                          </Select>
-                      </div>
-                  </div>
-                  {/* NEW: Status Filter */}
-                  <Tabs value={filterStatus} onValueChange={setFilterStatus} className="w-full">
-                      <TabsList className="bg-purple-900/20 w-full grid grid-cols-2">
-                          <TabsTrigger value="all" className="text-xs sm:text-sm">Todos Status</TabsTrigger>
-                          <TabsTrigger value="completed" className="text-xs sm:text-sm">Concluídas</TabsTrigger>
-                      </TabsList>
-                  </Tabs>
-                </div>
+              <CardHeader className="border-b border-purple-900/30">
+                <CardTitle className="flex items-center gap-2 text-white">
+                  <FileText className="w-5 h-5 text-indigo-400" />
+                  Movimentações ({paginatedTransactions.length})
+                </CardTitle>
               </CardHeader>
-              <CardContent className="p-4">
-                {isLoading ? (
-                  <div className="space-y-3">
-                    {[1,2,3,4,5].map(i => (
-                      <div key={i} className="h-20 bg-purple-900/20 animate-pulse rounded-lg" />
-                    ))}
-                  </div>
-                ) : paginatedTransactions.length === 0 ? (
-                  <div className="text-center py-12">
-                    <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-purple-900/30 flex items-center justify-center">
-                      <ArrowLeftRight className="w-10 h-10 text-purple-400" />
-                    </div>
-                    <p className="text-purple-300 text-lg mb-2">Nenhuma transação encontrada</p>
-                    <p className="text-purple-400 text-sm">
-                      {searchQuery || filterType !== "all" || filterCategory || filterAccount || filterStatus !== "all"
-                        ? "Tente ajustar os filtros"
-                        : "Crie sua primeira transação!"}
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="space-y-3">
-                      <AnimatePresence mode="popLayout">
-                        {paginatedTransactions.map((tx, index) => {
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-purple-900/20 border-b border-purple-900/30">
+                        <TableHead className="text-purple-200">Data</TableHead>
+                        <TableHead className="text-purple-200">Descrição</TableHead>
+                        <TableHead className="text-purple-200">Categoria</TableHead>
+                        <TableHead className="text-purple-200">Conta</TableHead>
+                        <TableHead className="text-purple-200">Tipo</TableHead>
+                        <TableHead className="text-purple-200 text-right">Valor</TableHead>
+                        <TableHead className="text-purple-200 text-right">Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {isLoading ? (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center py-8 text-purple-300">
+                            Carregando transações...
+                          </TableCell>
+                        </TableRow>
+                      ) : paginatedTransactions.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center py-8 text-purple-300">
+                            Nenhuma transação encontrada
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        paginatedTransactions.map((tx) => {
                           const category = getCategoryInfo(tx.category_id);
                           const account = getAccountInfo(tx.account_id);
                           const isIncome = tx.type === "income";
 
                           return (
-                            <motion.div
-                              key={tx.id}
-                              initial={{ opacity: 0, y: 20 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, x: -100 }} // Updated exit animation
-                              transition={{ delay: index * 0.03 }}
-                              className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-xl glass-card border border-purple-700/30 hover:border-purple-600/50 transition-all gap-3"
-                            >
-                              <div className="flex items-center gap-3 flex-1 w-full">
-                                <div className={`p-2 sm:p-3 rounded-full flex-shrink-0 ${isIncome ? 'bg-green-600/20' : 'bg-red-600/20'}`}>
-                                  {isIncome ? (
-                                    <ArrowUpRight className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
-                                  ) : (
-                                    <ArrowDownRight className="w-4 h-4 sm:w-5 sm:h-5 text-red-400" />
-                                  )}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="font-medium text-white text-sm sm:text-base truncate">{tx.description}</p>
-                                  <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                    <span className="text-xs text-purple-300">
-                                      {formatDateBR(tx.date)}
-                                    </span>
-                                    <span className="text-xs text-purple-400">•</span>
-                                    <span className="text-xs text-purple-300 truncate max-w-[100px]">{account.name}</span>
-                                    <Badge
-                                      className="text-xs"
-                                      style={{
-                                        backgroundColor: category.color + '20',
-                                        color: category.color,
-                                        borderColor: category.color + '40'
-                                      }}
-                                    >
-                                      {category.name}
-                                    </Badge>
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
-                                <p className={`font-bold text-base sm:text-lg ${isIncome ? 'text-green-400' : 'text-red-400'}`}>
-                                  {isIncome ? '+' : '-'} R$ {formatCurrencyBR(tx.amount)}
-                                </p>
-                                <div className="flex gap-2">
+                            <TableRow key={tx.id} className="border-b border-purple-900/20 hover:bg-purple-900/10">
+                              <TableCell className="text-purple-200">
+                                {formatDateBR(tx.date)}
+                              </TableCell>
+                              <TableCell className="text-white font-medium">{tx.description}</TableCell>
+                              <TableCell>
+                                <Badge
+                                  style={{
+                                    backgroundColor: category.color + '20',
+                                    color: category.color,
+                                    borderColor: category.color + '40'
+                                  }}
+                                >
+                                  {category.name}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-purple-200">{account.name}</TableCell>
+                              <TableCell>
+                                <Badge className={isIncome ? "bg-green-600/20 text-green-400" : "bg-red-600/20 text-red-400"}>
+                                  {isIncome ? "Entrada" : "Saída"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className={`text-right font-bold ${isIncome ? "text-green-400" : "text-red-400"}`}>
+                                {isIncome ? "+" : "-"} R$ {formatCurrencyBR(tx.amount)}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex gap-2 justify-end">
                                   <Button
                                     variant="ghost"
                                     size="icon"
@@ -589,78 +501,20 @@ export default function TransactionsPage() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    onClick={() => handleDelete(tx)} // Pass full tx object
+                                    onClick={() => handleDelete(tx)}
                                     className="h-8 w-8"
                                   >
                                     <Trash2 className="w-4 h-4 text-red-400" />
                                   </Button>
                                 </div>
-                              </div>
-                            </motion.div>
+                              </TableCell>
+                            </TableRow>
                           );
-                        })}
-                      </AnimatePresence>
-                    </div>
-
-                    {/* ✅ NOVO: Paginação */}
-                    {totalPages > 1 && (
-                      <div className="flex items-center justify-center gap-2 mt-6 pt-6 border-t border-purple-900/30">
-                        <Button
-                          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                          disabled={currentPage === 1}
-                          variant="outline"
-                          size="sm"
-                          className="border-purple-700 text-purple-300"
-                        >
-                          <ChevronLeft className="w-4 h-4" />
-                        </Button>
-
-                        <div className="flex items-center gap-1">
-                          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                            let pageNum;
-                            if (totalPages <= 5) {
-                              pageNum = i + 1;
-                            } else if (currentPage <= 3) {
-                              pageNum = i + 1;
-                            } else if (currentPage >= totalPages - 2) {
-                              pageNum = totalPages - 4 + i;
-                            } else {
-                              pageNum = currentPage - 2 + i;
-                            }
-
-                            return (
-                              <Button
-                                key={pageNum}
-                                onClick={() => setCurrentPage(pageNum)}
-                                variant={currentPage === pageNum ? "default" : "outline"}
-                                size="sm"
-                                className={currentPage === pageNum
-                                  ? "bg-purple-600 hover:bg-purple-700"
-                                  : "border-purple-700 text-purple-300"}
-                              >
-                                {pageNum}
-                              </Button>
-                            );
-                          })}
-                        </div>
-
-                        <Button
-                          onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                          disabled={currentPage === totalPages}
-                          variant="outline"
-                          size="sm"
-                          className="border-purple-700 text-purple-300"
-                        >
-                          <ChevronRight className="w-4 h-4" />
-                        </Button>
-
-                        <span className="text-purple-300 text-sm ml-2">
-                          Página {currentPage} de {totalPages}
-                        </span>
-                      </div>
-                    )}
-                  </>
-                )}
+                        })
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
               </CardContent>
             </Card>
           </div>
