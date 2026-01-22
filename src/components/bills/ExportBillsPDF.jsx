@@ -743,24 +743,24 @@ export default function ExportBillsPDF({ bills, categories, accounts, type = "pa
             {filters.periodMode === "specific" && (
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label className="text-purple-200 text-sm mb-2 block">Data Inicial</Label>
-                  <input
-                    type="date"
-                    value={filters.startDate}
-                    onChange={(e) => setFilters({...filters, startDate: e.target.value})}
-                    className="w-full px-3 py-2 bg-purple-900/20 border border-purple-700/50 rounded-md text-white text-sm"
-                  />
-                </div>
+                   <Label className="text-purple-200 text-sm mb-2 block">Data Inicial</Label>
+                   <input
+                     type="date"
+                     value={filters.startDate}
+                     onChange={(e) => setFilters({...filters, startDate: e.target.value})}
+                     className="w-full px-3 py-2 bg-purple-900/40 border border-purple-600/50 rounded-md text-purple-100 text-sm"
+                   />
+                 </div>
 
-                <div>
-                  <Label className="text-purple-200 text-sm mb-2 block">Data Final</Label>
-                  <input
-                    type="date"
-                    value={filters.endDate}
-                    onChange={(e) => setFilters({...filters, endDate: e.target.value})}
-                    className="w-full px-3 py-2 bg-purple-900/20 border border-purple-700/50 rounded-md text-white text-sm"
-                  />
-                </div>
+                 <div>
+                   <Label className="text-purple-200 text-sm mb-2 block">Data Final</Label>
+                   <input
+                     type="date"
+                     value={filters.endDate}
+                     onChange={(e) => setFilters({...filters, endDate: e.target.value})}
+                     className="w-full px-3 py-2 bg-purple-900/40 border border-purple-600/50 rounded-md text-purple-100 text-sm"
+                   />
+                 </div>
               </div>
             )}
 
