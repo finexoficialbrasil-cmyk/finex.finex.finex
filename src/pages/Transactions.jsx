@@ -32,7 +32,8 @@ import {
   Loader2, // Added import for Loader2
   ArrowLeftRight, // Added for empty state icon
   ChevronLeft, // Added for pagination
-  ChevronRight // Added for pagination
+  ChevronRight, // Added for pagination
+  FileText
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
