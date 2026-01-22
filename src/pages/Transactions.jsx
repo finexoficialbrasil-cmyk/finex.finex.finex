@@ -37,11 +37,12 @@ import {
   Edit,
   Trash2,
   X,
-  Loader2, // Added import for Loader2
-  ArrowLeftRight, // Added for empty state icon
-  ChevronLeft, // Added for pagination
-  ChevronRight, // Added for pagination
-  FileText
+  Loader2,
+  ArrowLeftRight,
+  ChevronLeft,
+  ChevronRight,
+  FileText,
+  Download
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
@@ -379,6 +380,93 @@ export default function TransactionsPage() {
     return { income, expense, balance: income - expense };
   }, [transactions]);
 
+  const exportToPDF = () => {
+    const content = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Transações - FINEX</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 40px; color: #333; }
+          .header { text-align: center; margin-bottom: 40px; border-bottom: 3px solid #a855f7; padding-bottom: 20px; }
+          .header h1 { color: #a855f7; margin: 0; font-size: 32px; }
+          .totals { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin: 30px 0; }
+          .total-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 12px; text-align: center; }
+          .total-card.income { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+          .total-card.expense { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+          .total-card h3 { margin: 0 0 10px 0; font-size: 14px; }
+          .total-card p { margin: 0; font-size: 28px; font-weight: bold; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+          th { background: #a855f7; color: white; padding: 15px; text-align: left; font-weight: 600; }
+          td { padding: 12px 15px; border-bottom: 1px solid #e5e7eb; }
+          tr:hover { background: #f9f9f9; }
+          .income-amount { color: #10b981; font-weight: bold; }
+          .expense-amount { color: #ef4444; font-weight: bold; }
+          .badge { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 500; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>FINEX - Transações</h1>
+          <p>Gerado em: ${formatDateBR(getBrazilDate())} às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
+        </div>
+
+        <div class="totals">
+          <div class="total-card income">
+            <h3>ENTRADAS TOTAIS</h3>
+            <p>R$ ${formatCurrencyBR(totals.income)}</p>
+          </div>
+          <div class="total-card expense">
+            <h3>SAÍDAS TOTAIS</h3>
+            <p>R$ ${formatCurrencyBR(totals.expense)}</p>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Descrição</th>
+              <th>Categoria</th>
+              <th>Conta</th>
+              <th>Tipo</th>
+              <th>Valor</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${paginatedTransactions.map(tx => {
+              const category = getCategoryInfo(tx.category_id);
+              const account = getAccountInfo(tx.account_id);
+              const isIncome = tx.type === "income";
+              
+              return `
+                <tr>
+                  <td>${formatDateBR(tx.date)}</td>
+                  <td>${tx.description}</td>
+                  <td><span class="badge" style="background: ${category?.color}20; color: ${category?.color};">${category?.name || "Sem categoria"}</span></td>
+                  <td>${account?.name || "-"}</td>
+                  <td>${isIncome ? "Entrada" : "Saída"}</td>
+                  <td class="${isIncome ? "income-amount" : "expense-amount"}">
+                    ${isIncome ? "+" : "-"} R$ ${formatCurrencyBR(tx.amount)}
+                  </td>
+                </tr>
+              `;
+            }).join("")}
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(content);
+    printWindow.document.close();
+    printWindow.onload = function() {
+      printWindow.print();
+    };
+  };
+
   return (
     <FeatureGuard pageName="Transactions">
       <SubscriptionGuard requireActive={true}>
@@ -391,13 +479,23 @@ export default function TransactionsPage() {
                 </h1>
                 <p className="text-purple-300 mt-1 text-sm">Gerencie suas entradas e saídas</p>
               </div>
-              <Button
-                onClick={() => setShowForm(true)}
-                className="w-full md:w-auto bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 neon-glow"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Nova Transação
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  onClick={exportToPDF}
+                  variant="outline"
+                  className="border-purple-700 text-purple-300 hover:bg-purple-900/20"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Exportar PDF
+                </Button>
+                <Button
+                  onClick={() => setShowForm(true)}
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 neon-glow"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nova Transação
+                </Button>
+              </div>
             </div>
 
             {/* Cards de Entrada e Saída */}
