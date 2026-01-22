@@ -114,21 +114,24 @@ export default function BillsSummary({ bills, categories }) {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Vence Hoje */}
+          {/* Contas a Pagar HOJE */}
           {billsData.payables.today > 0 && (
             <div className="p-4 rounded-xl bg-gradient-to-br from-yellow-900/40 to-orange-900/40 border-2 border-yellow-500/60 shadow-lg shadow-yellow-500/20">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-yellow-300 text-sm font-bold flex items-center gap-2">
+              <div className="flex flex-col gap-2 mb-2">
+                <p className="text-yellow-100 text-xs font-bold uppercase tracking-wider flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
-                  VENCE HOJE ({new Date().toLocaleDateString('pt-BR')})
+                  📅 Contas a Pagar HOJE
                 </p>
-                <Badge className="bg-yellow-600 text-white text-xs font-bold">
-                  {billsData.payables.today} conta(s)
-                </Badge>
+                <p className="text-yellow-300 text-sm font-semibold">
+                  {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
+                </p>
               </div>
-              <p className="text-3xl font-bold text-yellow-100">
+              <p className="text-3xl font-bold text-yellow-100 mb-1">
                 R$ {formatCurrencyBR(billsData.payables.todayTotal)}
               </p>
+              <Badge className="bg-yellow-600 text-white text-xs font-bold">
+                {billsData.payables.today} conta(s) vencendo hoje
+              </Badge>
             </div>
           )}
 
@@ -237,21 +240,24 @@ export default function BillsSummary({ bills, categories }) {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Vence Hoje */}
+          {/* Contas a Receber HOJE */}
           {billsData.receivables.today > 0 && (
             <div className="p-4 rounded-xl bg-gradient-to-br from-emerald-900/40 to-green-900/40 border-2 border-green-500/60 shadow-lg shadow-green-500/20">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-green-300 text-sm font-bold flex items-center gap-2">
+              <div className="flex flex-col gap-2 mb-2">
+                <p className="text-green-100 text-xs font-bold uppercase tracking-wider flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
-                  VENCE HOJE ({new Date().toLocaleDateString('pt-BR')})
+                  📅 Contas a Receber HOJE
                 </p>
-                <Badge className="bg-green-600 text-white text-xs font-bold">
-                  {billsData.receivables.today} conta(s)
-                </Badge>
+                <p className="text-green-300 text-sm font-semibold">
+                  {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
+                </p>
               </div>
-              <p className="text-3xl font-bold text-green-100">
+              <p className="text-3xl font-bold text-green-100 mb-1">
                 R$ {formatCurrencyBR(billsData.receivables.todayTotal)}
               </p>
+              <Badge className="bg-green-600 text-white text-xs font-bold">
+                {billsData.receivables.today} conta(s) vencendo hoje
+              </Badge>
             </div>
           )}
 
