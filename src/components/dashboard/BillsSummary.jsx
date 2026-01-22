@@ -24,9 +24,16 @@ export default function BillsSummary({ bills, categories }) {
     const totalPayable = payables.reduce((sum, b) => sum + b.amount, 0);
     const totalReceivable = receivables.reduce((sum, b) => sum + b.amount, 0);
     
-    // Data de hoje no fuso horário brasileiro
+    // Data de hoje no fuso horário brasileiro (UTC-3)
     const today = new Date();
-    const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD
+    const brazilOffset = -3 * 60; // UTC-3 em minutos
+    const localOffset = today.getTimezoneOffset();
+    const brazilTime = new Date(today.getTime() + (localOffset + brazilOffset) * 60 * 1000);
+    
+    const year = brazilTime.getFullYear();
+    const month = String(brazilTime.getMonth() + 1).padStart(2, '0');
+    const day = String(brazilTime.getDate()).padStart(2, '0');
+    const todayStr = `${year}-${month}-${day}`; // YYYY-MM-DD no horário brasileiro
     
     // Contas que vencem HOJE
     const todayPayables = payables.filter(b => b.due_date === todayStr);
