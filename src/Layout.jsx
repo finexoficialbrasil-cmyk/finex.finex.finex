@@ -2,26 +2,27 @@ import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import {
-  LayoutDashboard,
-  ArrowLeftRight,
-  Wallet,
-  TrendingUp,
-  User,
-  ChevronRight,
-  Receipt,
-  FileText,
-  Zap,
-  Target,
-  PlayCircle,
-  ArrowDownCircle,
-  ArrowUpCircle,
-  Tags,
-  Shield,
-  Sparkles,
-  Crown,
-  MessageCircle,
-  Upload
-} from "lucide-react";
+        LayoutDashboard,
+        ArrowLeftRight,
+        Wallet,
+        TrendingUp,
+        User,
+        ChevronRight,
+        Receipt,
+        FileText,
+        Zap,
+        Target,
+        PlayCircle,
+        ArrowDownCircle,
+        ArrowUpCircle,
+        Tags,
+        Shield,
+        Sparkles,
+        Crown,
+        MessageCircle,
+        Upload,
+        DollarSign
+      } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
