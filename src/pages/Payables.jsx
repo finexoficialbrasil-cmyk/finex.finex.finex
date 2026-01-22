@@ -610,11 +610,13 @@ export default function Payables() {
   };
 
   // Calcular totais por período
-  const currentMonthBills = bills.filter(bill => {
-    if (!bill.due_date) return false;
-    const billMonth = bill.due_date.substring(0, 7);
-    return billMonth === selectedMonth;
-  });
+  const currentMonthBills = selectedMonth === "todos" 
+    ? bills 
+    : bills.filter(bill => {
+        if (!bill.due_date) return false;
+        const billMonth = bill.due_date.substring(0, 7);
+        return billMonth === selectedMonth;
+      });
 
   const filteredBills = bills.filter(bill => {
     const matchesStatus = filterStatus === "all" || bill.status === filterStatus;
@@ -755,17 +757,21 @@ export default function Payables() {
             <Card className="glass-card border-0 neon-glow">
               <CardContent className="p-6">
                 <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-sm text-purple-300">Mês Selecionado</p>
-                    <Input
-                      type="month"
-                      value={selectedMonth}
-                      onChange={(e) => setSelectedMonth(e.target.value)}
-                      min="2020-01"
-                      max="2030-12"
-                      className="w-auto text-xs bg-purple-900/20 border-purple-700/50 text-white"
-                    />
-                  </div>
+                 <div className="flex items-center justify-between mb-3">
+                   <p className="text-sm text-purple-300">
+                     {selectedMonth === "todos" ? "Todos os Meses" : "Mês Selecionado"}
+                   </p>
+                   {selectedMonth !== "todos" && (
+                     <Input
+                       type="month"
+                       value={selectedMonth}
+                       onChange={(e) => setSelectedMonth(e.target.value)}
+                       min="2020-01"
+                       max="2030-12"
+                       className="w-auto text-xs bg-purple-900/20 border-purple-700/50 text-white"
+                     />
+                   )}
+                 </div>
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-purple-300">Total:</span>
