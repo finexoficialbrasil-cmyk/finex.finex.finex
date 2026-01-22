@@ -55,7 +55,8 @@ export default function Receivables() {
   const [accounts, setAccounts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [filterStatus, setFilterStatus] = useState("all");
-  const [sortBy, setSortBy] = useState("-created_date"); // Default sort for client-side
+  const [sortBy, setSortBy] = useState("-created_date");
+  const [searchTerm, setSearchTerm] = useState(""); // Default sort for client-side
   const [showForm, setShowForm] = useState(false);
   const [editingBill, setEditingBill] = useState(null);
   const [showReceipt, setShowReceipt] = useState(false);
@@ -465,7 +466,13 @@ Agradecemos pela atenção e confiança!
 
   // Client-side filtering and sorting
   const filteredAndSortedBills = bills
-    .filter(bill => filterStatus === "all" || bill.status === filterStatus)
+    .filter(bill => {
+      const matchesStatus = filterStatus === "all" || bill.status === filterStatus;
+      const matchesSearch = searchTerm === "" || 
+        bill.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        bill.contact_name?.toLowerCase().includes(searchTerm.toLowerCase());
+      return matchesStatus && matchesSearch;
+    })
     .sort((a, b) => {
       const order = sortBy.startsWith('-') ? -1 : 1;
       const field = sortBy.startsWith('-') || sortBy.startsWith('+') ? sortBy.substring(1) : sortBy;
@@ -687,6 +694,25 @@ Agradecemos pela atenção e confiança!
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+              
+              {/* Search Bar */}
+              <div className="relative mb-4">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-400" />
+                <Input
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Buscar por descrição ou cliente..."
+                  className="bg-purple-900/20 border-purple-700/50 text-white h-10 pl-10"
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-purple-400 hover:text-white"
+                  >
+                    ×
+                  </button>
+                )}
               </div>
               
               <Tabs value={filterStatus} onValueChange={setFilterStatus} className="flex-1">

@@ -56,6 +56,7 @@ export default function Payables() {
   const [categories, setCategories] = useState([]);
   const [filterStatus, setFilterStatus] = useState("all");
   const [sortBy, setSortBy] = useState("-created_date");
+  const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingBill, setEditingBill] = useState(null);
   const [showReceipt, setShowReceipt] = useState(false);
@@ -535,7 +536,11 @@ export default function Payables() {
 
   const filteredBills = bills.filter(bill => {
     const matchesStatus = filterStatus === "all" || bill.status === filterStatus;
-    return matchesStatus;
+    const matchesSearch = searchTerm === "" || 
+      bill.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      bill.contact_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      bill.supplier_full_name?.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesStatus && matchesSearch;
   });
 
   // ✅ Calcular quantidades para cada aba
@@ -715,6 +720,25 @@ export default function Payables() {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+
+              {/* Search Bar */}
+              <div className="relative mb-4">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-400" />
+                <Input
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Buscar por descrição, fornecedor ou cliente..."
+                  className="bg-purple-900/20 border-purple-700/50 text-white h-10 pl-10"
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-purple-400 hover:text-white"
+                  >
+                    ×
+                  </button>
+                )}
               </div>
 
               {/* Tabs for status filtering */}
