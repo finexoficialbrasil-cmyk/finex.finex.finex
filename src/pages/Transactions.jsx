@@ -631,7 +631,7 @@ export default function TransactionsPage() {
                 {/* ✅ Filtros e Busca */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
                   {/* Busca */}
-                  <div className="relative">
+                  <div className="relative md:col-span-3">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-400" />
                     <Input
                       placeholder="Buscar transações..."
@@ -644,7 +644,7 @@ export default function TransactionsPage() {
                   {/* Filtro Tipo */}
                   <Select value={filterType} onValueChange={setFilterType}>
                     <SelectTrigger className="bg-purple-900/20 border-purple-700/50 text-white">
-                      <SelectValue />
+                      <SelectValue placeholder="Filtrar por tipo" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todas</SelectItem>
@@ -656,7 +656,7 @@ export default function TransactionsPage() {
                   {/* Ordenação */}
                   <Select value={sortBy} onValueChange={setSortBy}>
                     <SelectTrigger className="bg-purple-900/20 border-purple-700/50 text-white">
-                      <SelectValue />
+                      <SelectValue placeholder="Ordenar por" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="-created_date">Mais recentes</SelectItem>
@@ -665,6 +665,51 @@ export default function TransactionsPage() {
                       <SelectItem value="amount">Menor valor</SelectItem>
                       <SelectItem value="description">A-Z</SelectItem>
                       <SelectItem value="-description">Z-A</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {/* Filtro Status */}
+                  <Select value={filterStatus} onValueChange={setFilterStatus}>
+                    <SelectTrigger className="bg-purple-900/20 border-purple-700/50 text-white">
+                      <SelectValue placeholder="Filtrar por status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos Status</SelectItem>
+                      <SelectItem value="completed">Concluídas</SelectItem>
+                      <SelectItem value="pending">Pendentes</SelectItem>
+                      <SelectItem value="cancelled">Canceladas</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                  {/* Filtro Categoria */}
+                  <Select value={filterCategory} onValueChange={setFilterCategory}>
+                    <SelectTrigger className="bg-purple-900/20 border-purple-700/50 text-white">
+                      <SelectValue placeholder="Filtrar por Categoria" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={null}>Todas as Categorias</SelectItem>
+                      {categories.map(cat => (
+                        <SelectItem key={cat.id} value={cat.id}>
+                          {cat.name} {cat.isSystem && "(Sistema)"}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {/* Filtro Conta */}
+                  <Select value={filterAccount} onValueChange={setFilterAccount}>
+                    <SelectTrigger className="bg-purple-900/20 border-purple-700/50 text-white">
+                      <SelectValue placeholder="Filtrar por Conta" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={null}>Todas as Contas</SelectItem>
+                      {accounts.map(acc => (
+                        <SelectItem key={acc.id} value={acc.id}>
+                          {acc.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
