@@ -162,7 +162,7 @@ export default function Dashboard() {
       const [cats, gls, billsData] = await Promise.all([
         Category.list("-created_date", 15), // Reduzido
         Goal.list("-created_date", 3), // Reduzido
-        Bill.list("-due_date", 5) // Reduzido
+        Bill.list("due_date", 10000) // ✅ MAIOR LIMITE + ordenar por vencimento mais próximo
       ]);
       
       setCategories(cats || []);
