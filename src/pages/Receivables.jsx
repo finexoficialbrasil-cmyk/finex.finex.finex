@@ -674,42 +674,32 @@ Agradecemos pela atenção e confiança!
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-6">
             <Card className="glass-card border-0 neon-glow">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-purple-300 mb-1">Saldo Pendente</p>
-                    <p className="text-2xl font-bold text-green-400">R$ {formatCurrencyBR(totals.total)}</p>
-                    <p className="text-xs text-green-400 mt-1">{bills.filter(b => b.status !== "paid" && b.status !== "cancelled").length} conta(s)</p>
-                  </div>
-                  <div className="p-3 rounded-xl bg-green-600/20">
-                    <DollarSign className="w-6 h-6 text-green-400" />
-                  </div>
+              <CardContent className="p-3 lg:p-6">
+                <div className="flex flex-col gap-2">
+                  <p className="text-xs lg:text-sm text-purple-300">Saldo Pendente</p>
+                  <p className="text-lg lg:text-2xl font-bold text-green-400">R$ {formatCurrencyBR(totals.total)}</p>
+                  <p className="text-xs text-green-400">{bills.filter(b => b.status !== "paid" && b.status !== "cancelled").length} conta(s)</p>
                 </div>
               </CardContent>
             </Card>
 
             <Card className="glass-card border-0 neon-glow">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-purple-300 mb-1">Atrasadas</p>
-                    <p className="text-2xl font-bold text-red-400">R$ {formatCurrencyBR(totals.overdue)}</p>
-                    <p className="text-xs text-red-400 mt-1">{bills.filter(b => b.status === "overdue").length} conta(s)</p>
-                  </div>
-                  <div className="p-3 rounded-xl bg-red-600/20">
-                    <AlertCircle className="w-6 h-6 text-red-400" />
-                  </div>
+              <CardContent className="p-3 lg:p-6">
+                <div className="flex flex-col gap-2">
+                  <p className="text-xs lg:text-sm text-purple-300">Atrasadas</p>
+                  <p className="text-lg lg:text-2xl font-bold text-red-400">R$ {formatCurrencyBR(totals.overdue)}</p>
+                  <p className="text-xs text-red-400">{bills.filter(b => b.status === "overdue").length} conta(s)</p>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="glass-card border-0 neon-glow">
-              <CardContent className="p-6">
+            <Card className="glass-card border-0 neon-glow col-span-2 lg:col-span-1">
+              <CardContent className="p-3 lg:p-6">
                 <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-sm text-purple-300">
+                  <div className="flex flex-col gap-2 mb-2">
+                    <p className="text-xs lg:text-sm text-purple-300">
                       {selectedMonth === "todos" ? "Todos os Meses" : "Mês Selecionado"}
                     </p>
                     {selectedMonth !== "todos" && (
@@ -719,22 +709,22 @@ Agradecemos pela atenção e confiança!
                         onChange={(e) => setSelectedMonth(e.target.value)}
                         min="2020-01"
                         max="2030-12"
-                        className="w-auto text-xs bg-purple-900/20 border-purple-700/50 text-white"
+                        className="w-full text-xs bg-purple-900/20 border-purple-700/50 text-white"
                       />
                     )}
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-purple-300">Total:</span>
-                      <span className="text-sm font-bold text-white">R$ {formatCurrencyBR(totals.monthTotal)}</span>
+                      <span className="text-xs lg:text-sm font-bold text-white">R$ {formatCurrencyBR(totals.monthTotal)}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-yellow-300">Pendente:</span>
-                      <span className="text-sm font-bold text-yellow-400">R$ {formatCurrencyBR(totals.monthPending)}</span>
+                      <span className="text-xs lg:text-sm font-bold text-yellow-400">R$ {formatCurrencyBR(totals.monthPending)}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-green-300">Recebido:</span>
-                      <span className="text-sm font-bold text-green-400">R$ {formatCurrencyBR(totals.monthReceived)}</span>
+                      <span className="text-xs lg:text-sm font-bold text-green-400">R$ {formatCurrencyBR(totals.monthReceived)}</span>
                     </div>
                   </div>
                 </div>
@@ -744,14 +734,14 @@ Agradecemos pela atenção e confiança!
 
           {/* Filters */}
           <Card className="glass-card border-0 neon-glow">
-            <CardHeader className="border-b border-purple-900/30 p-4">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <CardTitle className="text-white">Contas a Receber</CardTitle>
-                
-                <div className="flex items-center gap-2">
-                  <Label className="text-purple-300 text-sm">Ordenar:</Label>
+            <CardHeader className="border-b border-purple-900/30">
+              <div className="flex flex-col gap-3">
+                <CardTitle className="text-lg lg:text-xl text-white">Contas a Receber</CardTitle>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Label className="text-purple-300 text-xs lg:text-sm flex-shrink-0">Ordenar:</Label>
                   <Select value={sortBy} onValueChange={setSortBy}>
-                    <SelectTrigger className="w-[180px] bg-purple-900/20 border-purple-700/50 text-white">
+                    <SelectTrigger className="w-full md:w-[180px] bg-purple-900/20 border-purple-700/50 text-white text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -786,14 +776,14 @@ Agradecemos pela atenção e confiança!
               </div>
               
               {/* Month selector and view toggle */}
-              <div className="flex items-center gap-3 mb-3">
-                <Label className="text-purple-300 text-sm flex-shrink-0">Ver:</Label>
-                <div className="flex gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Label className="text-purple-300 text-xs lg:text-sm flex-shrink-0">Ver:</Label>
+                <div className="flex gap-1 flex-wrap">
                   <Button
                     variant={selectedMonth !== "todos" ? "default" : "outline"}
                     size="sm"
                     onClick={() => setSelectedMonth(new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0'))}
-                    className="bg-green-600/30 text-green-200 border-green-600/50 hover:bg-green-600/50"
+                    className="text-xs bg-green-600/30 text-green-200 border-green-600/50 hover:bg-green-600/50 px-2 py-1 h-8"
                   >
                     Mês Selecionado
                   </Button>
@@ -801,19 +791,19 @@ Agradecemos pela atenção e confiança!
                     variant={selectedMonth === "todos" ? "default" : "outline"}
                     size="sm"
                     onClick={() => setSelectedMonth("todos")}
-                    className="bg-green-600/30 text-green-200 border-green-600/50 hover:bg-green-600/50"
+                    className="text-xs bg-green-600/30 text-green-200 border-green-600/50 hover:bg-green-600/50 px-2 py-1 h-8"
                   >
                     Todos os Meses
                   </Button>
                 </div>
               </div>
 
-              <Tabs value={filterStatus} onValueChange={setFilterStatus} className="flex-1">
-                  <TabsList className="bg-purple-900/20 w-full grid grid-cols-4">
-                    <TabsTrigger value="all">Todas</TabsTrigger>
-                    <TabsTrigger value="pending">Pendentes</TabsTrigger>
-                    <TabsTrigger value="overdue">Atrasadas</TabsTrigger>
-                    <TabsTrigger value="paid">Recebidas</TabsTrigger>
+              <Tabs value={filterStatus} onValueChange={setFilterStatus} className="w-full">
+                  <TabsList className="bg-purple-900/20 w-full grid grid-cols-2 lg:grid-cols-4 h-auto">
+                    <TabsTrigger value="all" className="flex-1 text-xs lg:text-sm py-2">Todas</TabsTrigger>
+                    <TabsTrigger value="pending" className="flex-1 text-xs lg:text-sm py-2">Pendentes</TabsTrigger>
+                    <TabsTrigger value="overdue" className="flex-1 text-xs lg:text-sm py-2">Atrasadas</TabsTrigger>
+                    <TabsTrigger value="paid" className="flex-1 text-xs lg:text-sm py-2">Recebidas</TabsTrigger>
                   </TabsList>
                 </Tabs>
             </CardHeader>
@@ -837,17 +827,17 @@ Agradecemos pela atenção e confiança!
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -20 }}
                           transition={{ delay: index * 0.03 }}
-                          className={`flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-xl glass-card hover:bg-purple-900/20 transition-all ${
+                          className={`flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 rounded-xl glass-card hover:bg-purple-900/20 transition-all ${
                             bill.status === "overdue" ? "border-l-4 border-red-500" : ""
                           }`}
-                        >
-                          <div className="flex items-center gap-3 md:gap-4 flex-1 mb-3 sm:mb-0 w-full">
-                            <div className="p-2 md:p-3 rounded-full bg-green-600/20 flex-shrink-0">
-                              <Receipt className="w-4 h-4 md:w-5 md:h-5 text-green-400" />
+                          >
+                          <div className="flex items-center gap-2 sm:gap-4 flex-1 mb-2 sm:mb-0">
+                            <div className="p-2 sm:p-3 rounded-full bg-green-600/20 flex-shrink-0">
+                              <Receipt className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <p className="font-medium text-white text-sm md:text-base truncate">{bill.description}</p>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <p className="font-medium text-white text-xs sm:text-sm md:text-base truncate">{bill.description}</p>
                                 {bill.is_recurring && (
                                   <Badge className="bg-blue-600/20 text-blue-400 border-blue-600/40 text-xs flex items-center gap-1">
                                     <RepeatIcon className="w-3 h-3" />
@@ -887,14 +877,14 @@ Agradecemos pela atenção e confiança!
                               </div>
                             </div>
                           </div>
-                          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-                            <div className="text-left sm:text-right">
-                              <p className="font-bold text-base md:text-lg text-green-400">
+                          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
+                            <div className="text-left sm:text-right order-2 sm:order-none">
+                              <p className="font-bold text-sm sm:text-lg text-green-400">
                                 R$ {bill.amount.toFixed(2)}
                               </p>
-                              <p className="text-xs text-purple-400">{account.name}</p>
+                              <p className="text-xs text-purple-400 truncate">{account.name}</p>
                             </div>
-                            <div className="flex gap-2 justify-end">
+                            <div className="flex gap-1 sm:gap-2 justify-end order-1 sm:order-none">
                               {bill.status === "pending" || bill.status === "overdue" ? (
                                 <>
                                   {bill.contact_phone && (
@@ -902,20 +892,20 @@ Agradecemos pela atenção e confiança!
                                       variant="ghost"
                                       size="icon"
                                       onClick={() => sendWhatsAppReminder(bill)}
-                                      className="h-8 w-8 md:h-9 md:w-9 text-green-400 hover:bg-green-900/20"
+                                      className="h-7 w-7 sm:h-8 sm:w-8 text-green-400 hover:bg-green-900/20"
                                       title="Enviar cobrança WhatsApp"
                                     >
-                                      <MessageCircle className="w-4 h-4" />
+                                      <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4" />
                                     </Button>
                                   )}
                                   <Button
                                     variant="ghost"
                                     size="icon"
                                     onClick={() => handleReceive(bill)}
-                                    className="h-8 w-8 md:h-9 md:w-9 text-green-400 hover:bg-green-900/20"
+                                    className="h-7 w-7 sm:h-8 sm:w-8 text-green-400 hover:bg-green-900/20"
                                     title="Marcar como recebido"
                                   >
-                                    <Check className="w-4 h-4" />
+                                    <Check className="w-3 h-3 sm:w-4 sm:h-4" />
                                   </Button>
                                 </>
                               ) : null}
@@ -923,17 +913,17 @@ Agradecemos pela atenção e confiança!
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => handleEdit(bill)}
-                                className="h-8 w-8 md:h-9 md:w-9 text-purple-400 hover:bg-purple-900/20"
+                                className="h-7 w-7 sm:h-8 sm:w-8 text-purple-400 hover:bg-purple-900/20"
                               >
-                                <Edit className="w-4 h-4" />
+                                <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
                               </Button>
                               <Button
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => handleDelete(bill.id)}
-                                className="h-8 w-8 md:h-9 md:w-9 text-red-400 hover:bg-red-900/20"
+                                className="h-7 w-7 sm:h-8 sm:w-8 text-red-400 hover:bg-red-900/20"
                               >
-                                <Trash2 className="w-4 h-4" />
+                                <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
                               </Button>
                             </div>
                           </div>
