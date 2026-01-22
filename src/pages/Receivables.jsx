@@ -37,7 +37,8 @@ import {
   RepeatIcon,
   Users,
   DollarSign,
-  Loader2 // Import Loader2 for spinner
+  Loader2, // Import Loader2 for spinner
+  Search
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, differenceInDays, isBefore } from "date-fns";
