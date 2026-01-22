@@ -25,7 +25,8 @@ export default function ExportBillsPDF({ bills, categories, accounts, type = "pa
     category: "all",
     account: "all",
     startDate: "",
-    endDate: ""
+    endDate: "",
+    periodMode: "specific"
   });
 
   const generatePDF = async () => {
@@ -636,7 +637,8 @@ export default function ExportBillsPDF({ bills, categories, accounts, type = "pa
       category: "all",
       account: "all",
       startDate: "",
-      endDate: ""
+      endDate: "",
+      periodMode: "specific"
     });
   };
 
@@ -716,27 +718,51 @@ export default function ExportBillsPDF({ bills, categories, accounts, type = "pa
               </Select>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-purple-200 text-sm mb-2 block">Data Inicial</Label>
-                <input
-                  type="date"
-                  value={filters.startDate}
-                  onChange={(e) => setFilters({...filters, startDate: e.target.value})}
-                  className="w-full px-3 py-2 bg-purple-900/20 border border-purple-700/50 rounded-md text-white text-sm"
-                />
-              </div>
-
-              <div>
-                <Label className="text-purple-200 text-sm mb-2 block">Data Final</Label>
-                <input
-                  type="date"
-                  value={filters.endDate}
-                  onChange={(e) => setFilters({...filters, endDate: e.target.value})}
-                  className="w-full px-3 py-2 bg-purple-900/20 border border-purple-700/50 rounded-md text-white text-sm"
-                />
+            <div>
+              <Label className="text-purple-200 text-sm mb-2 block">Período</Label>
+              <div className="flex gap-2 mb-3">
+                <Button
+                  variant={filters.periodMode === "specific" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setFilters({...filters, periodMode: "specific"})}
+                  className="flex-1"
+                >
+                  Mês Específico
+                </Button>
+                <Button
+                  variant={filters.periodMode === "all" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setFilters({...filters, periodMode: "all"})}
+                  className="flex-1"
+                >
+                  Todos os Meses
+                </Button>
               </div>
             </div>
+
+            {filters.periodMode === "specific" && (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-purple-200 text-sm mb-2 block">Data Inicial</Label>
+                  <input
+                    type="date"
+                    value={filters.startDate}
+                    onChange={(e) => setFilters({...filters, startDate: e.target.value})}
+                    className="w-full px-3 py-2 bg-purple-900/20 border border-purple-700/50 rounded-md text-white text-sm"
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-purple-200 text-sm mb-2 block">Data Final</Label>
+                  <input
+                    type="date"
+                    value={filters.endDate}
+                    onChange={(e) => setFilters({...filters, endDate: e.target.value})}
+                    className="w-full px-3 py-2 bg-purple-900/20 border border-purple-700/50 rounded-md text-white text-sm"
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="flex gap-3 pt-4 border-t border-purple-700/30">
               <Button

@@ -625,7 +625,7 @@ export default function Payables() {
     
     // ✅ Filtrar por mês selecionado
     const billMonth = bill.due_date.substring(0, 7); // YYYY-MM
-    const matchesMonth = billMonth === selectedMonth;
+    const matchesMonth = selectedMonth === "todos" ? true : billMonth === selectedMonth;
     
     return matchesStatus && matchesSearch && matchesMonth;
   });
@@ -831,7 +831,30 @@ export default function Payables() {
               </div>
 
               {/* Tabs for status filtering */}
-              <div className="flex flex-col md:flex-row gap-4">
+              <div className="space-y-3">
+                {/* Month selector and view toggle */}
+                <div className="flex items-center gap-3">
+                  <Label className="text-purple-300 text-sm flex-shrink-0">Ver:</Label>
+                  <div className="flex gap-2">
+                    <Button
+                      variant={selectedMonth !== "todos" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setSelectedMonth(new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0'))}
+                      className="bg-purple-600/30 text-purple-200 border-purple-600/50 hover:bg-purple-600/50"
+                    >
+                      Mês Selecionado
+                    </Button>
+                    <Button
+                      variant={selectedMonth === "todos" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setSelectedMonth("todos")}
+                      className="bg-purple-600/30 text-purple-200 border-purple-600/50 hover:bg-purple-600/50"
+                    >
+                      Todos os Meses
+                    </Button>
+                  </div>
+                </div>
+
                 <Tabs value={filterStatus} onValueChange={setFilterStatus} className="flex-1">
                   <TabsList className="bg-purple-900/20 w-full">
                     <TabsTrigger value="all" className="flex-1">
