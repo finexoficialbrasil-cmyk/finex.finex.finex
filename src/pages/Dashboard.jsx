@@ -188,6 +188,7 @@ export default function Dashboard() {
 
     const monthTransactions = transactions.filter(t => {
       if (!t.date) return false;
+      if (t.deleted === true) return false; // ✅ EXCLUIR transações deletadas
       
       try {
         // ✅ CORRIGIDO: Parsear a data corretamente (formato YYYY-MM-DD)
