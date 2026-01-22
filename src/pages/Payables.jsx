@@ -995,7 +995,11 @@ export default function Payables() {
                     <Input
                       type="date"
                       value={formData.due_date}
-                      onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+                      onChange={(e) => {
+                        // Garantir que a data seja salva exatamente como selecionada (sem conversão de timezone)
+                        const selectedDate = e.target.value; // Formato YYYY-MM-DD
+                        setFormData({ ...formData, due_date: selectedDate });
+                      }}
                       required
                       className="bg-purple-900/20 border-purple-700/50 text-white mt-1"
                     />
