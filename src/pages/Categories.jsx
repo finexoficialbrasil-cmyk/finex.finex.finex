@@ -347,7 +347,7 @@ export default function Categories() {
                       </Button>
                     )}
                   </div>
-                  <div className="grid md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
                     {incomeCategories.map((cat, index) => (
                       <motion.div
                         key={cat.id}
@@ -356,8 +356,8 @@ export default function Categories() {
                         transition={{ delay: index * 0.1 }}
                       >
                         <Card className="glass-card border-0 neon-glow hover:scale-105 transition-transform">
-                          <CardContent className="p-4">
-                            <div className="flex items-center justify-between">
+                          <CardContent className="p-3 md:p-4">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
                               <div className="flex items-center gap-3">
                                 <div
                                   className="w-12 h-12 rounded-full flex items-center justify-center"
@@ -380,22 +380,22 @@ export default function Categories() {
                                 </div>
                               </div>
                               {!cat.isSystem && (
-                                <div className="flex gap-1">
+                                <div className="flex gap-1 flex-shrink-0">
                                   <Button
                                     variant="ghost"
                                     size="icon"
                                     onClick={() => handleEdit(cat)}
-                                    className="h-8 w-8"
+                                    className="h-7 w-7 sm:h-8 sm:w-8"
                                   >
-                                    <Edit className="w-4 h-4 text-purple-400" />
+                                    <Edit className="w-3 h-3 sm:w-4 sm:h-4 text-purple-400" />
                                   </Button>
                                   <Button
                                     variant="ghost"
                                     size="icon"
                                     onClick={() => handleDelete(cat)}
-                                    className="h-8 w-8"
+                                    className="h-7 w-7 sm:h-8 sm:w-8"
                                   >
-                                    <Trash2 className="w-4 h-4 text-red-400" />
+                                    <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 text-red-400" />
                                   </Button>
                                 </div>
                               )}
@@ -428,7 +428,7 @@ export default function Categories() {
                       </Button>
                     )}
                   </div>
-                  <div className="grid md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
                     {expenseCategories.map((cat, index) => (
                       <motion.div
                         key={cat.id}
@@ -439,8 +439,8 @@ export default function Categories() {
                         className={`cursor-pointer ${!cat.isSystem && selectedCategories.includes(cat.id) ? 'ring-2 ring-cyan-400' : ''}`}
                       >
                         <Card className={`glass-card border-0 neon-glow hover:scale-105 transition-transform ${selectedCategories.includes(cat.id) ? 'bg-cyan-900/20' : ''}`}>
-                          <CardContent className="p-4">
-                            <div className="flex items-center justify-between">
+                          <CardContent className="p-3 md:p-4">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
                               <div className="flex items-center gap-3">
                                 {!cat.isSystem && (
                                   <input
@@ -474,22 +474,22 @@ export default function Categories() {
                                 </div>
                               </div>
                               {!cat.isSystem && (
-                                <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                                <div className="flex gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                                   <Button
                                     variant="ghost"
                                     size="icon"
                                     onClick={() => handleEdit(cat)}
-                                    className="h-8 w-8"
+                                    className="h-7 w-7 sm:h-8 sm:w-8"
                                   >
-                                    <Edit className="w-4 h-4 text-purple-400" />
+                                    <Edit className="w-3 h-3 sm:w-4 sm:h-4 text-purple-400" />
                                   </Button>
                                   <Button
                                     variant="ghost"
                                     size="icon"
                                     onClick={() => handleDelete(cat)}
-                                    className="h-8 w-8"
+                                    className="h-7 w-7 sm:h-8 sm:w-8"
                                   >
-                                    <Trash2 className="w-4 h-4 text-red-400" />
+                                    <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 text-red-400" />
                                   </Button>
                                 </div>
                               )}
