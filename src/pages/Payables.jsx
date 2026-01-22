@@ -506,6 +506,13 @@ export default function Payables() {
     window.print();
   };
 
+  // Calcular totais por período
+  const currentMonthBills = bills.filter(bill => {
+    if (!bill.due_date) return false;
+    const billMonth = bill.due_date.substring(0, 7);
+    return billMonth === selectedMonth;
+  });
+
   const filteredBills = bills.filter(bill => {
     const matchesStatus = filterStatus === "all" || bill.status === filterStatus;
     return matchesStatus;
@@ -553,13 +560,6 @@ export default function Payables() {
     }
     return <Badge className="bg-blue-600/20 text-blue-400 border-blue-600/40">Pendente</Badge>;
   };
-
-  // Calcular totais por período
-  const currentMonthBills = bills.filter(bill => {
-    if (!bill.due_date) return false;
-    const billMonth = bill.due_date.substring(0, 7);
-    return billMonth === selectedMonth;
-  });
 
   const totals = {
     total: bills.filter(b => b.status !== "paid" && b.status !== "cancelled").reduce((sum, b) => sum + b.amount, 0),
