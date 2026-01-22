@@ -511,6 +511,14 @@ export default function Payables() {
     return matchesStatus;
   });
 
+  // ✅ Calcular quantidades para cada aba
+  const counts = {
+    all: bills.length,
+    pending: bills.filter(b => b.status === "pending").length,
+    overdue: bills.filter(b => b.status === "overdue").length,
+    paid: currentMonthBills.filter(b => b.status === "paid").length
+  };
+
   const getCategoryInfo = (categoryId) => {
     return categories.find(c => c.id === categoryId) || { name: "Sem categoria", color: "#666" };
   };
@@ -693,10 +701,22 @@ export default function Payables() {
               <div className="flex flex-col md:flex-row gap-4">
                 <Tabs value={filterStatus} onValueChange={setFilterStatus} className="flex-1">
                   <TabsList className="bg-purple-900/20 w-full">
-                    <TabsTrigger value="all" className="flex-1">Todas</TabsTrigger>
-                    <TabsTrigger value="pending" className="flex-1">Pendentes</TabsTrigger>
-                    <TabsTrigger value="overdue" className="flex-1">Atrasadas</TabsTrigger>
-                    <TabsTrigger value="paid" className="flex-1">Pagas</TabsTrigger>
+                    <TabsTrigger value="all" className="flex-1">
+                      Todas
+                      <Badge className="ml-2 bg-purple-600/30 text-purple-200 text-xs">{counts.all}</Badge>
+                    </TabsTrigger>
+                    <TabsTrigger value="pending" className="flex-1">
+                      Pendentes
+                      <Badge className="ml-2 bg-yellow-600/30 text-yellow-200 text-xs">{counts.pending}</Badge>
+                    </TabsTrigger>
+                    <TabsTrigger value="overdue" className="flex-1">
+                      Atrasadas
+                      <Badge className="ml-2 bg-red-600/30 text-red-200 text-xs">{counts.overdue}</Badge>
+                    </TabsTrigger>
+                    <TabsTrigger value="paid" className="flex-1">
+                      Pagas
+                      <Badge className="ml-2 bg-green-600/30 text-green-200 text-xs">{counts.paid}</Badge>
+                    </TabsTrigger>
                   </TabsList>
                 </Tabs>
               </div>
