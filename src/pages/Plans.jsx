@@ -650,40 +650,46 @@ export default function Plans() {
         )}
 
         {/* Current Plan Info - Active Subscription */}
-        {hasUserActiveAccess && user?.subscription_status === 'active' && user?.subscription_end_date && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="max-w-4xl mx-auto mb-8"
-          >
-            <Card className="glass-card border-0 border-l-4 border-green-500">
-              <CardContent className="p-6">
-                <div className="flex items-start gap-4">
-                  <div className="p-3 rounded-xl bg-green-600/20">
-                    <CheckCircle className="w-6 h-6 text-green-400" />
+        {hasUserActiveAccess && user?.subscription_status === 'active' && user?.subscription_end_date && (() => {
+          const daysLeft = calculateDaysLeft(user.subscription_end_date);
+          const needsRenewal = daysLeft <= 30; // Considera "precisa renovar" quando faltam 30 dias ou menos
+          
+          return (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="max-w-4xl mx-auto mb-8"
+            >
+              <Card className={`glass-card border-0 border-l-4 ${needsRenewal ? 'border-yellow-500' : 'border-green-500'}`}>
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-4">
+                    <div className={`p-3 rounded-xl ${needsRenewal ? 'bg-yellow-600/20' : 'bg-green-600/20'}`}>
+                      {needsRenewal ? (
+                        <AlertTriangle className="w-6 h-6 text-yellow-400" />
+                      ) : (
+                        <CheckCircle className="w-6 h-6 text-green-400" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-white font-bold text-lg mb-2">
+                        {needsRenewal ? '⚠️ Renovação Necessária' : '✅ Assinatura Ativa'}
+                      </h3>
+                      <p className={needsRenewal ? 'text-yellow-300 mb-2' : 'text-green-300 mb-2'}>
+                        Plano: <strong>{formatPlanName(user.subscription_plan)}</strong>
+                      </p>
+                      <p className="text-purple-300 text-sm">
+                        Válido até: <strong>{new Date(user.subscription_end_date + 'T12:00:00').toLocaleDateString('pt-BR')}</strong>
+                      </p>
+                      <p className={`text-sm mt-1 font-bold ${daysLeft <= 7 ? 'text-red-400' : needsRenewal ? 'text-yellow-300' : 'text-cyan-300'}`}>
+                        ⏱️ Faltam <strong>{daysLeft} dias</strong> {needsRenewal ? '- Renove agora!' : 'para renovação'}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <h3 className="text-white font-bold text-lg mb-2">✅ Assinatura Ativa</h3>
-                    <p className="text-green-300 mb-2">
-                      Plano: <strong>{formatPlanName(user.subscription_plan)}</strong>
-                    </p>
-                    <p className="text-purple-300 text-sm">
-                      Válido até: <strong>{new Date(user.subscription_end_date + 'T12:00:00').toLocaleDateString('pt-BR')}</strong>
-                    </p>
-                    {(() => {
-                      const daysLeft = calculateDaysLeft(user.subscription_end_date);
-                      return (
-                        <p className="text-cyan-300 text-sm mt-1">
-                          ⏱️ Faltam <strong>{daysLeft} dias</strong> para renovação
-                        </p>
-                      );
-                    })()}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
+                </CardContent>
+              </Card>
+            </motion.div>
+          );
+        })()}
 
         {/* Comparison Table */}
         <AnimatePresence>
@@ -752,6 +758,10 @@ export default function Plans() {
             const hasActivePlan = hasActiveAccess(user); // ✅ USAR NOVA FUNÇÃO
             
             const isFreePlan = plan.price === 0;
+            
+            // ✅ Calcular dias restantes para renovação
+            const daysLeft = user?.subscription_end_date ? calculateDaysLeft(user.subscription_end_date) : 999;
+            const needsRenewal = daysLeft <= 30; // Menos de 30 dias = precisa renovar
             
             // ✅ NOVO: Verificar se já usou trial ANTES
             const alreadyUsedFreeTrial = user?.trial_started_at || 
@@ -889,7 +899,7 @@ export default function Plans() {
                               '⚠️ Você já possui acesso ativo'}
                           </p>
                         </div>
-                      ) : isCurrentPlan ? (
+                      ) : isCurrentPlan && !needsRenewal ? (
                         <Button
                           disabled
                           className="w-full bg-green-600"
@@ -901,7 +911,7 @@ export default function Plans() {
                         <Button
                           onClick={() => handleSelectPlan(plan)}
                           disabled={isSubmitting}
-                          className={`w-full bg-gradient-to-r ${plan.color_gradient}`}
+                          className={`w-full bg-gradient-to-r ${plan.color_gradient} ${needsRenewal && isCurrentPlan ? 'animate-pulse' : ''}`}
                         >
                           {isSubmitting && selectedPlan?.id === plan.id ? (
                             <>
@@ -911,7 +921,7 @@ export default function Plans() {
                           ) : (
                             <>
                               <Zap className="w-4 h-4 mr-2" />
-                              {hasActivePlan ? 'Fazer Upgrade' : plan.price === 0 ? '🎁 Testar 3 Dias Grátis' : 'Assinar Agora'}
+                              {isCurrentPlan && needsRenewal ? '🔄 Renovar Agora' : hasActivePlan ? 'Fazer Upgrade' : plan.price === 0 ? '🎁 Testar 3 Dias Grátis' : 'Assinar Agora'}
                             </>
                           )}
                         </Button>
