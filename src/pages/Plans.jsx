@@ -794,7 +794,7 @@ export default function Plans() {
                   isBlocked ? 'opacity-60' : ''
                 } ${isFreePlan ? '' : 'hover:scale-105 transition-transform'}`}>
                   
-                  {isCurrentPlan && (
+                  {isCurrentPlan && hasActiveAccess(user) && (
                     <div className="absolute top-2 right-2">
                       <span className="px-3 py-1 bg-green-600 text-white text-xs rounded-full font-bold">
                         ✅ ATIVO
