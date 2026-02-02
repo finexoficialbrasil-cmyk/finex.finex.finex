@@ -868,20 +868,18 @@ export default function TransactionsPage() {
                                 <div className="flex gap-2 justify-end">
                                   {!tx.deleted && (
                                     <>
-                                      {tx.edited && (
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          onClick={() => {
-                                            setSelectedEditHistory(tx);
-                                            setShowEditHistory(true);
-                                          }}
-                                          className="h-8 w-8"
-                                          title="Ver histórico de edições"
-                                        >
-                                          <History className="w-4 h-4 text-blue-400" />
-                                        </Button>
-                                      )}
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => {
+                                          setSelectedEditHistory(tx);
+                                          setShowEditHistory(true);
+                                        }}
+                                        className="h-8 w-8"
+                                        title="Ver histórico de edições"
+                                      >
+                                        <History className={`w-4 h-4 ${tx.edited ? 'text-blue-400' : 'text-gray-500'}`} />
+                                      </Button>
                                       <Button
                                         variant="ghost"
                                         size="icon"
