@@ -38,8 +38,8 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { User as UserEntity } from "@/entities/User";
-import { SystemPlan } from "@/entities/SystemPlan"; // Added import
-import { SystemSettings } from "@/entities/SystemSettings"; // Added import
+import { SystemPlan } from "@/entities/SystemPlan";
+import { SystemSettings } from "@/entities/SystemSettings";
 import { motion, AnimatePresence } from "framer-motion";
 import SubscriptionGuard from "./components/SubscriptionGuard";
 import WelcomeEmailSender from "./components/WelcomeEmailSender";

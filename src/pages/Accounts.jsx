@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Account, Transaction } from "@/entities/all";
+import { Account } from "@/entities/Account";
+import { Transaction } from "@/entities/Transaction";
 import { UploadFile } from "@/integrations/Core";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
