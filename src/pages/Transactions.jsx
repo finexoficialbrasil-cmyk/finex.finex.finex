@@ -43,7 +43,9 @@ import {
   ChevronRight,
   FileText,
   Download,
-  AlertCircle
+  AlertCircle,
+  History,
+  Clock
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
@@ -90,6 +92,8 @@ export default function TransactionsPage() {
   const [filterAccount, setFilterAccount] = useState("");   // NEW: Filter by account
   const [sortBy, setSortBy] = useState("-created_date"); // NEW: Default sorting by latest creation date
   const [showDeleted, setShowDeleted] = useState(false); // ✅ NOVO: Mostrar excluídas
+  const [showEditHistory, setShowEditHistory] = useState(false); // ✅ NOVO: Mostrar histórico de edições
+  const [selectedEditHistory, setSelectedEditHistory] = useState(null); // ✅ NOVO: Transação selecionada
   const [showForm, setShowForm] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false); // ✅ NOVO: Estado de submissão
@@ -237,7 +241,42 @@ export default function TransactionsPage() {
 
       if (editingTransaction) {
         oldAccountId = editingTransaction.account_id;
-        await Transaction.update(editingTransaction.id, data);
+        
+        // ✅ NOVO: Registrar histórico de edição
+        const user = await User.me();
+        const now = new Date().toISOString();
+        
+        // Buscar histórico anterior
+        let editHistory = [];
+        try {
+          if (editingTransaction.edit_history) {
+            editHistory = JSON.parse(editingTransaction.edit_history);
+          }
+        } catch (e) {
+          editHistory = [];
+        }
+        
+        // Adicionar nova entrada ao histórico
+        editHistory.push({
+          edited_at: now,
+          edited_by: user.email,
+          changes: {
+            description: { old: editingTransaction.description, new: data.description },
+            amount: { old: editingTransaction.amount, new: data.amount },
+            type: { old: editingTransaction.type, new: data.type },
+            category_id: { old: editingTransaction.category_id, new: data.category_id },
+            account_id: { old: editingTransaction.account_id, new: data.account_id },
+            date: { old: editingTransaction.date, new: data.date }
+          }
+        });
+        
+        await Transaction.update(editingTransaction.id, {
+          ...data,
+          edited: true,
+          last_edited_at: now,
+          last_edited_by: user.email,
+          edit_history: JSON.stringify(editHistory)
+        });
       } else {
         await Transaction.create(data);
       }
@@ -825,6 +864,20 @@ export default function TransactionsPage() {
                                 <div className="flex gap-2 justify-end">
                                   {!tx.deleted && (
                                     <>
+                                      {tx.edited && (
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          onClick={() => {
+                                            setSelectedEditHistory(tx);
+                                            setShowEditHistory(true);
+                                          }}
+                                          className="h-8 w-8"
+                                          title="Ver histórico de edições"
+                                        >
+                                          <History className="w-4 h-4 text-blue-400" />
+                                        </Button>
+                                      )}
                                       <Button
                                         variant="ghost"
                                         size="icon"
@@ -1019,6 +1072,137 @@ export default function TransactionsPage() {
                   </Button>
                 </div>
               </form>
+            </DialogContent>
+          </Dialog>
+
+          {/* ✅ NOVO: Dialog de Histórico de Edições */}
+          <Dialog open={showEditHistory} onOpenChange={setShowEditHistory}>
+            <DialogContent className="glass-card border-purple-700/50 text-white max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader className="sticky top-0 bg-[#1a1a2e] z-10 pb-4">
+                <DialogTitle className="text-xl sm:text-2xl bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent flex items-center gap-2">
+                  <History className="w-6 h-6 text-blue-400" />
+                  Histórico de Edições
+                </DialogTitle>
+              </DialogHeader>
+              
+              {selectedEditHistory && (
+                <div className="space-y-4 pb-4">
+                  {/* Info da transação */}
+                  <div className="p-4 rounded-xl bg-purple-900/20 border border-purple-700/30">
+                    <h3 className="font-semibold text-purple-200 mb-2">{selectedEditHistory.description}</h3>
+                    <div className="flex items-center gap-2 text-sm text-purple-300">
+                      <Clock className="w-4 h-4" />
+                      <span>Última edição: {selectedEditHistory.last_edited_at ? format(new Date(selectedEditHistory.last_edited_at), "dd/MM/yyyy 'às' HH:mm") : '-'}</span>
+                    </div>
+                  </div>
+
+                  {/* Histórico */}
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-semibold text-purple-200">Alterações Realizadas:</h4>
+                    
+                    {(() => {
+                      try {
+                        const history = selectedEditHistory.edit_history ? JSON.parse(selectedEditHistory.edit_history) : [];
+                        
+                        if (history.length === 0) {
+                          return (
+                            <p className="text-sm text-purple-400">Nenhuma edição registrada</p>
+                          );
+                        }
+                        
+                        return history.slice().reverse().map((entry, index) => {
+                          const changes = Object.entries(entry.changes).filter(([key, value]) => 
+                            value.old !== value.new
+                          );
+                          
+                          if (changes.length === 0) return null;
+                          
+                          return (
+                            <div key={index} className="p-4 rounded-xl bg-blue-900/20 border border-blue-700/30 space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs text-blue-300 font-semibold">
+                                  Edição #{history.length - index}
+                                </span>
+                                <span className="text-xs text-blue-400">
+                                  {format(new Date(entry.edited_at), "dd/MM/yyyy 'às' HH:mm")}
+                                </span>
+                              </div>
+                              
+                              <div className="text-xs text-blue-300">
+                                Por: {entry.edited_by}
+                              </div>
+                              
+                              <div className="space-y-2 mt-3">
+                                {changes.map(([field, value]) => {
+                                  const fieldNames = {
+                                    description: 'Descrição',
+                                    amount: 'Valor',
+                                    type: 'Tipo',
+                                    category_id: 'Categoria',
+                                    account_id: 'Conta',
+                                    date: 'Data'
+                                  };
+                                  
+                                  let oldDisplay = value.old;
+                                  let newDisplay = value.new;
+                                  
+                                  if (field === 'amount') {
+                                    oldDisplay = `R$ ${formatCurrencyBR(value.old)}`;
+                                    newDisplay = `R$ ${formatCurrencyBR(value.new)}`;
+                                  } else if (field === 'type') {
+                                    oldDisplay = value.old === 'income' ? 'Entrada' : 'Saída';
+                                    newDisplay = value.new === 'income' ? 'Entrada' : 'Saída';
+                                  } else if (field === 'category_id') {
+                                    const oldCat = getCategoryInfo(value.old);
+                                    const newCat = getCategoryInfo(value.new);
+                                    oldDisplay = oldCat.name;
+                                    newDisplay = newCat.name;
+                                  } else if (field === 'account_id') {
+                                    const oldAcc = getAccountInfo(value.old);
+                                    const newAcc = getAccountInfo(value.new);
+                                    oldDisplay = oldAcc.name;
+                                    newDisplay = newAcc.name;
+                                  } else if (field === 'date') {
+                                    oldDisplay = formatDateBR(value.old);
+                                    newDisplay = formatDateBR(value.new);
+                                  }
+                                  
+                                  return (
+                                    <div key={field} className="text-sm">
+                                      <span className="text-purple-300 font-semibold">{fieldNames[field]}:</span>
+                                      <div className="flex items-center gap-2 mt-1">
+                                        <span className="px-2 py-1 rounded bg-red-900/30 text-red-300 line-through">
+                                          {oldDisplay || '-'}
+                                        </span>
+                                        <span className="text-purple-400">→</span>
+                                        <span className="px-2 py-1 rounded bg-green-900/30 text-green-300">
+                                          {newDisplay || '-'}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        });
+                      } catch (e) {
+                        console.error("Erro ao processar histórico:", e);
+                        return <p className="text-sm text-red-400">Erro ao carregar histórico</p>;
+                      }
+                    })()}
+                  </div>
+
+                  <div className="flex justify-end pt-4 sticky bottom-0 bg-[#1a1a2e] pb-2">
+                    <Button
+                      onClick={() => setShowEditHistory(false)}
+                      className="bg-gradient-to-r from-purple-600 to-pink-600"
+                    >
+                      Fechar
+                    </Button>
+                  </div>
+                </div>
+              )}
             </DialogContent>
           </Dialog>
         </div>
