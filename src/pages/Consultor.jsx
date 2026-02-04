@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { User } from "@/entities/User";
@@ -209,7 +208,10 @@ export default function Consultor() {
       
       // ✅ BUSCAR DADOS REAIS DO USUÁRIO
       console.log("📊 Buscando dados financeiros...");
-      const { Transaction, Account, Category, Goal } = await import("@/entities/all");
+      const { Transaction } = await import("@/entities/Transaction");
+      const { Account } = await import("@/entities/Account");
+      const { Category } = await import("@/entities/Category");
+      const { Goal } = await import("@/entities/Goal");
       
       const [transactions, accounts, categories, goals] = await Promise.all([
         Transaction.list("-date", 100),
