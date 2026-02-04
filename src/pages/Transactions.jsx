@@ -588,39 +588,42 @@ export default function TransactionsPage() {
     return "Histórico Completo";
   };
 
-  // ✅ Calcular totais de entrada e saída - APENAS MÊS ATUAL
+  // ✅ Calcular totais de entrada e saída - BASEADO NO PERÍODO SELECIONADO
   const totals = useMemo(() => {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-
-    console.log("📊 Transações - Calculando totais para:", currentMonth + 1, "/", currentYear);
+    const dateRange = getDateRange();
     
-    const monthTransactions = transactions.filter(tx => {
+    console.log("📊 Calculando totais para período:", periodFilter, dateRange);
+    
+    const periodTransactions = transactions.filter(tx => {
       if (!tx.date || tx.status !== 'completed' || tx.deleted) return false;
       
-      try {
-        const [year, month] = tx.date.split('-').map(Number);
-        return month === (currentMonth + 1) && year === currentYear;
-      } catch (e) {
-        return false;
+      // Se for "Histórico Completo", incluir todas
+      if (periodFilter === "all") return true;
+      
+      // Filtrar por período
+      if (dateRange && tx.date) {
+        if (tx.date < dateRange.start || tx.date > dateRange.end) {
+          return false;
+        }
       }
+      
+      return true;
     });
 
-    console.log("📊 Transações filtradas do mês:", monthTransactions.length);
+    console.log("📊 Transações filtradas do período:", periodTransactions.length);
     
-    const income = monthTransactions
+    const income = periodTransactions
       .filter(tx => tx.type === 'income')
       .reduce((sum, tx) => sum + (tx.amount || 0), 0);
     
-    const expense = monthTransactions
+    const expense = periodTransactions
       .filter(tx => tx.type === 'expense')
       .reduce((sum, tx) => sum + (tx.amount || 0), 0);
 
-    console.log("📊 Transações - Entradas:", income, "| Saídas:", expense);
+    console.log("📊 Entradas:", income, "| Saídas:", expense);
 
     return { income, expense, balance: income - expense };
-  }, [transactions]);
+  }, [transactions, periodFilter, selectedDate, getDateRange]);
 
   const exportToPDF = () => {
     const content = `
