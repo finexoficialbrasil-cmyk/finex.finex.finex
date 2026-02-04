@@ -49,12 +49,9 @@
  */
 import Accounts from './pages/Accounts';
 import Admin from './pages/Admin';
-import Bills from './pages/Bills';
 import Categories from './pages/Categories';
 import Consultor from './pages/Consultor';
-import Dashboard from './pages/Dashboard';
 import DownloadApp from './pages/DownloadApp';
-import Goals from './pages/Goals';
 import Home from './pages/Home';
 import Import from './pages/Import';
 import Payables from './pages/Payables';
@@ -64,20 +61,20 @@ import Receivables from './pages/Receivables';
 import Reports from './pages/Reports';
 import Statement from './pages/Statement';
 import TermsOfService from './pages/TermsOfService';
-import Transactions from './pages/Transactions';
 import Tutorials from './pages/Tutorials';
+import Goals from './pages/Goals';
+import Dashboard from './pages/Dashboard';
+import Transactions from './pages/Transactions';
+import Bills from './pages/Bills';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
     "Accounts": Accounts,
     "Admin": Admin,
-    "Bills": Bills,
     "Categories": Categories,
     "Consultor": Consultor,
-    "Dashboard": Dashboard,
     "DownloadApp": DownloadApp,
-    "Goals": Goals,
     "Home": Home,
     "Import": Import,
     "Payables": Payables,
@@ -87,8 +84,11 @@ export const PAGES = {
     "Reports": Reports,
     "Statement": Statement,
     "TermsOfService": TermsOfService,
-    "Transactions": Transactions,
     "Tutorials": Tutorials,
+    "Goals": Goals,
+    "Dashboard": Dashboard,
+    "Transactions": Transactions,
+    "Bills": Bills,
 }
 
 export const pagesConfig = {
