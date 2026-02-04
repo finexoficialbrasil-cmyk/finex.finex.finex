@@ -478,12 +478,12 @@ export default function Payables() {
       await Transaction.create({
         description: bill.description,
         amount: bill.amount,
-        type: "expense", // Assuming all paid bills are expenses
+        type: "expense",
         category_id: bill.category_id,
         account_id: bill.account_id,
         date: paymentDate,
         status: "completed",
-        notes: `Pagamento da conta: ${bill.description}`
+        notes: `Origem: Conta a Pagar - ${bill.description}`
       });
 
       // ✅ Se for recorrente, criar próxima conta

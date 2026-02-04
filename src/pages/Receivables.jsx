@@ -377,7 +377,7 @@ export default function Receivables() {
         account_id: bill.account_id,
         date: paymentDate,
         status: "completed",
-        notes: `Recebimento da conta: ${bill.description}`
+        notes: `Origem: Conta a Receber - ${bill.description}`
       });
 
       if (bill.is_recurring) {

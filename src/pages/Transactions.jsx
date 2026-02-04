@@ -382,7 +382,7 @@ export default function TransactionsPage() {
     
     const notes = tx.notes.toLowerCase();
     
-    if (notes.includes('comando de voz')) {
+    if (notes.includes('comando de voz') || notes.includes('criado por comando de voz')) {
       return { type: 'voice', label: 'Áudio', icon: Mic, color: 'cyan' };
     }
     
@@ -390,12 +390,12 @@ export default function TransactionsPage() {
       return { type: 'whatsapp', label: 'WhatsApp', icon: MessageCircle, color: 'green' };
     }
     
-    if (notes.includes('conta a pagar') || notes.includes('payable')) {
-      return { type: 'payable', label: 'Conta Pagar', icon: CreditCard, color: 'red' };
+    if (notes.includes('origem: conta a pagar') || notes.includes('pagamento da conta')) {
+      return { type: 'payable', label: 'Conta Pagar', icon: ArrowDownRight, color: 'red' };
     }
     
-    if (notes.includes('conta a receber') || notes.includes('receivable')) {
-      return { type: 'receivable', label: 'Conta Receber', icon: CreditCard, color: 'emerald' };
+    if (notes.includes('origem: conta a receber') || notes.includes('recebimento da conta')) {
+      return { type: 'receivable', label: 'Conta Receber', icon: ArrowUpRight, color: 'emerald' };
     }
     
     return { type: 'manual', label: 'Manual', icon: Wallet, color: 'purple' };
