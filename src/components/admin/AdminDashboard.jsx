@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { User, Transaction, SystemTutorial } from "@/entities/all";
+import { User } from "@/entities/User";
+import { Transaction } from "@/entities/Transaction";
+import { SystemTutorial } from "@/entities/SystemTutorial";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Activity, Eye, TrendingUp, ArrowUpRight } from "lucide-react";
 import { motion } from "framer-motion";
