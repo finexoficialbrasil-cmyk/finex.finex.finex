@@ -51,7 +51,11 @@ import {
   History,
   Clock,
   Calendar,
-  CalendarDays
+  CalendarDays,
+  Mic,
+  MessageCircle,
+  CreditCard,
+  Wallet
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
@@ -371,6 +375,31 @@ export default function TransactionsPage() {
   const getAccountInfo = useCallback((accountId) => {
     return accounts.find(a => a.id === accountId) || { name: "Conta" };
   }, [accounts]);
+
+  // ✅ NOVO: Detectar origem da transação
+  const getTransactionSource = useCallback((tx) => {
+    if (!tx.notes) return { type: 'manual', label: 'Manual', icon: Wallet, color: 'purple' };
+    
+    const notes = tx.notes.toLowerCase();
+    
+    if (notes.includes('comando de voz')) {
+      return { type: 'voice', label: 'Áudio', icon: Mic, color: 'cyan' };
+    }
+    
+    if (notes.includes('whatsapp')) {
+      return { type: 'whatsapp', label: 'WhatsApp', icon: MessageCircle, color: 'green' };
+    }
+    
+    if (notes.includes('conta a pagar') || notes.includes('payable')) {
+      return { type: 'payable', label: 'Conta Pagar', icon: CreditCard, color: 'red' };
+    }
+    
+    if (notes.includes('conta a receber') || notes.includes('receivable')) {
+      return { type: 'receivable', label: 'Conta Receber', icon: CreditCard, color: 'emerald' };
+    }
+    
+    return { type: 'manual', label: 'Manual', icon: Wallet, color: 'purple' };
+  }, []);
 
   // ✅ NOVO: Calcular range de datas baseado no período
   const getDateRange = useCallback(() => {
@@ -1020,6 +1049,7 @@ export default function TransactionsPage() {
                         <TableHead className="text-purple-200">Categoria</TableHead>
                         <TableHead className="text-purple-200">Conta</TableHead>
                         <TableHead className="text-purple-200">Tipo</TableHead>
+                        <TableHead className="text-purple-200">Origem</TableHead>
                         <TableHead className="text-purple-200 text-right">Valor</TableHead>
                         <TableHead className="text-purple-200 text-right">Ações</TableHead>
                       </TableRow>
@@ -1027,13 +1057,13 @@ export default function TransactionsPage() {
                     <TableBody>
                       {isLoading ? (
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center py-8 text-purple-300">
+                          <TableCell colSpan={8} className="text-center py-8 text-purple-300">
                             Carregando transações...
                           </TableCell>
                         </TableRow>
                       ) : paginatedTransactions.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center py-8 text-purple-300">
+                          <TableCell colSpan={8} className="text-center py-8 text-purple-300">
                             Nenhuma transação encontrada
                           </TableCell>
                         </TableRow>
@@ -1042,6 +1072,7 @@ export default function TransactionsPage() {
                           const category = getCategoryInfo(tx.category_id);
                           const account = getAccountInfo(tx.account_id);
                           const isIncome = tx.type === "income";
+                          const source = getTransactionSource(tx);
 
                           return (
                             <TableRow key={tx.id} className="border-b border-purple-900/20 hover:bg-purple-900/10">
@@ -1069,6 +1100,12 @@ export default function TransactionsPage() {
                               <TableCell>
                                 <Badge className={isIncome ? "bg-green-600/20 text-green-400" : "bg-red-600/20 text-red-400"}>
                                   {isIncome ? "Entrada" : "Saída"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge className={`bg-${source.color}-600/20 text-${source.color}-400 border border-${source.color}-600/40 flex items-center gap-1 w-fit`}>
+                                  <source.icon className="w-3 h-3" />
+                                  {source.label}
                                 </Badge>
                               </TableCell>
                               <TableCell className={`text-right font-bold ${isIncome ? "text-green-400" : "text-red-400"}`}>
