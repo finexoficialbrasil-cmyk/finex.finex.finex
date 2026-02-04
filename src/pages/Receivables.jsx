@@ -116,21 +116,19 @@ export default function Receivables() {
       const today = new Date();
       const todayLocal = new Date(today.getFullYear(), today.getMonth(), today.getDate());
       
-      const updatedBills = await Promise.all(
-        receivableBills.map(async (bill) => {
-          if (bill.status === "pending") {
-            const [year, month, day] = bill.due_date.split('-').map(Number);
-            const billDate = new Date(year, month - 1, day);
-            
-            if (isBefore(billDate, todayLocal)) {
-              // Update the status in the DB
-              await Bill.update(bill.id, { ...bill, status: "overdue" });
-              return { ...bill, status: "overdue" }; // Return the updated bill for local state
-            }
+      const updatedBills = receivableBills.map((bill) => {
+        if (bill.status === "pending" || bill.status === "overdue") {
+          const [year, month, day] = bill.due_date.split('-').map(Number);
+          const billDate = new Date(year, month - 1, day);
+          
+          if (isBefore(billDate, todayLocal)) {
+            return { ...bill, status: "overdue" };
+          } else {
+            return { ...bill, status: "pending" };
           }
-          return bill;
-        })
-      );
+        }
+        return bill;
+      });
       
       setBills(updatedBills);
       setAccounts(accsData);
@@ -166,26 +164,24 @@ export default function Receivables() {
         return isNaN(num) ? 0 : num;
       };
 
-      // ✅ Recalcular status baseado na nova data de vencimento
-      let calculatedStatus = formData.status;
-      if (editingBill && formData.status !== "paid" && formData.status !== "cancelled") {
-        const [year, month, day] = formData.due_date.split('-').map(Number);
+      const data = {
+        ...formData,
+        amount: parseAmountBR(formData.amount)
+      };
+
+      // ✅ Recalcular status baseado na nova data de vencimento (ao editar)
+      if (editingBill && data.status !== "paid" && data.status !== "cancelled") {
+        const [year, month, day] = data.due_date.split('-').map(Number);
         const billDate = new Date(year, month - 1, day);
         const today = new Date();
         const todayLocal = new Date(today.getFullYear(), today.getMonth(), today.getDate());
         
         if (isBefore(billDate, todayLocal)) {
-          calculatedStatus = "overdue";
+          data.status = "overdue";
         } else {
-          calculatedStatus = "pending";
+          data.status = "pending";
         }
       }
-
-      const data = {
-        ...formData,
-        amount: parseAmountBR(formData.amount),
-        status: calculatedStatus
-      };
       
       if (editingBill) {
         await Bill.update(editingBill.id, data);

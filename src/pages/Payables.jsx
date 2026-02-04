@@ -128,19 +128,19 @@ export default function Payables() {
 
       const todayLocal = new Date(today.getFullYear(), today.getMonth(), today.getDate());
       
-      const updatedBills = await Promise.all(
-        payableBills.map(async (bill) => {
-          if (bill.status === "pending") {
-            const [year, month, day] = bill.due_date.split('-').map(Number);
-            const billDate = new Date(year, month - 1, day);
-            
-            if (isBefore(billDate, todayLocal)) {
-              return { ...bill, status: "overdue" };
-            }
+      const updatedBills = payableBills.map((bill) => {
+        if (bill.status === "pending" || bill.status === "overdue") {
+          const [year, month, day] = bill.due_date.split('-').map(Number);
+          const billDate = new Date(year, month - 1, day);
+          
+          if (isBefore(billDate, todayLocal)) {
+            return { ...bill, status: "overdue" };
+          } else {
+            return { ...bill, status: "pending" };
           }
-          return bill;
-        })
-      );
+        }
+        return bill;
+      });
 
       setBills(updatedBills);
       setAccounts(accsData);
@@ -176,26 +176,24 @@ export default function Payables() {
         return isNaN(num) ? 0 : num;
       };
 
-      // ✅ Recalcular status baseado na nova data de vencimento
-      let calculatedStatus = formData.status;
-      if (editingBill && formData.status !== "paid" && formData.status !== "cancelled") {
-        const [year, month, day] = formData.due_date.split('-').map(Number);
+      const data = {
+        ...formData,
+        amount: parseAmountBR(formData.amount)
+      };
+
+      // ✅ Recalcular status baseado na nova data de vencimento (ao editar)
+      if (editingBill && data.status !== "paid" && data.status !== "cancelled") {
+        const [year, month, day] = data.due_date.split('-').map(Number);
         const billDate = new Date(year, month - 1, day);
         const today = new Date();
         const todayLocal = new Date(today.getFullYear(), today.getMonth(), today.getDate());
         
         if (isBefore(billDate, todayLocal)) {
-          calculatedStatus = "overdue";
+          data.status = "overdue";
         } else {
-          calculatedStatus = "pending";
+          data.status = "pending";
         }
       }
-
-      const data = {
-        ...formData,
-        amount: parseAmountBR(formData.amount),
-        status: calculatedStatus
-      };
 
       // ✅ NOVO: Se for recorrência com valor variável, criar múltiplas contas
       if (formData.is_recurring && formData.is_variable_amount && !editingBill) {
