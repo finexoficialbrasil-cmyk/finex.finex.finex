@@ -49,7 +49,9 @@ import {
   Download,
   AlertCircle,
   History,
-  Clock
+  Clock,
+  Calendar,
+  CalendarDays
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
@@ -104,6 +106,13 @@ export default function TransactionsPage() {
   const [isLoading, setIsLoading] = useState(true); // ✅ NOVO: Estado de carregamento inicial
   const [currentPage, setCurrentPage] = useState(1); // ✅ NOVO: Estado para paginação
   const [itemsPerPage] = useState(2000); // 2000 itens por página
+  
+  // ✅ NOVO: Filtros de período
+  const [periodFilter, setPeriodFilter] = useState("month"); // day, week, month, all
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
 
   const [formData, setFormData] = useState({
     description: "",
@@ -363,14 +372,52 @@ export default function TransactionsPage() {
     return accounts.find(a => a.id === accountId) || { name: "Conta" };
   }, [accounts]);
 
+  // ✅ NOVO: Calcular range de datas baseado no período
+  const getDateRange = useCallback(() => {
+    if (periodFilter === "all") return null;
+    
+    const [year, month] = selectedDate.split('-').map(Number);
+    
+    if (periodFilter === "day") {
+      return { start: selectedDate, end: selectedDate };
+    }
+    
+    if (periodFilter === "week") {
+      // Calcular semana
+      const date = new Date(year, month - 1, 1);
+      const dayOfWeek = date.getDay();
+      const startOfWeek = new Date(date);
+      startOfWeek.setDate(date.getDate() - dayOfWeek);
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
+      
+      return {
+        start: `${startOfWeek.getFullYear()}-${String(startOfWeek.getMonth() + 1).padStart(2, '0')}-${String(startOfWeek.getDate()).padStart(2, '0')}`,
+        end: `${endOfWeek.getFullYear()}-${String(endOfWeek.getMonth() + 1).padStart(2, '0')}-${String(endOfWeek.getDate()).padStart(2, '0')}`
+      };
+    }
+    
+    if (periodFilter === "month") {
+      const lastDay = new Date(year, month, 0).getDate();
+      return {
+        start: `${year}-${String(month).padStart(2, '0')}-01`,
+        end: `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
+      };
+    }
+    
+    return null;
+  }, [periodFilter, selectedDate]);
+
   // ✅ NOVO: Filtrar e paginar transações
-  const { paginatedTransactions, totalPages } = useMemo(() => {
+  const { paginatedTransactions, totalPages, filteredTotal } = useMemo(() => {
     const now = new Date();
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     
     console.log("🔍 Filtrando transações. showDeleted:", showDeleted);
     console.log("📊 Total de transações carregadas:", transactions.length);
     console.log("🗑️ Transações com deleted=true:", transactions.filter(tx => tx.deleted).length);
+    
+    const dateRange = getDateRange();
     
     // Filtrar
     let filtered = transactions.filter(tx => {
@@ -388,6 +435,13 @@ export default function TransactionsPage() {
       } else {
         // Não mostrar excluídas
         if (tx.deleted) return false;
+      }
+      
+      // ✅ Filtrar por período
+      if (dateRange && tx.date) {
+        if (tx.date < dateRange.start || tx.date > dateRange.end) {
+          return false;
+        }
       }
       
       const matchesSearch = !searchQuery ||
@@ -442,13 +496,68 @@ export default function TransactionsPage() {
     const paginated = filtered.slice(startIndex, endIndex);
     const totalPages = Math.ceil(filtered.length / itemsPerPage);
 
-    return { paginatedTransactions: paginated, totalPages };
-  }, [transactions, searchQuery, filterType, filterStatus, filterCategory, filterAccount, sortBy, currentPage, itemsPerPage, showDeleted, getCategoryInfo]);
+    return { paginatedTransactions: paginated, totalPages, filteredTotal: filtered.length };
+  }, [transactions, searchQuery, filterType, filterStatus, filterCategory, filterAccount, sortBy, currentPage, itemsPerPage, showDeleted, getCategoryInfo, getDateRange]);
 
   // ✅ NOVO: Resetar página ao mudar filtros
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, filterType, filterStatus, filterCategory, filterAccount, sortBy]);
+  }, [searchQuery, filterType, filterStatus, filterCategory, filterAccount, sortBy, periodFilter, selectedDate]);
+  
+  // ✅ Funções de navegação de período
+  const navigatePeriod = (direction) => {
+    const [year, month] = selectedDate.split('-').map(Number);
+    
+    if (periodFilter === "day") {
+      const date = new Date(year, month - 1, 1);
+      date.setDate(date.getDate() + direction);
+      setSelectedDate(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`);
+    } else if (periodFilter === "week") {
+      const date = new Date(year, month - 1, 1);
+      date.setDate(date.getDate() + (direction * 7));
+      setSelectedDate(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`);
+    } else if (periodFilter === "month") {
+      const newMonth = month + direction;
+      const newDate = new Date(year, newMonth - 1, 1);
+      setSelectedDate(`${newDate.getFullYear()}-${String(newDate.getMonth() + 1).padStart(2, '0')}`);
+    }
+  };
+  
+  const goToToday = () => {
+    const now = new Date();
+    if (periodFilter === "day") {
+      setSelectedDate(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`);
+    } else {
+      setSelectedDate(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`);
+    }
+  };
+  
+  const getPeriodLabel = () => {
+    const [year, month, day] = selectedDate.split('-').map(Number);
+    
+    if (periodFilter === "day") {
+      const date = new Date(year, month - 1, day || 1);
+      return format(date, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
+    }
+    
+    if (periodFilter === "week") {
+      const date = new Date(year, month - 1, 1);
+      const dayOfWeek = date.getDay();
+      const startOfWeek = new Date(date);
+      startOfWeek.setDate(date.getDate() - dayOfWeek);
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
+      
+      return `${format(startOfWeek, "dd MMM", { locale: ptBR })} - ${format(endOfWeek, "dd MMM yyyy", { locale: ptBR })}`;
+    }
+    
+    if (periodFilter === "month") {
+      const date = new Date(year, month - 1, 1);
+      return format(date, "MMMM 'de' yyyy", { locale: ptBR });
+    }
+    
+    return "Histórico Completo";
+  };
 
   // ✅ Calcular totais de entrada e saída - APENAS MÊS ATUAL
   const totals = useMemo(() => {
@@ -635,40 +744,141 @@ export default function TransactionsPage() {
 
             <Card className="glass-card border-0 neon-glow">
               <CardHeader className="border-b border-purple-900/30 pb-6">
-                <div className="flex items-center justify-between mb-4">
-                  <CardTitle className="flex items-center gap-2 text-white">
-                    <FileText className="w-5 h-5 text-indigo-400" />
-                    Movimentações ({paginatedTransactions.length})
-                  </CardTitle>
-                  
-                  {!showDeleted && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-purple-400">Páginas:</span>
-                      <div className="flex gap-1">
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2 text-white">
+                      <FileText className="w-5 h-5 text-indigo-400" />
+                      Movimentações ({filteredTotal})
+                    </CardTitle>
+                    
+                    {!showDeleted && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-purple-400">Páginas:</span>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            disabled={currentPage === 1}
+                            className="h-8 w-8 text-purple-300"
+                          >
+                            <ChevronLeft className="w-4 h-4" />
+                          </Button>
+                          <span className="px-3 py-1 bg-purple-900/30 rounded-lg text-purple-200 text-sm">
+                            {currentPage} / {totalPages || 1}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                            disabled={currentPage === totalPages}
+                            className="h-8 w-8 text-purple-300"
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* ✅ NOVO: Filtros de Período */}
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        variant={periodFilter === "day" ? "default" : "outline"}
+                        onClick={() => {
+                          setPeriodFilter("day");
+                          const now = new Date();
+                          setSelectedDate(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`);
+                        }}
+                        className={periodFilter === "day" 
+                          ? "bg-gradient-to-r from-purple-600 to-pink-600" 
+                          : "border-purple-700/50 text-purple-300"}
+                      >
+                        <Calendar className="w-4 h-4 mr-1" />
+                        Diário
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={periodFilter === "week" ? "default" : "outline"}
+                        onClick={() => {
+                          setPeriodFilter("week");
+                          const now = new Date();
+                          setSelectedDate(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`);
+                        }}
+                        className={periodFilter === "week" 
+                          ? "bg-gradient-to-r from-purple-600 to-pink-600" 
+                          : "border-purple-700/50 text-purple-300"}
+                      >
+                        <CalendarDays className="w-4 h-4 mr-1" />
+                        Semanal
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={periodFilter === "month" ? "default" : "outline"}
+                        onClick={() => {
+                          setPeriodFilter("month");
+                          const now = new Date();
+                          setSelectedDate(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`);
+                        }}
+                        className={periodFilter === "month" 
+                          ? "bg-gradient-to-r from-purple-600 to-pink-600" 
+                          : "border-purple-700/50 text-purple-300"}
+                      >
+                        <Calendar className="w-4 h-4 mr-1" />
+                        Mensal
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={periodFilter === "all" ? "default" : "outline"}
+                        onClick={() => setPeriodFilter("all")}
+                        className={periodFilter === "all" 
+                          ? "bg-gradient-to-r from-purple-600 to-pink-600" 
+                          : "border-purple-700/50 text-purple-300"}
+                      >
+                        <History className="w-4 h-4 mr-1" />
+                        Completo
+                      </Button>
+                    </div>
+
+                    {/* ✅ Navegação de Período */}
+                    {periodFilter !== "all" && (
+                      <div className="flex items-center gap-2">
                         <Button
+                          size="sm"
                           variant="ghost"
-                          size="icon"
-                          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                          disabled={currentPage === 1}
-                          className="h-8 w-8 text-purple-300"
+                          onClick={() => navigatePeriod(-1)}
+                          className="text-purple-300"
                         >
                           <ChevronLeft className="w-4 h-4" />
                         </Button>
-                        <span className="px-3 py-1 bg-purple-900/30 rounded-lg text-purple-200 text-sm">
-                          {currentPage} / {totalPages || 1}
-                        </span>
+                        
+                        <div className="flex-1 text-center">
+                          <p className="text-white font-semibold capitalize">{getPeriodLabel()}</p>
+                        </div>
+                        
                         <Button
+                          size="sm"
                           variant="ghost"
-                          size="icon"
-                          onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                          disabled={currentPage === totalPages}
-                          className="h-8 w-8 text-purple-300"
+                          onClick={() => navigatePeriod(1)}
+                          className="text-purple-300"
                         >
                           <ChevronRight className="w-4 h-4" />
                         </Button>
+                        
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={goToToday}
+                          className="border-cyan-700/50 text-cyan-300 hover:bg-cyan-900/20"
+                        >
+                          <Clock className="w-4 h-4 mr-1" />
+                          Hoje
+                        </Button>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
                 
                 {/* ✅ Filtros e Busca */}
