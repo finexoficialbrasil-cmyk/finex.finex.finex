@@ -865,27 +865,26 @@ export default function TransactionsPage() {
                                 {isIncome ? "+" : "-"} R$ {formatCurrencyBR(tx.amount)}
                               </TableCell>
                               <TableCell className="text-right">
-                                <div className="flex gap-1 justify-end items-center">
+                                <div className="flex gap-2 justify-end">
                                   {!tx.deleted && (
                                     <>
                                       <Button
                                         variant="ghost"
-                                        size="sm"
+                                        size="icon"
                                         onClick={() => {
                                           setSelectedEditHistory(tx);
                                           setShowEditHistory(true);
                                         }}
-                                        className={`h-8 px-3 ${tx.edited ? 'bg-blue-500/20 hover:bg-blue-500/30 text-blue-400' : 'bg-gray-700/20 hover:bg-gray-700/30 text-gray-400'}`}
-                                        title={tx.edited ? "Ver histórico (editado)" : "Ver histórico (sem edições)"}
+                                        className="h-8 w-8"
+                                        title="Ver histórico de edições"
                                       >
-                                        <History className="w-4 h-4 mr-1" />
-                                        <span className="text-xs">{tx.edited ? 'Editado' : 'Histórico'}</span>
+                                        <History className={`w-4 h-4 ${tx.edited ? 'text-blue-400' : 'text-gray-500'}`} />
                                       </Button>
                                       <Button
                                         variant="ghost"
                                         size="icon"
                                         onClick={() => handleEdit(tx)}
-                                        className="h-8 w-8 hover:bg-purple-500/20"
+                                        className="h-8 w-8"
                                       >
                                         <Edit className="w-4 h-4 text-purple-400" />
                                       </Button>
@@ -893,7 +892,7 @@ export default function TransactionsPage() {
                                         variant="ghost"
                                         size="icon"
                                         onClick={() => handleDelete(tx)}
-                                        className="h-8 w-8 hover:bg-red-500/20"
+                                        className="h-8 w-8"
                                       >
                                         <Trash2 className="w-4 h-4 text-red-400" />
                                       </Button>

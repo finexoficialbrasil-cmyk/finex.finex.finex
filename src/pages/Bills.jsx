@@ -1,9 +1,6 @@
+
 import React, { useState, useEffect } from "react";
-import { Bill } from "@/entities/Bill";
-import { Account } from "@/entities/Account";
-import { Category } from "@/entities/Category";
-import { Transaction } from "@/entities/Transaction";
-import { SystemCategory } from "@/entities/SystemCategory";
+import { Bill, Account, Category, Transaction, SystemCategory } from "@/entities/all"; // Added SystemCategory
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

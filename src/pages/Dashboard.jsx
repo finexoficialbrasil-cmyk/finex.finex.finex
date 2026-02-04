@@ -1,9 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { Transaction } from "@/entities/Transaction";
-import { Account } from "@/entities/Account";
-import { Category } from "@/entities/Category";
-import { Goal } from "@/entities/Goal";
-import { Bill } from "@/entities/Bill";
+import { Transaction, Account, Category, Goal, Bill } from "@/entities/all";
 import { User } from "@/entities/User";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
