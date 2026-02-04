@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { User } from "@/entities/User";
-import { SystemPlan, Subscription, SystemSettings } from "@/entities/all";
+import { SystemPlan } from "@/entities/SystemPlan";
+import { Subscription } from "@/entities/Subscription";
+import { SystemSettings } from "@/entities/SystemSettings";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

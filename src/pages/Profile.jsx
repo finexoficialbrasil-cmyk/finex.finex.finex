@@ -1,7 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { User } from "@/entities/User";
 import { TermsOfService } from "@/entities/TermsOfService";
-import { Transaction, Account, Category, Goal, Bill, Transfer } from "@/entities/all";
+import { Transaction } from "@/entities/Transaction";
+import { Account } from "@/entities/Account";
+import { Category } from "@/entities/Category";
+import { Goal } from "@/entities/Goal";
+import { Bill } from "@/entities/Bill";
+import { Transfer } from "@/entities/Transfer";
 import { base44 } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
