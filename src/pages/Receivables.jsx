@@ -166,9 +166,25 @@ export default function Receivables() {
         return isNaN(num) ? 0 : num;
       };
 
+      // ✅ Recalcular status baseado na nova data de vencimento
+      let calculatedStatus = formData.status;
+      if (editingBill && formData.status !== "paid" && formData.status !== "cancelled") {
+        const [year, month, day] = formData.due_date.split('-').map(Number);
+        const billDate = new Date(year, month - 1, day);
+        const today = new Date();
+        const todayLocal = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        
+        if (isBefore(billDate, todayLocal)) {
+          calculatedStatus = "overdue";
+        } else {
+          calculatedStatus = "pending";
+        }
+      }
+
       const data = {
         ...formData,
-        amount: parseAmountBR(formData.amount)
+        amount: parseAmountBR(formData.amount),
+        status: calculatedStatus
       };
       
       if (editingBill) {
