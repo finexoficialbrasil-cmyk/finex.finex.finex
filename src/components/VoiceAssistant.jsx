@@ -1,10 +1,13 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { base44 } from "@/api/base44Client";
-import { Transaction, Bill, Account, Category, SystemCategory } from "@/entities/all";
+import { Transaction } from "@/entities/Transaction";
+import { Bill } from "@/entities/Bill";
+import { Account } from "@/entities/Account";
+import { Category } from "@/entities/Category";
+import { SystemCategory } from "@/entities/SystemCategory";
 import { Mic, MicOff, Sparkles, Loader2, Check, X, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, parseISO } from 'date-fns';
