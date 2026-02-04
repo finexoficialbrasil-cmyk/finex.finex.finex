@@ -1,6 +1,7 @@
-
 import React, { useState, useEffect } from "react";
-import { Transaction, Category, Account } from "@/entities/all";
+import { Transaction } from "@/entities/Transaction";
+import { Category } from "@/entities/Category";
+import { Account } from "@/entities/Account";
 import { InvokeLLM } from "@/integrations/Core";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
