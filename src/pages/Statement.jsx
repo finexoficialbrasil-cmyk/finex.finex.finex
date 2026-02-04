@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useCallback } from "react";
 import FeatureGuard from "../components/FeatureGuard";
-import { Transaction, Account, Category, SystemCategory } from "@/entities/all";
+import { Transaction } from "@/entities/Transaction";
+import { Account } from "@/entities/Account";
+import { Category } from "@/entities/Category";
+import { SystemCategory } from "@/entities/SystemCategory";
 import { User } from "@/entities/User";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
