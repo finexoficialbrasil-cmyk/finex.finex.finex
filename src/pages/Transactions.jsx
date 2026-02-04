@@ -865,45 +865,48 @@ export default function TransactionsPage() {
                                 {isIncome ? "+" : "-"} R$ {formatCurrencyBR(tx.amount)}
                               </TableCell>
                               <TableCell className="text-right">
-                                <div className="flex gap-2 justify-end">
-                                  {!tx.deleted && (
-                                    <>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => {
-                                          setSelectedEditHistory(tx);
-                                          setShowEditHistory(true);
-                                        }}
-                                        className="h-8 w-8"
-                                        title="Ver histórico de edições"
-                                      >
-                                        <History className={`w-4 h-4 ${tx.edited ? 'text-blue-400' : 'text-gray-500'}`} />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => handleEdit(tx)}
-                                        className="h-8 w-8"
-                                      >
-                                        <Edit className="w-4 h-4 text-purple-400" />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => handleDelete(tx)}
-                                        className="h-8 w-8"
-                                      >
-                                        <Trash2 className="w-4 h-4 text-red-400" />
-                                      </Button>
-                                    </>
-                                  )}
-                                  {tx.deleted && (
-                                    <span className="text-xs text-red-400 px-2 py-1 rounded bg-red-900/20">
-                                      Excluída
-                                    </span>
-                                  )}
-                                </div>
+                               <div className="flex gap-2 justify-end">
+                                 {!tx.deleted && (
+                                   <>
+                                     {tx.edited && (
+                                       <Button
+                                         variant="ghost"
+                                         size="icon"
+                                         onClick={() => {
+                                           setSelectedEditHistory(tx);
+                                           setShowEditHistory(true);
+                                         }}
+                                         className="h-8 w-8 relative group"
+                                         title="Ver histórico de edições"
+                                       >
+                                         <History className="w-4 h-4 text-blue-400 animate-pulse" />
+                                         <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-400 rounded-full"></span>
+                                       </Button>
+                                     )}
+                                     <Button
+                                       variant="ghost"
+                                       size="icon"
+                                       onClick={() => handleEdit(tx)}
+                                       className="h-8 w-8"
+                                     >
+                                       <Edit className="w-4 h-4 text-purple-400" />
+                                     </Button>
+                                     <Button
+                                       variant="ghost"
+                                       size="icon"
+                                       onClick={() => handleDelete(tx)}
+                                       className="h-8 w-8"
+                                     >
+                                       <Trash2 className="w-4 h-4 text-red-400" />
+                                     </Button>
+                                   </>
+                                 )}
+                                 {tx.deleted && (
+                                   <span className="text-xs text-red-400 px-2 py-1 rounded bg-red-900/20">
+                                     Excluída
+                                   </span>
+                                 )}
+                               </div>
                               </TableCell>
                             </TableRow>
                           );
