@@ -458,12 +458,7 @@ export default function Plans() {
 
     try {
       console.log("════════════════════════════════════════");
-      console.log("📝 USUÁRIO CRIANDO SUBSCRIPTION");
-      console.log("════════════════════════════════════════");
-      console.log("📧 User email:", user.email);
-      console.log("📊 Plan type:", selectedPlan.plan_type);
-      console.log("💰 Amount:", selectedPlan.price);
-      console.log("📋 Status: pending");
+      console.log("📝 CRIANDO SUBSCRIPTION E PROCESSANDO COMPROVANTE");
       console.log("════════════════════════════════════════");
       
       const subscriptionData = {
@@ -477,49 +472,54 @@ export default function Plans() {
         notes: paymentData.notes || `Pagamento manual via PIX - ${selectedPlan.name}`
       };
       
-      console.log("📤 Enviando para banco:", JSON.stringify(subscriptionData, null, 2));
-      
       const newSubscription = await Subscription.create(subscriptionData);
+      console.log("✅ Subscription criada:", newSubscription.id);
 
-      console.log("════════════════════════════════════════");
-      console.log("✅ SUBSCRIPTION CRIADA COM SUCESSO!");
-      console.log("════════════════════════════════════════");
-      console.log("📦 ID:", newSubscription.id);
-      console.log("📧 User:", newSubscription.user_email);
-      console.log("📊 Status:", newSubscription.status);
-      console.log("💰 Amount:", newSubscription.amount_paid);
-      console.log("📅 Created:", newSubscription.created_date);
-      console.log("════════════════════════════════════════");
-      console.log("💡 AGORA O ADMIN DEVE VER ESTA SUBSCRIPTION NO PAINEL!");
-      console.log("════════════════════════════════════════");
+      // ✅ PROCESSAR COMPROVANTE COM IA
+      console.log("🤖 Analisando comprovante com IA...");
+      
+      const { processPaymentProof } = await import("@/functions/processPaymentProof");
+      
+      const analysisResult = await processPaymentProof({
+        subscription_id: newSubscription.id,
+        proof_url: paymentData.payment_proof_url,
+        expected_amount: selectedPlan.price,
+        plan_type: selectedPlan.plan_type
+      });
 
-      // ✅ VERIFICAR SE FOI SALVA MESMO
-      try {
-        console.log("🔍 Verificando se foi salva no banco...");
-        const allSubs = await Subscription.list();
-        const justCreated = allSubs.find(s => s.id === newSubscription.id);
-        
-        if (justCreated) {
-          console.log("✅ CONFIRMADO: Subscription está no banco!");
-          console.log("📦 Dados salvos:", JSON.stringify(justCreated, null, 2));
-        } else {
-          console.error("❌ ERRO: Subscription NÃO FOI ENCONTRADA no banco após criação!");
+      const result = analysisResult.data;
+
+      console.log("📊 Resultado da análise:", result);
+
+      if (result.success && result.auto_approved) {
+        // ✅ ATIVADO AUTOMATICAMENTE
+        alert(`🎉 ASSINATURA ATIVADA AUTOMATICAMENTE!\n\n✅ Seu comprovante foi validado com sucesso!\n\n📊 Plano: ${selectedPlan.name}\n💰 Valor: R$ ${selectedPlan.price.toFixed(2)}\n📅 Válido até: ${new Date(result.activation.end_date + 'T12:00:00').toLocaleDateString('pt-BR')}\n\n🚀 Recarregue a página para acessar todas as funcionalidades!`);
+      } else if (result.success && !result.auto_approved) {
+        // ⏳ PRECISA DE APROVAÇÃO MANUAL
+        const reasons = [];
+        if (!result.analysis.amount_matches) {
+          reasons.push(`• Valor detectado: R$ ${result.analysis.amount_paid.toFixed(2)} (esperado: R$ ${result.analysis.amount_expected.toFixed(2)})`);
         }
-      } catch (verifyError) {
-        console.error("❌ Erro ao verificar:", verifyError);
+        if (!result.analysis.is_valid) {
+          reasons.push("• Comprovante inválido ou ilegível");
+        }
+        if (result.analysis.confidence === "low") {
+          reasons.push("• Baixa confiança na análise automática");
+        }
+
+        alert(`⏳ COMPROVANTE EM ANÁLISE\n\n${result.message}\n\nMotivos para revisão manual:\n${reasons.join('\n')}\n\n📧 Você receberá um email quando for aprovado!`);
+      } else {
+        throw new Error(result.error || "Erro desconhecido ao processar comprovante");
       }
 
-      alert(`✅ Pagamento registrado!\n\n📝 ID da Assinatura: ${newSubscription.id}\n\n📋 Sua assinatura foi enviada para análise.\n\n⏱️ Aguarde a confirmação do administrador (até 24h).\n\n🔔 Você receberá uma notificação quando for aprovada!`);
       setShowPaymentModal(false);
-      loadData();
+      setTimeout(() => {
+        loadData();
+      }, 2000);
+      
     } catch (error) {
-      console.error("════════════════════════════════════════");
-      console.error("❌ ERRO AO CRIAR SUBSCRIPTION:");
-      console.error("   Name:", error.name);
-      console.error("   Message:", error.message);
-      console.error("   Stack:", error.stack);
-      console.error("════════════════════════════════════════");
-      alert(`❌ Erro ao enviar comprovante.\n\nDetalhes: ${error.message}\n\nTente novamente ou entre em contato com o suporte.`);
+      console.error("❌ ERRO:", error);
+      alert(`❌ Erro ao processar comprovante.\n\n${error.message}\n\nSeu comprovante foi salvo e será revisado manualmente pelo admin.`);
     } finally {
       setIsSubmitting(false);
     }
@@ -1125,13 +1125,26 @@ export default function Plans() {
 
               {/* Instruções */}
               <div className="bg-cyan-900/20 p-5 rounded-lg border border-cyan-700/30">
-                <h4 className="text-cyan-300 font-bold mb-3">📋 Como Funciona</h4>
+                <h4 className="text-cyan-300 font-bold mb-3 flex items-center gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  Como Funciona - Ativação Automática por IA
+                </h4>
                 <ol className="text-cyan-200 text-sm space-y-2 list-decimal list-inside">
                   <li>Copie a chave PIX acima</li>
-                  <li>Faça o pagamento no app do seu banco</li>
-                  <li>Envie o comprovante aqui</li>
-                  <li>Aguarde a aprovação do admin (até 24h)</li>
+                  <li>Faça o pagamento de <strong>EXATAMENTE R$ {selectedPlan?.price.toFixed(2)}</strong></li>
+                  <li>Tire um print do comprovante e envie aqui</li>
+                  <li>🤖 Nossa IA analisa o comprovante INSTANTANEAMENTE</li>
+                  <li>✅ Se o valor corresponder, sua assinatura é ATIVADA AUTOMATICAMENTE!</li>
                 </ol>
+                <div className="mt-3 p-3 bg-green-900/30 rounded-lg border border-green-700/40">
+                  <p className="text-green-300 text-xs flex items-start gap-2">
+                    <Zap className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                    <span>
+                      <strong>IMPORTANTE:</strong> Pague o valor EXATO (R$ {selectedPlan?.price.toFixed(2)}) 
+                      para ativação automática. Caso o valor seja diferente, o admin fará a revisão manual.
+                    </span>
+                  </p>
+                </div>
               </div>
 
               {/* Botões */}
