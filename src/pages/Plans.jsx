@@ -10,7 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { UploadFile } from "@/integrations/Core";
-import { asaasCreatePayment } from "@/functions/asaasCreatePayment"; // ✅ IMPORT DIRETO
+import { asaasCreatePayment } from "@/functions/asaasCreatePayment";
+import { processPaymentProof } from "@/functions/processPaymentProof";
 import { base44 } from "@/api/base44Client";
 import {
   Dialog,
@@ -503,16 +504,14 @@ export default function Plans() {
       const newSubscription = await Subscription.create(subscriptionData);
 
       // Processar com IA
-      const processPaymentProof = (await import("@/functions/processPaymentProof")).default;
-      
-      const analysisResult = await processPaymentProof({
+      const response = await processPaymentProof({
         subscription_id: newSubscription.id,
         proof_url: paymentData.payment_proof_url,
         expected_amount: selectedPlan.price,
         plan_type: selectedPlan.plan_type
       });
 
-      const result = analysisResult?.data || analysisResult;
+      const result = response.data;
 
       if (result.success && result.auto_approved) {
         // ✅ APROVADO - Mostrar sucesso e recarregar
