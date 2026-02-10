@@ -448,6 +448,19 @@ export default function AdminSubscriptions() {
                     </div>
                   </div>
 
+                  {/* Comprovante inline */}
+                  {sub.payment_proof_url && (
+                    <div className="mt-3 pt-3 border-t border-purple-900/30">
+                      <p className="text-purple-300 text-xs mb-2">📄 Comprovante:</p>
+                      <img 
+                        src={sub.payment_proof_url}
+                        alt="Comprovante"
+                        className="w-full max-h-48 object-contain rounded border border-purple-700/50 bg-purple-900/10 cursor-pointer hover:scale-105 transition-transform"
+                        onClick={() => handleViewDetails(sub)}
+                      />
+                    </div>
+                  )}
+
                   <div className="flex flex-wrap gap-2 pt-2 border-t border-purple-900/30">
                     <Button
                       variant="outline"
