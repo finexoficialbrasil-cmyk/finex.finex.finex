@@ -109,11 +109,12 @@ Retorne APENAS um JSON no formato:
       });
 
       // ✅ Atualizar usuário
-      await base44.asServiceRole.entities.User.update(user.id, {
+      const { updateMe } = await import('npm:@base44/sdk@0.8.6');
+      await base44.asServiceRole.auth.updateUser(user.email, {
         subscription_status: "active",
         subscription_plan: plan_type,
         subscription_end_date: expirationDate,
-        trial_started_at: null, // Limpar trial se houver
+        trial_started_at: null,
         trial_ends_at: null
       });
 
