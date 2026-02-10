@@ -479,11 +479,7 @@ export default function Plans() {
       if (result.success && result.auto_approved) {
         alert(`✅ COMPROVANTE APROVADO!\n\n🎉 Sua assinatura foi ativada!\n\n📊 Plano: ${selectedPlan.name}\n💰 Valor: R$ ${selectedPlan.price.toFixed(2)}\n📅 Válido até: ${new Date(result.activation.end_date + 'T12:00:00').toLocaleDateString('pt-BR')}\n\n🚀 Recarregue a página!`);
       } else if (result.success && !result.auto_approved) {
-        let reason = "Valor diferente do esperado";
-        if (!result.analysis.is_valid) reason = "Comprovante inválido ou ilegível";
-        if (result.analysis.confidence === "low") reason = "Baixa qualidade da imagem";
-
-        alert(`❌ COMPROVANTE REPROVADO\n\n⚠️ Motivo: ${reason}\n\n💰 Valor detectado: R$ ${result.analysis.amount_paid?.toFixed(2) || '0.00'}\n💰 Valor esperado: R$ ${selectedPlan.price.toFixed(2)}\n\n📧 O admin fará a revisão manual em até 24h.`);
+        alert(`⏳ COMPROVANTE EM ANÁLISE\n\n📝 Seu comprovante foi enviado com sucesso!\n\n💰 Valor do plano: R$ ${selectedPlan.price.toFixed(2)}\n\n👨‍💼 O admin fará a análise manual em até 24h.\n📧 Você receberá um email quando for aprovado!`);
       } else {
         throw new Error(result.error || "Erro ao analisar comprovante");
       }
