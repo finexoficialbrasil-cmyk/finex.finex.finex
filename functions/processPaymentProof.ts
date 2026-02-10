@@ -19,6 +19,7 @@ Deno.serve(async (req) => {
     // ✅ Usar IA para analisar o comprovante
     let analysisResult;
     try {
+      console.log("🔍 Analisando comprovante:", proof_url);
       analysisResult = await base44.asServiceRole.integrations.Core.InvokeLLM({
         prompt: `Você é um especialista em validação de comprovantes bancários PIX brasileiros.
 
@@ -55,7 +56,20 @@ Retorne JSON:
       });
     } catch (llmError) {
       console.error("❌ Erro na IA:", llmError);
-      throw new Error("Não foi possível analisar a imagem. Verifique se enviou um comprovante válido.");
+      console.error("❌ Detalhes:", JSON.stringify(llmError, null, 2));
+      
+      // Se a IA falhar, enviar para análise manual
+      await base44.asServiceRole.entities.Subscription.update(subscription_id, {
+        status: "pending",
+        notes: "Erro na análise automática. Aguardando revisão manual do admin."
+      });
+      
+      return Response.json({
+        success: true,
+        auto_approved: false,
+        error: "Erro na análise automática",
+        message: "Comprovante enviado para análise manual do admin."
+      });
     }
 
     console.log("📊 Resultado da análise:", analysisResult);
