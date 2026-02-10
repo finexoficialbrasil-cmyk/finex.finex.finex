@@ -16,6 +16,11 @@ Deno.serve(async (req) => {
     console.log("📊 Valor esperado:", expected_amount);
     console.log("📋 Tipo de plano:", plan_type);
 
+    // ✅ Buscar nome esperado do recebedor PIX
+    const settings = await base44.asServiceRole.entities.SystemSettings.list();
+    const pixReceiverName = settings.find(s => s.key === "pix_receiver_name")?.value || "MARCIO JOSE GOMES DE SOUZA";
+    console.log("👤 Nome esperado:", pixReceiverName);
+
     // ✅ Usar IA para analisar o comprovante
     let analysisResult;
     try {
@@ -83,19 +88,51 @@ Retorne JSON:
 
     const analysis = analysisResult;
     
-    // ✅ Verificar se o valor corresponde (tolerância de R$ 0,50)
+    // ✅ Verificar VALOR (tolerância de R$ 0,50)
     const amountDifference = Math.abs(analysis.amount_paid - expected_amount);
     const amountMatches = amountDifference <= 0.50;
 
-    console.log("💰 Diferença de valor:", amountDifference);
-    console.log("✅ Valor corresponde:", amountMatches);
+    // ✅ Verificar NOME do recebedor (case-insensitive, remove acentos)
+    const normalizeString = (str) => str.toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, ' ').trim();
+    
+    const receiverNameMatches = normalizeString(analysis.receiver_name || "")
+      .includes(normalizeString(pixReceiverName));
+
+    // ✅ Verificar DATA (últimas 24 horas)
+    let dateIsValid = false;
+    try {
+      const transactionDate = analysis.transaction_date;
+      let parsedDate;
+
+      // Tentar diferentes formatos
+      if (transactionDate.includes('/')) {
+        const [day, month, year] = transactionDate.split('/');
+        parsedDate = new Date(year, month - 1, day);
+      } else if (transactionDate.includes('-')) {
+        parsedDate = new Date(transactionDate);
+      }
+
+      if (parsedDate && !isNaN(parsedDate)) {
+        const now = new Date();
+        const diffHours = (now - parsedDate) / (1000 * 60 * 60);
+        dateIsValid = diffHours >= 0 && diffHours <= 24;
+      }
+    } catch (e) {
+      console.error("Erro ao validar data:", e);
+    }
+
+    console.log("💰 Valor:", amountMatches ? "✅ OK" : `❌ Incorreto (${analysis.amount_paid})`);
+    console.log("👤 Nome:", receiverNameMatches ? "✅ OK" : `❌ Incorreto (${analysis.receiver_name})`);
+    console.log("📅 Data:", dateIsValid ? "✅ OK" : `❌ Fora do prazo (${analysis.transaction_date})`);
 
     let subscriptionStatus = "pending";
     let activationDate = null;
     let expirationDate = null;
 
-    // ✅ Se o valor corresponder E o comprovante for válido = ATIVAR AUTOMATICAMENTE
-    if (amountMatches && analysis.is_valid) {
+    // ✅ Se TUDO estiver correto = ATIVAR AUTOMATICAMENTE
+    if (amountMatches && receiverNameMatches && dateIsValid && analysis.is_valid) {
       console.log("🎉 ATIVANDO ASSINATURA AUTOMATICAMENTE!");
       
       // Calcular datas
@@ -165,15 +202,19 @@ Retorne JSON:
       }
 
     } else {
-      console.log("⚠️ Comprovante precisa de revisão manual");
-      console.log("   Motivos:");
-      if (!amountMatches) console.log("   - Valor não corresponde");
-      if (!analysis.is_valid) console.log("   - Comprovante inválido");
-      if (analysis.confidence === "low") console.log("   - Baixa confiança na análise");
+      // ❌ COMPROVANTE RECUSADO
+      const rejectionReasons = [];
+      if (!analysis.is_valid) rejectionReasons.push("Não é um comprovante válido");
+      if (!amountMatches) rejectionReasons.push(`Valor incorreto (R$ ${analysis.amount_paid?.toFixed(2)})`);
+      if (!receiverNameMatches) rejectionReasons.push(`Nome do recebedor incorreto (${analysis.receiver_name})`);
+      if (!dateIsValid) rejectionReasons.push(`Data fora do prazo (${analysis.transaction_date})`);
+
+      console.log("❌ COMPROVANTE RECUSADO:");
+      rejectionReasons.forEach(r => console.log(`   - ${r}`));
       
-      // Atualizar apenas com as informações da análise
       await base44.asServiceRole.entities.Subscription.update(subscription_id, {
-        notes: `Aguardando aprovação manual | Valor detectado: R$ ${analysis.amount_paid.toFixed(2)} | Esperado: R$ ${expected_amount.toFixed(2)} | Banco: ${analysis.bank || 'N/A'} | Confiança: ${analysis.confidence}`
+        status: "cancelled",
+        notes: `❌ RECUSADO - ${rejectionReasons.join(", ")}`
       });
     }
 
@@ -183,11 +224,15 @@ Retorne JSON:
       analysis: {
         is_valid: analysis.is_valid,
         amount_paid: analysis.amount_paid,
+        receiver_name: analysis.receiver_name,
+        transaction_date: analysis.transaction_date,
         amount_expected: expected_amount,
+        expected_receiver: pixReceiverName,
         amount_matches: amountMatches,
+        receiver_matches: receiverNameMatches,
+        date_valid: dateIsValid,
         confidence: analysis.confidence,
-        bank: analysis.bank,
-        date: analysis.date
+        bank: analysis.bank
       },
       activation: subscriptionStatus === "active" ? {
         start_date: activationDate,
@@ -195,7 +240,7 @@ Retorne JSON:
       } : null,
       message: subscriptionStatus === "active" 
         ? "✅ Assinatura ativada automaticamente! Aguarde alguns instantes e recarregue a página." 
-        : "⏳ Comprovante enviado para revisão manual. O admin aprovará em até 24h."
+        : "❌ Comprovante recusado. Entre em contato com o financeiro."
     });
 
   } catch (error) {
