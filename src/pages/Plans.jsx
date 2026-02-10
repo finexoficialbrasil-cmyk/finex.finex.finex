@@ -464,8 +464,24 @@ export default function Plans() {
       
       const newSubscription = await Subscription.create(subscriptionData);
 
-      // Comprovante salvo - aguardando aprovação manual do admin
-      alert(`✅ COMPROVANTE ENVIADO!\n\n📝 Seu comprovante foi enviado com sucesso!\n\n📊 Plano: ${selectedPlan.name}\n💰 Valor: R$ ${selectedPlan.price.toFixed(2)}\n\n👨‍💼 O admin fará a análise manual em até 24h.\n📧 Você receberá um email quando for aprovado!`);
+      // Processar com IA
+      const { processPaymentProof } = await import("@/functions/processPaymentProof");
+      
+      const analysisResult = await processPaymentProof({
+        subscription_id: newSubscription.id,
+        proof_url: paymentData.payment_proof_url,
+        expected_amount: selectedPlan.price,
+        plan_type: selectedPlan.plan_type
+      });
+
+      const result = analysisResult.data;
+
+      if (result.success && result.auto_approved) {
+        alert(`✅ COMPROVANTE APROVADO AUTOMATICAMENTE!\n\n🎉 Sua assinatura foi ativada!\n\n📊 Plano: ${selectedPlan.name}\n💰 Valor: R$ ${selectedPlan.price.toFixed(2)}\n📅 Válido até: ${new Date(result.activation.end_date + 'T12:00:00').toLocaleDateString('pt-BR')}\n\n🚀 Recarregue a página para acessar todas as funcionalidades!`);
+      } else {
+        // Comprovante recusado
+        alert(`❌ COMPROVANTE RECUSADO\n\n⚠️ O comprovante enviado não foi aceito.\n\nMotivos possíveis:\n• Valor diferente do esperado (R$ ${selectedPlan.price.toFixed(2)})\n• Não é um comprovante bancário válido\n• Imagem ilegível ou incompleta\n\n📞 Entre em contato com o financeiro:\n💬 WhatsApp: (65) 98129-7511\n\nSua solicitação foi registrada para análise manual.`);
+      }
 
       setShowPaymentModal(false);
       setTimeout(() => loadData(), 2000);

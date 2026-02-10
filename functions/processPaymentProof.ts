@@ -17,50 +17,54 @@ Deno.serve(async (req) => {
     console.log("📋 Tipo de plano:", plan_type);
 
     // ✅ Usar IA para analisar o comprovante
-    const analysisResult = await base44.integrations.Core.InvokeLLM({
-      prompt: `Você é um especialista em validação de comprovantes bancários PIX.
+    let analysisResult;
+    try {
+      analysisResult = await base44.asServiceRole.integrations.Core.InvokeLLM({
+        prompt: `Você é um especialista em validação de comprovantes bancários PIX brasileiros.
 
-Analise a imagem do comprovante e extraia:
-1. O VALOR PAGO (em reais, apenas números)
-2. Se é um comprovante VÁLIDO de PIX (true/false)
-3. Banco ou instituição financeira (se visível)
-4. Data da transação (se visível)
+ANALISE ESTA IMAGEM e identifique:
 
-IMPORTANTE:
-- Ignore centavos se a diferença for menor que R$ 0,10
-- Considere o comprovante VÁLIDO se tiver elementos visuais de um comprovante bancário real
+1. É um COMPROVANTE BANCÁRIO VÁLIDO de PIX? (tem logo de banco, dados de transferência, valor, etc)
+2. VALOR PAGO (número exato em reais - ex: 50.00, 100.00)
+
+REGRAS IMPORTANTES:
+- Se NÃO for um comprovante bancário (foto qualquer, print de conversa, etc) → is_valid = false
+- Se for comprovante válido de PIX → is_valid = true
 - O valor esperado é R$ ${expected_amount.toFixed(2)}
+- Tolerância de até R$ 0,50 centavos
 
-Retorne APENAS um JSON no formato:
+Retorne JSON:
 {
   "is_valid": boolean,
   "amount_paid": number,
   "bank": string,
-  "date": string,
   "confidence": "high" | "medium" | "low"
 }`,
-      add_context_from_internet: false,
-      file_urls: [proof_url],
-      response_json_schema: {
-        type: "object",
-        properties: {
-          is_valid: { type: "boolean" },
-          amount_paid: { type: "number" },
-          bank: { type: "string" },
-          date: { type: "string" },
-          confidence: { type: "string", enum: ["high", "medium", "low"] }
-        },
-        required: ["is_valid", "amount_paid", "confidence"]
-      }
-    });
+        add_context_from_internet: false,
+        file_urls: [proof_url],
+        response_json_schema: {
+          type: "object",
+          properties: {
+            is_valid: { type: "boolean" },
+            amount_paid: { type: "number" },
+            bank: { type: "string" },
+            confidence: { type: "string", enum: ["high", "medium", "low"] }
+          },
+          required: ["is_valid", "amount_paid"]
+        }
+      });
+    } catch (llmError) {
+      console.error("❌ Erro na IA:", llmError);
+      throw new Error("Não foi possível analisar a imagem. Verifique se enviou um comprovante válido.");
+    }
 
     console.log("📊 Resultado da análise:", analysisResult);
 
     const analysis = analysisResult;
     
-    // ✅ Verificar se o valor corresponde (tolerância de R$ 0,10)
+    // ✅ Verificar se o valor corresponde (tolerância de R$ 0,50)
     const amountDifference = Math.abs(analysis.amount_paid - expected_amount);
-    const amountMatches = amountDifference <= 0.10;
+    const amountMatches = amountDifference <= 0.50;
 
     console.log("💰 Diferença de valor:", amountDifference);
     console.log("✅ Valor corresponde:", amountMatches);
@@ -70,7 +74,7 @@ Retorne APENAS um JSON no formato:
     let expirationDate = null;
 
     // ✅ Se o valor corresponder E o comprovante for válido = ATIVAR AUTOMATICAMENTE
-    if (amountMatches && analysis.is_valid && analysis.confidence !== "low") {
+    if (amountMatches && analysis.is_valid) {
       console.log("🎉 ATIVANDO ASSINATURA AUTOMATICAMENTE!");
       
       // Calcular datas
