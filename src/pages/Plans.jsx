@@ -503,7 +503,7 @@ export default function Plans() {
       const newSubscription = await Subscription.create(subscriptionData);
 
       // Processar com IA
-      const { processPaymentProof } = await import("@/functions/processPaymentProof");
+      const processPaymentProof = (await import("@/functions/processPaymentProof")).default;
       
       const analysisResult = await processPaymentProof({
         subscription_id: newSubscription.id,
@@ -512,7 +512,7 @@ export default function Plans() {
         plan_type: selectedPlan.plan_type
       });
 
-      const result = analysisResult.data;
+      const result = analysisResult?.data || analysisResult;
 
       if (result.success && result.auto_approved) {
         // ✅ APROVADO - Mostrar sucesso e recarregar
