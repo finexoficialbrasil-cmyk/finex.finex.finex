@@ -229,24 +229,16 @@ export default function Plans() {
         return;
       }
 
-      // ✅ VERIFICAR MODO DE PAGAMENTO
-      const mode = paymentSettings.payment_mode || "manual";
-      console.log("🔧 Modo de pagamento detectado:", mode);
-      
-      if (mode === "automatic" && paymentSettings.asaas_api_key) {
-        console.log("⚡ Usando pagamento automático Asaas");
-        handleAsaasPayment(plan);
-      } else {
-        console.log("📝 Usando pagamento manual");
-        setPaymentData({
-          payment_proof_url: "",
-          notes: "",
-          pix_code: "",
-          pix_qrcode_base64: "",
-          asaas_payment_id: ""
-        });
-        setShowPaymentModal(true);
-      }
+      // ✅ SEMPRE USAR MODO MANUAL
+      console.log("📝 Usando pagamento manual");
+      setPaymentData({
+        payment_proof_url: "",
+        notes: "",
+        pix_code: "",
+        pix_qrcode_base64: "",
+        asaas_payment_id: ""
+      });
+      setShowPaymentModal(true);
     } catch (error) {
       console.error("Erro ao selecionar plano:", error);
       alert("Erro ao processar. Tente novamente.");
