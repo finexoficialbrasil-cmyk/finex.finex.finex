@@ -441,7 +441,7 @@ export default function Plans() {
   const handleSubmitPayment = async (e) => {
     e.preventDefault();
 
-    if (!paymentData.payment_proof_url && !paymentData.pix_code) {
+    if (!paymentData.payment_proof_url) {
       alert("❌ Por favor, envie o comprovante de pagamento PIX!");
       return;
     }
@@ -449,10 +449,9 @@ export default function Plans() {
     setIsSubmitting(true);
 
     try {
-      console.log("════════════════════════════════════════");
-      console.log("📝 CRIANDO SUBSCRIPTION E PROCESSANDO COMPROVANTE");
-      console.log("════════════════════════════════════════");
+      console.log("🤖 Analisando comprovante com IA...");
       
+      // Criar subscription
       const subscriptionData = {
         user_email: user.email,
         plan_type: selectedPlan.plan_type,
@@ -460,16 +459,12 @@ export default function Plans() {
         amount_paid: selectedPlan.price,
         payment_method: "pix",
         payment_proof_url: paymentData.payment_proof_url,
-        transaction_id: paymentData.asaas_payment_id || null,
-        notes: paymentData.notes || `Pagamento manual via PIX - ${selectedPlan.name}`
+        notes: paymentData.notes || `Aguardando análise - ${selectedPlan.name}`
       };
       
       const newSubscription = await Subscription.create(subscriptionData);
-      console.log("✅ Subscription criada:", newSubscription.id);
 
-      // ✅ PROCESSAR COMPROVANTE COM IA
-      console.log("🤖 Analisando comprovante com IA...");
-      
+      // Processar com IA
       const { processPaymentProof } = await import("@/functions/processPaymentProof");
       
       const analysisResult = await processPaymentProof({
@@ -481,37 +476,24 @@ export default function Plans() {
 
       const result = analysisResult.data;
 
-      console.log("📊 Resultado da análise:", result);
-
       if (result.success && result.auto_approved) {
-        // ✅ ATIVADO AUTOMATICAMENTE
-        alert(`🎉 ASSINATURA ATIVADA AUTOMATICAMENTE!\n\n✅ Seu comprovante foi validado com sucesso!\n\n📊 Plano: ${selectedPlan.name}\n💰 Valor: R$ ${selectedPlan.price.toFixed(2)}\n📅 Válido até: ${new Date(result.activation.end_date + 'T12:00:00').toLocaleDateString('pt-BR')}\n\n🚀 Recarregue a página para acessar todas as funcionalidades!`);
+        alert(`✅ COMPROVANTE APROVADO!\n\n🎉 Sua assinatura foi ativada!\n\n📊 Plano: ${selectedPlan.name}\n💰 Valor: R$ ${selectedPlan.price.toFixed(2)}\n📅 Válido até: ${new Date(result.activation.end_date + 'T12:00:00').toLocaleDateString('pt-BR')}\n\n🚀 Recarregue a página!`);
       } else if (result.success && !result.auto_approved) {
-        // ⏳ PRECISA DE APROVAÇÃO MANUAL
-        const reasons = [];
-        if (!result.analysis.amount_matches) {
-          reasons.push(`• Valor detectado: R$ ${result.analysis.amount_paid.toFixed(2)} (esperado: R$ ${result.analysis.amount_expected.toFixed(2)})`);
-        }
-        if (!result.analysis.is_valid) {
-          reasons.push("• Comprovante inválido ou ilegível");
-        }
-        if (result.analysis.confidence === "low") {
-          reasons.push("• Baixa confiança na análise automática");
-        }
+        let reason = "Valor diferente do esperado";
+        if (!result.analysis.is_valid) reason = "Comprovante inválido ou ilegível";
+        if (result.analysis.confidence === "low") reason = "Baixa qualidade da imagem";
 
-        alert(`⏳ COMPROVANTE EM ANÁLISE\n\n${result.message}\n\nMotivos para revisão manual:\n${reasons.join('\n')}\n\n📧 Você receberá um email quando for aprovado!`);
+        alert(`❌ COMPROVANTE REPROVADO\n\n⚠️ Motivo: ${reason}\n\n💰 Valor detectado: R$ ${result.analysis.amount_paid?.toFixed(2) || '0.00'}\n💰 Valor esperado: R$ ${selectedPlan.price.toFixed(2)}\n\n📧 O admin fará a revisão manual em até 24h.`);
       } else {
-        throw new Error(result.error || "Erro desconhecido ao processar comprovante");
+        throw new Error(result.error || "Erro ao analisar comprovante");
       }
 
       setShowPaymentModal(false);
-      setTimeout(() => {
-        loadData();
-      }, 2000);
+      setTimeout(() => loadData(), 2000);
       
     } catch (error) {
       console.error("❌ ERRO:", error);
-      alert(`❌ Erro ao processar comprovante.\n\n${error.message}\n\nSeu comprovante foi salvo e será revisado manualmente pelo admin.`);
+      alert(`❌ Erro ao processar.\n\n${error.message}\n\nO admin revisará manualmente.`);
     } finally {
       setIsSubmitting(false);
     }
@@ -952,14 +934,7 @@ export default function Plans() {
             </div>
           )}
 
-          {isSubmitting && !paymentData.pix_code ? (
-            <div className="text-center py-12">
-              <Loader2 className="w-16 h-16 text-purple-400 animate-spin mx-auto mb-4" />
-              <p className="text-white font-bold text-lg mb-2">Gerando QR Code PIX...</p>
-              <p className="text-purple-300 text-sm">Aguarde alguns segundos</p>
-              <p className="text-purple-400 text-xs mt-2">Conectando com Asaas...</p>
-            </div>
-          ) : paymentData.pix_code ? (
+          {paymentData.pix_code ? (
             /* Pagamento Asaas */
             <div className="space-y-6">
               {/* Valor */}
@@ -1158,12 +1133,12 @@ export default function Plans() {
                   {isSubmitting ? (
                     <>
                       <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                      Enviando...
+                      Analisando com IA...
                     </>
                   ) : (
                     <>
-                      <Check className="w-5 h-5 mr-2" />
-                      Enviar Comprovante
+                      <Sparkles className="w-5 h-5 mr-2" />
+                      Enviar e Analisar
                     </>
                   )}
                 </Button>
