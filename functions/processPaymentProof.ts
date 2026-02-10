@@ -23,21 +23,26 @@ Deno.serve(async (req) => {
       analysisResult = await base44.asServiceRole.integrations.Core.InvokeLLM({
         prompt: `Você é um especialista em validação de comprovantes bancários PIX brasileiros.
 
-ANALISE ESTA IMAGEM e identifique:
+ANALISE ESTA IMAGEM e extraia:
 
 1. É um COMPROVANTE BANCÁRIO VÁLIDO de PIX? (tem logo de banco, dados de transferência, valor, etc)
-2. VALOR PAGO (número exato em reais - ex: 50.00, 100.00)
+2. VALOR PAGO (número exato em reais - ex: 7.99, 50.00, 100.00)
+3. NOME DO RECEBEDOR PIX (destinatário do pagamento)
+4. DATA DA TRANSAÇÃO (formato: DD/MM/YYYY ou YYYY-MM-DD)
 
 REGRAS IMPORTANTES:
 - Se NÃO for um comprovante bancário (foto qualquer, print de conversa, etc) → is_valid = false
 - Se for comprovante válido de PIX → is_valid = true
-- O valor esperado é R$ ${expected_amount.toFixed(2)}
-- Tolerância de até R$ 0,50 centavos
+- Valor esperado: R$ ${expected_amount.toFixed(2)}
+- Nome esperado do recebedor: "${pixReceiverName}"
+- Tolerância de valor: até R$ 0,50 centavos
 
 Retorne JSON:
 {
   "is_valid": boolean,
   "amount_paid": number,
+  "receiver_name": string,
+  "transaction_date": string,
   "bank": string,
   "confidence": "high" | "medium" | "low"
 }`,
@@ -48,10 +53,12 @@ Retorne JSON:
           properties: {
             is_valid: { type: "boolean" },
             amount_paid: { type: "number" },
+            receiver_name: { type: "string" },
+            transaction_date: { type: "string" },
             bank: { type: "string" },
             confidence: { type: "string", enum: ["high", "medium", "low"] }
           },
-          required: ["is_valid", "amount_paid"]
+          required: ["is_valid", "amount_paid", "receiver_name", "transaction_date"]
         }
       });
     } catch (llmError) {
