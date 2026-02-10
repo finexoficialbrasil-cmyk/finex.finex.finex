@@ -464,25 +464,8 @@ export default function Plans() {
       
       const newSubscription = await Subscription.create(subscriptionData);
 
-      // Processar com IA
-      const { processPaymentProof } = await import("@/functions/processPaymentProof");
-      
-      const analysisResult = await processPaymentProof({
-        subscription_id: newSubscription.id,
-        proof_url: paymentData.payment_proof_url,
-        expected_amount: selectedPlan.price,
-        plan_type: selectedPlan.plan_type
-      });
-
-      const result = analysisResult.data;
-
-      if (result.success && result.auto_approved) {
-        alert(`✅ COMPROVANTE APROVADO!\n\n🎉 Sua assinatura foi ativada!\n\n📊 Plano: ${selectedPlan.name}\n💰 Valor: R$ ${selectedPlan.price.toFixed(2)}\n📅 Válido até: ${new Date(result.activation.end_date + 'T12:00:00').toLocaleDateString('pt-BR')}\n\n🚀 Recarregue a página!`);
-      } else if (result.success && !result.auto_approved) {
-        alert(`⏳ COMPROVANTE EM ANÁLISE\n\n📝 Seu comprovante foi enviado com sucesso!\n\n💰 Valor do plano: R$ ${selectedPlan.price.toFixed(2)}\n\n👨‍💼 O admin fará a análise manual em até 24h.\n📧 Você receberá um email quando for aprovado!`);
-      } else {
-        throw new Error(result.error || "Erro ao analisar comprovante");
-      }
+      // Comprovante salvo - aguardando aprovação manual do admin
+      alert(`✅ COMPROVANTE ENVIADO!\n\n📝 Seu comprovante foi enviado com sucesso!\n\n📊 Plano: ${selectedPlan.name}\n💰 Valor: R$ ${selectedPlan.price.toFixed(2)}\n\n👨‍💼 O admin fará a análise manual em até 24h.\n📧 Você receberá um email quando for aprovado!`);
 
       setShowPaymentModal(false);
       setTimeout(() => loadData(), 2000);
