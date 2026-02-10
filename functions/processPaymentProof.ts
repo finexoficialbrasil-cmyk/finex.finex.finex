@@ -185,15 +185,19 @@ Retorne JSON:
         notes: `Ativado automaticamente via IA | Banco: ${analysis.bank || 'N/A'} | Confiança: ${analysis.confidence}`
       });
 
-      // ✅ Atualizar usuário
-      const { updateMe } = await import('npm:@base44/sdk@0.8.6');
-      await base44.asServiceRole.auth.updateUser(user.email, {
-        subscription_status: "active",
-        subscription_plan: plan_type,
-        subscription_end_date: expirationDate,
-        trial_started_at: null,
-        trial_ends_at: null
-      });
+      // ✅ Atualizar usuário via entities (não existe updateUser no auth)
+      const allUsers = await base44.asServiceRole.entities.User.list();
+      const targetUser = allUsers.find(u => u.email === user.email);
+      
+      if (targetUser) {
+        await base44.asServiceRole.entities.User.update(targetUser.id, {
+          subscription_status: "active",
+          subscription_plan: plan_type,
+          subscription_end_date: expirationDate,
+          trial_started_at: null,
+          trial_ends_at: null
+        });
+      }
 
       // ✅ Enviar email de confirmação
       try {
