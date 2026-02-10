@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { UploadFile } from "@/integrations/Core";
 import { asaasCreatePayment } from "@/functions/asaasCreatePayment"; // ✅ IMPORT DIRETO
+import { base44 } from "@/api/base44Client";
 import {
   Dialog,
   DialogContent,
@@ -409,12 +410,49 @@ export default function Plans() {
     const file = e.target.files[0];
     if (!file) return;
 
+    setIsSubmitting(true);
+    setErrorMessage("");
+
     try {
+      // Upload do arquivo
       const { file_url } = await UploadFile({ file });
       setPaymentData({ ...paymentData, payment_proof_url: file_url });
-      alert("✅ Comprovante carregado com sucesso!");
+      
+      // ✅ Validação rápida com IA (só para dar feedback)
+      try {
+        const quickCheck = await base44.integrations.Core.InvokeLLM({
+          prompt: `Analise esta imagem rapidamente e responda:
+          
+          1. É um comprovante bancário PIX válido?
+          2. Tem as informações básicas visíveis (valor, banco, data)?
+          
+          Retorne JSON curto.`,
+          add_context_from_internet: false,
+          file_urls: [file_url],
+          response_json_schema: {
+            type: "object",
+            properties: {
+              is_valid_receipt: { type: "boolean" },
+              message: { type: "string" }
+            },
+            required: ["is_valid_receipt", "message"]
+          }
+        });
+
+        if (quickCheck.is_valid_receipt) {
+          setErrorMessage(""); // Limpar erro anterior
+        } else {
+          setErrorMessage(`⚠️ ATENÇÃO: ${quickCheck.message}\n\nSe você tem certeza que é um comprovante válido, pode continuar.`);
+        }
+      } catch (aiError) {
+        console.log("Erro na validação rápida:", aiError);
+        // Continuar mesmo se a validação falhar
+      }
+      
     } catch (error) {
-      alert("❌ Erro ao fazer upload do comprovante. Tente novamente.");
+      setErrorMessage("❌ Erro ao fazer upload. Tente novamente.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -1078,6 +1116,7 @@ export default function Plans() {
                     onChange={handleProofUpload}
                     accept="image/*,.pdf"
                     className="flex-1 bg-purple-900/50 border-purple-700/50 text-purple-200"
+                    disabled={isSubmitting}
                   />
                   {paymentData.payment_proof_url && (
                     <Badge className="bg-green-600 text-white">
@@ -1089,6 +1128,18 @@ export default function Plans() {
                 <p className="text-purple-400 text-xs mt-2">
                   Envie o print do comprovante PIX do seu banco
                 </p>
+
+                {/* Preview do Comprovante */}
+                {paymentData.payment_proof_url && (
+                  <div className="mt-3 p-3 rounded-lg bg-purple-900/30 border border-purple-700/50">
+                    <p className="text-purple-200 text-sm font-bold mb-2">📄 Comprovante Enviado:</p>
+                    <img 
+                      src={paymentData.payment_proof_url}
+                      alt="Comprovante"
+                      className="w-full max-h-64 object-contain rounded border border-purple-700/50 bg-black/20"
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Observações */}
