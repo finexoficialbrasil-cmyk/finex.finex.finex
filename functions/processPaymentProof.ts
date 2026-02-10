@@ -92,15 +92,27 @@ Retorne JSON:
     const amountDifference = Math.abs(analysis.amount_paid - expected_amount);
     const amountMatches = amountDifference <= 0.50;
 
-    // ✅ Verificar NOME do recebedor (case-insensitive, remove acentos)
-    const normalizeString = (str) => str.toLowerCase()
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-      .replace(/\s+/g, ' ').trim();
+    // ✅ Verificar NOME do recebedor (case-insensitive, remove acentos, mais tolerante)
+    const normalizeString = (str) => {
+      if (!str) return "";
+      return str.toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/\s+/g, ' ')
+        .replace(/[^\w\s]/g, '') // Remove pontuação
+        .trim();
+    };
     
-    const receiverNameMatches = normalizeString(analysis.receiver_name || "")
-      .includes(normalizeString(pixReceiverName));
+    const normalizedReceiver = normalizeString(analysis.receiver_name || "");
+    const normalizedExpected = normalizeString(pixReceiverName);
+    
+    // Verificar se contém as palavras principais do nome
+    const expectedWords = normalizedExpected.split(' ').filter(w => w.length > 2);
+    const receiverWords = normalizedReceiver.split(' ');
+    const matchedWords = expectedWords.filter(word => receiverWords.some(rw => rw.includes(word) || word.includes(rw)));
+    
+    const receiverNameMatches = matchedWords.length >= Math.min(3, expectedWords.length);
 
-    // ✅ Verificar DATA (últimas 24 horas)
+    // ✅ Verificar DATA (últimas 72 horas - mais tolerante)
     let dateIsValid = false;
     try {
       const transactionDate = analysis.transaction_date;
@@ -108,8 +120,11 @@ Retorne JSON:
 
       // Tentar diferentes formatos
       if (transactionDate.includes('/')) {
-        const [day, month, year] = transactionDate.split('/');
-        parsedDate = new Date(year, month - 1, day);
+        const parts = transactionDate.split('/');
+        const day = parseInt(parts[0]);
+        const month = parseInt(parts[1]) - 1;
+        const year = parts[2].length === 2 ? 2000 + parseInt(parts[2]) : parseInt(parts[2]);
+        parsedDate = new Date(year, month, day);
       } else if (transactionDate.includes('-')) {
         parsedDate = new Date(transactionDate);
       }
@@ -117,7 +132,7 @@ Retorne JSON:
       if (parsedDate && !isNaN(parsedDate)) {
         const now = new Date();
         const diffHours = (now - parsedDate) / (1000 * 60 * 60);
-        dateIsValid = diffHours >= 0 && diffHours <= 24;
+        dateIsValid = diffHours >= -2 && diffHours <= 72; // 72h tolerância + 2h futuro
       }
     } catch (e) {
       console.error("Erro ao validar data:", e);
