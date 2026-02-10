@@ -477,14 +477,34 @@ export default function Plans() {
       const result = analysisResult.data;
 
       if (result.success && result.auto_approved) {
-        alert(`✅ COMPROVANTE APROVADO AUTOMATICAMENTE!\n\n🎉 Sua assinatura foi ativada!\n\n📊 Plano: ${selectedPlan.name}\n💰 Valor: R$ ${selectedPlan.price.toFixed(2)}\n📅 Válido até: ${new Date(result.activation.end_date + 'T12:00:00').toLocaleDateString('pt-BR')}\n\n🚀 Recarregue a página para acessar todas as funcionalidades!`);
+        // ✅ APROVADO - Mostrar sucesso e recarregar
+        setShowPaymentModal(false);
+        setErrorMessage("");
+        
+        alert(`✅ COMPROVANTE APROVADO!\n\n🎉 Sua assinatura foi ativada!\n\n📊 Plano: ${selectedPlan.name}\n💰 Valor: R$ ${selectedPlan.price.toFixed(2)}\n📅 Válido até: ${new Date(result.activation.end_date + 'T12:00:00').toLocaleDateString('pt-BR')}\n\n🚀 Recarregando...`);
+        
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
       } else {
-        // Comprovante recusado
-        alert(`❌ COMPROVANTE RECUSADO\n\n⚠️ O comprovante enviado não foi aceito.\n\nMotivos possíveis:\n• Valor diferente do esperado (R$ ${selectedPlan.price.toFixed(2)})\n• Não é um comprovante bancário válido\n• Imagem ilegível ou incompleta\n\n📞 Entre em contato com o financeiro:\n💬 WhatsApp: (65) 98129-7511\n\nSua solicitação foi registrada para análise manual.`);
+        // ❌ RECUSADO - Mostrar tarja vermelha no modal
+        setErrorMessage(
+          `❌ COMPROVANTE RECUSADO\n\n` +
+          `⚠️ Seu comprovante não atende aos padrões exigidos.\n\n` +
+          `📋 Motivos possíveis:\n` +
+          `• Valor diferente de R$ ${selectedPlan.price.toFixed(2)}\n` +
+          `• Nome do recebedor incorreto\n` +
+          `• Data fora das últimas 24 horas\n` +
+          `• Não é um comprovante PIX válido\n\n` +
+          `⏳ PRÓXIMOS PASSOS:\n` +
+          `🔍 Um administrador analisará seu comprovante em até 24 horas.\n` +
+          `📞 Ou entre em contato com o suporte:\n` +
+          `💬 WhatsApp: (65) 98129-7511`
+        );
+        
+        // Manter modal aberto para o usuário ver o erro
+        setIsSubmitting(false);
       }
-
-      setShowPaymentModal(false);
-      setTimeout(() => loadData(), 2000);
       
     } catch (error) {
       console.error("❌ ERRO:", error);
