@@ -11,7 +11,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { UploadFile } from "@/integrations/Core";
 import { asaasCreatePayment } from "@/functions/asaasCreatePayment";
-import { processPaymentProof } from "@/functions/processPaymentProof";
 import { base44 } from "@/api/base44Client";
 import {
   Dialog,
@@ -504,7 +503,7 @@ export default function Plans() {
       const newSubscription = await Subscription.create(subscriptionData);
 
       // Processar com IA
-      const response = await processPaymentProof({
+      const response = await base44.functions.invoke('processPaymentProof', {
         subscription_id: newSubscription.id,
         proof_url: paymentData.payment_proof_url,
         expected_amount: selectedPlan.price,
