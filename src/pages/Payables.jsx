@@ -392,12 +392,20 @@ export default function Payables() {
       return;
     }
 
+    // ✅ BLOQUEAR cliques duplos
+    if (isSubmitting) {
+      console.log("⚠️ Já está processando, ignorando clique duplo");
+      return;
+    }
+
     // ✅ PROTEÇÃO: Verificar se já foi pago (estado local)
     if (bill.status === "paid") {
       alert("⚠️ Esta conta já foi paga! Não é possível pagar novamente.");
       loadData();
       return;
     }
+
+    setIsSubmitting(true);
 
     // ✅ PROTEÇÃO: Buscar status atual do banco
     try {
@@ -558,6 +566,8 @@ export default function Payables() {
       }
 
       loadData();
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -1010,11 +1020,21 @@ export default function Payables() {
                               {bill.status === "pending" || bill.status === "overdue" ? (
                                 <Button
                                   onClick={() => handlePay(bill)}
-                                  className="h-10 sm:h-11 px-4 sm:px-6 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all flex items-center gap-2 flex-shrink-0"
+                                  disabled={isSubmitting}
+                                  className="h-10 sm:h-11 px-4 sm:px-6 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all flex items-center gap-2 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                                   title="Confirmar Pagamento"
                                 >
-                                  <Check className="w-5 h-5 sm:w-5 sm:h-5" />
-                                  <span className="hidden sm:inline text-sm">Pagar</span>
+                                  {isSubmitting ? (
+                                    <>
+                                      <Loader2 className="w-5 h-5 animate-spin" />
+                                      <span className="hidden sm:inline text-sm">Processando...</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Check className="w-5 h-5 sm:w-5 sm:h-5" />
+                                      <span className="hidden sm:inline text-sm">Pagar</span>
+                                    </>
+                                  )}
                                 </Button>
                               ) : null}
                               <Button

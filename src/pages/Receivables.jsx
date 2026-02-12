@@ -290,12 +290,19 @@ export default function Receivables() {
       return;
     }
 
+    // ✅ BLOQUEAR cliques duplos
+    if (isSubmitting) {
+      console.log("⚠️ Já está processando, ignorando clique duplo");
+      return;
+    }
+
     if (bill.status === "paid") {
       alert("⚠️ Esta conta já foi recebida! Não é possível receber novamente.");
       await loadData(); // Reload data to ensure latest status
       return;
     }
 
+    setIsSubmitting(true);
     setIsLoading(true);
     try {
       const allBills = await Bill.list(); // Fetch fresh list to check current status
@@ -958,11 +965,21 @@ Agradecemos pela atenção e confiança!
                                   )}
                                   <Button
                                     onClick={() => handleReceive(bill)}
-                                    className="h-10 sm:h-11 px-4 sm:px-6 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all flex items-center gap-2 flex-shrink-0"
+                                    disabled={isSubmitting}
+                                    className="h-10 sm:h-11 px-4 sm:px-6 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all flex items-center gap-2 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                                     title="Confirmar Recebimento"
                                   >
-                                    <Check className="w-5 h-5 sm:w-5 sm:h-5" />
-                                    <span className="hidden sm:inline text-sm">Receber</span>
+                                    {isSubmitting ? (
+                                      <>
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                        <span className="hidden sm:inline text-sm">Processando...</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Check className="w-5 h-5 sm:w-5 sm:h-5" />
+                                        <span className="hidden sm:inline text-sm">Receber</span>
+                                      </>
+                                    )}
                                   </Button>
                                 </>
                               ) : null}
