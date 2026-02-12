@@ -455,6 +455,7 @@ export default function Receivables() {
       await loadData(); // Reload data even on error to sync state
     } finally {
       setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
