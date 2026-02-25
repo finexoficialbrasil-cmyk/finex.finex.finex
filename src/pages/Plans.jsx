@@ -119,6 +119,7 @@ export default function Plans() {
     pix_qrcode_base64: "",
     asaas_payment_id: ""
   });
+  const [paymentMethod, setPaymentMethod] = useState("pix"); // "pix" ou "xhopan"
 
   useEffect(() => {
     loadData();
