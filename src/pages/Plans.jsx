@@ -240,6 +240,7 @@ export default function Plans() {
         pix_qrcode_base64: "",
         asaas_payment_id: ""
       });
+      setPaymentMethod("pix");
       setShowPaymentModal(true);
     } catch (error) {
       console.error("Erro ao selecionar plano:", error);
