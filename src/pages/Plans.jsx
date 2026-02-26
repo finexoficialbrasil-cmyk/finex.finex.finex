@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { UploadFile } from "@/integrations/Core";
 import { asaasCreatePayment } from "@/functions/asaasCreatePayment";
 import { base44 } from "@/api/base44Client";
+import { xhopanPayment } from "@/functions/xhopanPayment";
 import {
   Dialog,
   DialogContent,
