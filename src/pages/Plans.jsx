@@ -121,6 +121,15 @@ export default function Plans() {
     asaas_payment_id: ""
   });
   const [paymentMethod, setPaymentMethod] = useState("pix"); // "pix" ou "xhopan"
+  const [xhopanState, setXhopanState] = useState({
+    loading: false,
+    token: null,
+    qrcode: null,
+    qrcode_base64: null,
+    balance: null,
+    confirmed: false,
+    error: null
+  });
 
   useEffect(() => {
     loadData();
