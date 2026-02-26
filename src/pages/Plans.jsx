@@ -1028,149 +1028,39 @@ export default function Plans() {
           )}
 
           {paymentMethod === "xhopan" && !paymentData.pix_code ? (
-            /* Pagamento via Banco Xhopan */
-            <div className="space-y-6">
-              {/* Valor */}
-              <div className="text-center p-6 rounded-xl bg-cyan-600/20 border-2 border-cyan-500/40">
-                <p className="text-cyan-300 text-sm font-semibold mb-2">💰 Valor Total</p>
-                <p className="text-5xl font-bold text-white">R$ {selectedPlan?.price.toFixed(2)}</p>
-                <p className="text-cyan-300 text-sm mt-2">
-                  {selectedPlan?.duration_months === 999 ? '⭐ Acesso Vitalício' :
-                   selectedPlan?.duration_months === 12 ? 'por ano' :
-                   selectedPlan?.duration_months === 6 ? 'por semestre' : 'por mês'}
-                </p>
-              </div>
-
-              {/* Info Banco Xhopan */}
-              <div className="bg-cyan-900/20 border-2 border-cyan-700/40 rounded-xl p-5">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-2xl">
-                    🏦
-                  </div>
-                  <div>
-                    <h3 className="text-white font-bold text-lg">Banco Xhopan</h3>
-                    <p className="text-cyan-300 text-sm">xhopan.base44.app</p>
-                  </div>
-                </div>
-                <p className="text-cyan-200 text-sm mb-4">
-                  Pague sua assinatura usando o saldo da sua conta no Banco Xhopan. 
-                  Acesse o banco, abra o PIX e realize o pagamento para a chave abaixo.
-                </p>
-
-                {/* Chave PIX do FINEX para o usuário pagar pelo Xhopan */}
-                <div className="bg-black/30 rounded-lg p-4 border border-cyan-700/30">
-                  <p className="text-cyan-400 text-xs font-bold mb-2">🔑 CHAVE PIX FINEX (para pagar no Xhopan):</p>
-                  <div className="flex gap-2 items-center">
-                    <Input
-                      value={paymentSettings.pix_key || "Não configurada"}
-                      readOnly
-                      className="flex-1 bg-transparent border-cyan-700/40 text-white font-mono text-sm"
-                    />
-                    <Button
-                      type="button"
-                      onClick={handleCopyPixKey}
-                      className="bg-cyan-600 hover:bg-cyan-700 shrink-0"
-                      disabled={!paymentSettings.pix_key}
-                    >
-                      <Copy className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  {paymentSettings.pix_recipient_name && (
-                    <p className="text-cyan-400 text-xs mt-2">👤 {paymentSettings.pix_recipient_name}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Passo a Passo */}
-              <div className="bg-blue-900/20 p-5 rounded-lg border border-blue-700/30">
-                <h4 className="text-blue-300 font-bold mb-3 flex items-center gap-2">
-                  <Zap className="w-4 h-4" />
-                  Como Pagar pelo Banco Xhopan
-                </h4>
-                <ol className="text-blue-200 text-sm space-y-3 list-decimal list-inside">
-                  <li>Copie a chave PIX acima</li>
-                  <li>
-                    Acesse o Banco Xhopan:{" "}
-                    <a
-                      href="https://xhopan.base44.app"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-cyan-400 underline font-bold hover:text-cyan-300"
-                    >
-                      xhopan.base44.app
-                    </a>
-                  </li>
-                  <li>Clique em <strong>"PIX"</strong> no menu do banco</li>
-                  <li>Escolha <strong>"Transferir / Pagar"</strong> e cole a chave copiada</li>
-                  <li>Confirme o valor de <strong>R$ {selectedPlan?.price.toFixed(2)}</strong></li>
-                  <li>Tire um print do comprovante e envie abaixo</li>
-                </ol>
-              </div>
-
-              {/* Upload Comprovante */}
-              <div>
-                <Label className="text-purple-200 font-bold mb-2 block">
-                  <FileText className="w-4 h-4 inline mr-2" />
-                  Comprovante do Xhopan *
-                </Label>
-                <div className="flex gap-2">
-                  <Input
-                    type="file"
-                    onChange={handleProofUpload}
-                    accept="image/*,.pdf"
-                    className="flex-1 bg-purple-900/50 border-purple-700/50 text-purple-200"
-                    disabled={isSubmitting}
-                  />
-                  {paymentData.payment_proof_url && (
-                    <Badge className="bg-green-600 text-white">
-                      <Check className="w-4 h-4 mr-1" />
-                      Enviado
-                    </Badge>
-                  )}
-                </div>
-                {paymentData.payment_proof_url && (
-                  <div className="mt-3 p-3 rounded-lg bg-purple-900/30 border border-purple-700/50">
-                    <p className="text-purple-200 text-sm font-bold mb-2">📄 Comprovante Enviado:</p>
-                    <img
-                      src={paymentData.payment_proof_url}
-                      alt="Comprovante"
-                      className="w-full max-h-64 object-contain rounded border border-purple-700/50 bg-black/20"
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Botões */}
-              <div className="flex gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowPaymentModal(false)}
-                  className="flex-1 border-purple-700/50 text-purple-200 hover:bg-purple-900/30"
-                  disabled={isSubmitting}
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  type="button"
-                  onClick={handleSubmitPayment}
-                  className="flex-1 bg-gradient-to-r from-cyan-600 to-blue-600 hover:opacity-90"
-                  disabled={isSubmitting || !paymentData.payment_proof_url}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                      Analisando com IA...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-5 h-5 mr-2" />
-                      Enviar Comprovante
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
+            /* Pagamento via Banco Xhopan - QR Code de saldo */
+            <XhopanPaymentFlow
+              selectedPlan={selectedPlan}
+              user={user}
+              xhopanState={xhopanState}
+              setXhopanState={setXhopanState}
+              onSuccess={async () => {
+                // Cria subscription e ativa
+                try {
+                  const sub = await Subscription.create({
+                    user_email: user.email,
+                    plan_type: selectedPlan.plan_type,
+                    status: "pending",
+                    amount_paid: selectedPlan.price,
+                    payment_method: "pix",
+                    notes: `Pagamento via Banco Xhopan - token: ${xhopanState.token}`
+                  });
+                  const response = await base44.functions.invoke('processPaymentProof', {
+                    subscription_id: sub.id,
+                    proof_url: null,
+                    expected_amount: selectedPlan.price,
+                    plan_type: selectedPlan.plan_type,
+                    xhopan_confirmed: true
+                  });
+                  setShowPaymentModal(false);
+                  alert(`✅ Pagamento confirmado!\n\n🎉 Sua assinatura ${selectedPlan.name} foi ativada!\n\n🚀 Recarregando...`);
+                  setTimeout(() => window.location.reload(), 1500);
+                } catch (err) {
+                  alert("❌ Erro ao ativar assinatura: " + err.message);
+                }
+              }}
+              onCancel={() => setShowPaymentModal(false)}
+            />
           ) : paymentData.pix_code ? (
             /* Pagamento Asaas */
             <div className="space-y-6">
