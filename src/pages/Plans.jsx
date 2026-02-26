@@ -3,6 +3,7 @@ import { User } from "@/entities/User";
 import { SystemPlan } from "@/entities/SystemPlan";
 import { Subscription } from "@/entities/Subscription";
 import { SystemSettings } from "@/entities/SystemSettings";
+import XhopanPaymentFlow from "@/components/XhopanPaymentFlow";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
