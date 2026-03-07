@@ -190,18 +190,26 @@ Retorne JSON:
         normalizeFingerprint(s.transaction_id) === normalizedCurrent
       );
 
-      if (duplicates.length > 0) {
-        const duplicate = duplicates.find(s => s.status === "active") || duplicates[0];
-        console.log(`🚫 TRANSAÇÃO DUPLICADA! Já usada pela conta: ${duplicate.user_email}`);
+      // ✅ Também verificar por URL do comprovante (segunda camada de proteção)
+      const duplicatesByUrl = proofUrl ? allSubscriptions.filter(s =>
+        s.id !== subscription_id &&
+        s.payment_proof_url === proofUrl
+      ) : [];
+
+      const allDuplicates = [...duplicates, ...duplicatesByUrl.filter(s => !duplicates.find(d => d.id === s.id))];
+
+      if (allDuplicates.length > 0) {
+        const duplicate = allDuplicates.find(s => s.status === "active") || allDuplicates[0];
+        console.log(`🚫 COMPROVANTE DUPLICADO! Já usado pela conta: ${duplicate.user_email}`);
         await base44.asServiceRole.entities.Subscription.update(subscription_id, {
           status: "cancelled",
-          notes: `❌ COMPROVANTE DUPLICADO - Mesma transação já utilizada pela conta: ${duplicate.user_email}`
+          notes: `❌ COMPROVANTE DUPLICADO - Já utilizado pela conta: ${duplicate.user_email}`
         });
         return Response.json({
           success: false,
           duplicate_proof: true,
           used_by_email: duplicate.user_email,
-          message: `Este comprovante já foi utilizado para ativar a conta ${duplicate.user_email}`
+          message: `Este comprovante já foi utilizado. Não é possível ativar novamente com o mesmo comprovante.`
         });
       }
     }
