@@ -175,7 +175,7 @@ Retorne JSON:
 
       // Buscar TODAS as subscriptions com o mesmo fingerprint (exceto a atual)
       // Normalizar fingerprints antigos também (remove horário se houver)
-      const allSubscriptions = await base44.asServiceRole.entities.Subscription.list();
+      const allSubscriptions = await base44.asServiceRole.entities.Subscription.list("-created_date", 500);
       const normalizeFingerprint = (fp) => {
         if (!fp) return "";
         // Remove horário do fingerprint: "7.99|02/03/2026 - 13:03:36|sicredi" → "7.99|02/03/2026|sicredi"
