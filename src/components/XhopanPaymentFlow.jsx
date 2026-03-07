@@ -207,6 +207,17 @@ export default function XhopanPaymentFlow({ selectedPlan, user, xhopanState, set
             </Button>
           </div>
 
+          {/* ⚠️ AVISO IMPORTANTE */}
+          <div className="bg-red-900/20 p-4 rounded-lg border border-red-700/40">
+            <p className="text-red-300 text-sm font-bold flex items-start gap-2">
+              <span className="text-lg">⚠️</span>
+              <span>
+                <strong>IMPORTANTE:</strong> Só abra o QR Code quando estiver pronto para PAGAR IMEDIATAMENTE. 
+                Abrir sem pagar tornará o token inválido.
+              </span>
+            </p>
+          </div>
+
           {/* Instruções simplificadas */}
           <div className="bg-blue-900/20 p-4 rounded-lg border border-blue-700/30">
             <ol className="text-blue-200 text-sm space-y-2 list-decimal list-inside">
@@ -214,6 +225,7 @@ export default function XhopanPaymentFlow({ selectedPlan, user, xhopanState, set
               <li>Vá em <strong>PIX → Pagar / Escanear</strong></li>
               <li>Aponte a câmera para o QR Code acima</li>
               <li>Confirme o débito de <strong>R$ {selectedPlan?.price?.toFixed(2)}</strong> do seu saldo</li>
+              <li>✅ O pagamento será confirmado automaticamente</li>
             </ol>
           </div>
 
