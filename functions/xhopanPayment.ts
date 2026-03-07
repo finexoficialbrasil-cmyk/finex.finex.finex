@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
 
     if (action === "generate_payment_token") {
       // Gera token + QR Code para o usuário pagar com saldo Xhopan
-      const res = await fetch(`${XHOPAN_API_URL}/`, {
+      const res = await fetch(XHOPAN_API_URL, {
         method: "POST",
         headers,
         body: JSON.stringify({
