@@ -22,11 +22,11 @@ export default function XhopanPaymentFlow({ selectedPlan, user, xhopanState, set
         amount: selectedPlan.price
       });
       const data = res.data;
-      if (data.success || data.token) {
+      if (data.success || data.token || data.payment_token) {
         setXhopanState(s => ({
           ...s,
           loading: false,
-          token: data.token,
+          token: data.payment_token || data.token,
           qrcode: data.qrcode || data.qr_code,
           qrcode_base64: data.qrcode_base64 || data.qr_code_base64
         }));
