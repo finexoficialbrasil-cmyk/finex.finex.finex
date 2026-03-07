@@ -3,6 +3,45 @@ import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle, AlertTriangle, Wallet } from "lucide-react";
 import { xhopanPayment } from "@/functions/xhopanPayment";
 
+// Gera payload PIX BR Code padrão Banco Central
+function generatePixPayload(token, amount) {
+  const pixKey = token;
+  const merchantName = "XHOPAN BANK";
+  const merchantCity = "CUIABA";
+  const txId = token.replace(/[^A-Z0-9]/gi, '').substring(0, 25).toUpperCase();
+  const amountStr = amount ? amount.toFixed(2) : "0.00";
+
+  const pad = (id, value) => {
+    const len = String(value.length).padStart(2, '0');
+    return `${id}${len}${value}`;
+  };
+
+  const merchantAccountInfo = pad("00", "BR.GOV.BCB.PIX") + pad("01", pixKey);
+  const additionalData = pad("05", txId);
+
+  let payload =
+    pad("00", "01") +
+    pad("26", merchantAccountInfo) +
+    pad("52", "0000") +
+    pad("53", "986") +
+    pad("54", amountStr) +
+    pad("58", "BR") +
+    pad("59", merchantName) +
+    pad("60", merchantCity) +
+    pad("62", additionalData) +
+    "6304";
+
+  // CRC16 CCITT
+  let crc = 0xFFFF;
+  for (let i = 0; i < payload.length; i++) {
+    crc ^= payload.charCodeAt(i) << 8;
+    for (let j = 0; j < 8; j++) {
+      crc = (crc & 0x8000) ? (crc << 1) ^ 0x1021 : crc << 1;
+    }
+  }
+  return payload + (crc & 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
+}
+
 export default function XhopanPaymentFlow({ selectedPlan, user, xhopanState, setXhopanState, onSuccess, onCancel }) {
 
   // Ao montar, gerar token + QR Code automaticamente
