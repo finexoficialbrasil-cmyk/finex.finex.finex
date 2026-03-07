@@ -6,7 +6,7 @@ import { xhopanPayment } from "@/functions/xhopanPayment";
 export default function XhopanPaymentFlow({ selectedPlan, user, xhopanState, setXhopanState, onSuccess, onCancel }) {
   const pollingRef = useRef(null);
   const pollingCountRef = useRef(0);
-  const MAX_POLLS = 60; // 5 minutos (a cada 5s)
+  const MAX_POLLS = 120; // 10 minutos (a cada 5s)
 
   useEffect(() => {
     if (!xhopanState.token && !xhopanState.loading && !xhopanState.error) {
@@ -76,7 +76,13 @@ export default function XhopanPaymentFlow({ selectedPlan, user, xhopanState, set
         token: xhopanState.token
       });
       const data = res.data;
+      
       if (data.success || data.confirmed) {
+        stopPolling();
+        setXhopanState(s => ({ ...s, confirmed: true }));
+        onSuccess();
+      } else if (data.error && data.error.includes("already used")) {
+        // Token foi usado = pagamento confirmado!
         stopPolling();
         setXhopanState(s => ({ ...s, confirmed: true }));
         onSuccess();
@@ -84,6 +90,7 @@ export default function XhopanPaymentFlow({ selectedPlan, user, xhopanState, set
       // Se não confirmado ainda, polling continua silenciosamente
     } catch (err) {
       // Ignorar erros de polling, continuar tentando
+      console.log(`⏳ Aguardando confirmação... (tentativa ${pollingCountRef.current}/${MAX_POLLS})`);
     }
   };
 
@@ -179,9 +186,14 @@ export default function XhopanPaymentFlow({ selectedPlan, user, xhopanState, set
           {/* Status de detecção automática */}
           <div className="flex items-center justify-center gap-3 p-3 rounded-xl bg-green-900/20 border border-green-700/30">
             <Loader2 className="w-5 h-5 text-green-400 animate-spin" />
-            <p className="text-green-300 text-sm font-semibold">
-              ⚡ Detectando pagamento automaticamente...
-            </p>
+            <div>
+              <p className="text-green-300 text-sm font-semibold">
+                ⚡ Detectando pagamento automaticamente...
+              </p>
+              <p className="text-green-400 text-xs mt-1">
+                Isso pode levar alguns segundos. Não feche esta tela.
+              </p>
+            </div>
           </div>
 
           {/* Botão cancelar */}
