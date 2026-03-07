@@ -137,28 +137,33 @@ export default function XhopanPaymentFlow({ selectedPlan, user, xhopanState, set
       {xhopanState.token && !xhopanState.loading && !xhopanState.confirmed && !xhopanState.error && (
         <>
           <div className="text-center">
-            <div className="bg-white p-4 rounded-xl inline-block shadow-lg shadow-cyan-500/20">
+            <div className="bg-white p-6 rounded-xl inline-block shadow-lg shadow-cyan-500/20">
               {xhopanState.qrcode_base64 ? (
                 <img
                   src={`data:image/png;base64,${xhopanState.qrcode_base64}`}
                   alt="QR Code Xhopan"
-                  className="w-56 h-56 mx-auto"
+                  className="w-64 h-64"
+                  style={{ imageRendering: 'crisp-edges' }}
                 />
               ) : xhopanState.qrcode ? (
                 <img
                   src={xhopanState.qrcode}
                   alt="QR Code Xhopan"
-                  className="w-56 h-56 mx-auto"
+                  className="w-64 h-64"
+                  style={{ imageRendering: 'crisp-edges' }}
                 />
               ) : (
-                <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=224x224&data=${encodeURIComponent(xhopanState.token)}`}
-                  alt="QR Code Xhopan"
-                  className="w-56 h-56 mx-auto"
-                />
+                <svg viewBox="0 0 250 250" className="w-64 h-64">
+                  <rect width="250" height="250" fill="white"/>
+                  <image 
+                    href={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(xhopanState.token)}`}
+                    width="250" 
+                    height="250" 
+                  />
+                </svg>
               )}
             </div>
-            <p className="text-cyan-300 text-sm mt-3">📱 Abra o Banco Xhopan e escaneie este QR Code</p>
+            <p className="text-cyan-300 text-sm mt-4">📱 Abra o Banco Xhopan e escaneie este QR Code</p>
           </div>
 
           {/* Instruções simplificadas */}
