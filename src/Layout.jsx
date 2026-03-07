@@ -729,6 +729,7 @@ function LayoutContent({ children }) {
       <WelcomeEmailSender />
       <PhoneVerificationModal user={user} onPhoneUpdated={handlePhoneUpdated} />
       <TermsOfServiceModal user={user} onAccepted={handleTermsAccepted} />
+      {/* SystemNotifications temporarily disabled */}
       
       <div className={`min-h-screen flex w-full bg-gradient-to-br ${themeColors.bg}`}>
         <Sidebar>
