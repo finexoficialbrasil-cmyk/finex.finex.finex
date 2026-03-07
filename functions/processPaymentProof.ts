@@ -208,11 +208,12 @@ Retorne JSON:
       
       subscriptionStatus = "active";
 
-      // ✅ Atualizar subscription
+      // ✅ Atualizar subscription (salvar proof_url para detectar duplicatas futuras)
       await base44.asServiceRole.entities.Subscription.update(subscription_id, {
         status: "active",
         start_date: activationDate,
         end_date: expirationDate,
+        payment_proof_url: proofUrl,
         notes: `Ativado automaticamente via IA | Banco: ${analysis.bank || 'N/A'} | Confiança: ${analysis.confidence}`
       });
 
