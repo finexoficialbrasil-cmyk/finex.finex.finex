@@ -220,11 +220,13 @@ Retorne JSON:
       
       subscriptionStatus = "active";
 
-      // ✅ Atualizar subscription (proof_url já foi salvo no início)
+      // ✅ Atualizar subscription (salvar fingerprint para detectar duplicatas)
+      const transactionFingerprint = `${analysis.amount_paid}|${analysis.transaction_date}|${(analysis.bank || '').toLowerCase()}`;
       await base44.asServiceRole.entities.Subscription.update(subscription_id, {
         status: "active",
         start_date: activationDate,
         end_date: expirationDate,
+        transaction_id: transactionFingerprint,
         notes: `Ativado automaticamente via IA | Banco: ${analysis.bank || 'N/A'} | Confiança: ${analysis.confidence}`
       });
 
