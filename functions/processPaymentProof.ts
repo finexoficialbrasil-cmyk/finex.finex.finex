@@ -174,11 +174,19 @@ Retorne JSON:
       });
 
       // Buscar TODAS as subscriptions com o mesmo fingerprint (exceto a atual)
+      // Normalizar fingerprints antigos também (remove horário se houver)
       const allSubscriptions = await base44.asServiceRole.entities.Subscription.list();
+      const normalizeFingerprint = (fp) => {
+        if (!fp) return "";
+        // Remove horário do fingerprint: "7.99|02/03/2026 - 13:03:36|sicredi" → "7.99|02/03/2026|sicredi"
+        return fp.replace(/\|([^|]+)\s[-–]\s[\d:]+\|/, "|$1|").replace(/\s[-–]\s[\d:]+/, "");
+      };
+      const normalizedCurrent = normalizeFingerprint(transactionFingerprint);
       const duplicates = allSubscriptions.filter(s =>
         s.id !== subscription_id &&
-        s.transaction_id === transactionFingerprint &&
-        (s.status === "active" || s.status === "pending")
+        (s.status === "active" || s.status === "pending") &&
+        s.transaction_id &&
+        normalizeFingerprint(s.transaction_id) === normalizedCurrent
       );
 
       if (duplicates.length > 0) {
