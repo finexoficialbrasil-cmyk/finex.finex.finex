@@ -249,12 +249,51 @@ Retorne JSON:
       
       subscriptionStatus = "active";
 
+      // 🏦 DEBITAR SALDO DO BANCO XHOPAN
+      const xhopanApiSecret = Deno.env.get("XHOPAN_API_SECRET");
+      let xhopanDebitResult = null;
+      
+      if (xhopanApiSecret) {
+        try {
+          console.log(`💳 Debitando R$ ${expected_amount} do Banco Xhopan...`);
+          const xhopanDebitResponse = await fetch("https://api.base44.app/api/apps/6983682c6d8afe8c8522e760/functions/xhopanPayAPI", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${xhopanApiSecret}`
+            },
+            body: JSON.stringify({
+              action: "debit",
+              user_email: user.email,
+              amount: expected_amount,
+              description: `Assinatura FINEX - ${plan_type === 'monthly' ? 'Mensal' : plan_type === 'semester' ? 'Semestral' : plan_type === 'annual' ? 'Anual' : 'Vitalício'}`
+            })
+          });
+
+          xhopanDebitResult = await xhopanDebitResponse.json();
+          
+          if (xhopanDebitResult.success) {
+            console.log(`✅ Saldo debitado com sucesso!`, {
+              new_balance: xhopanDebitResult.new_balance,
+              transaction_id: xhopanDebitResult.transaction_id
+            });
+          } else {
+            console.warn(`⚠️ Aviso: Débito no Xhopan falhou - ${xhopanDebitResult.error}`);
+          }
+        } catch (xhopanError) {
+          console.error("❌ Erro ao debitar no Xhopan:", xhopanError.message);
+        }
+      } else {
+        console.warn("⚠️ XHOPAN_API_SECRET não configurada - débito não processado");
+      }
+
       // ✅ Atualizar subscription (fingerprint já foi salvo antes da verificação de duplicata)
       await base44.asServiceRole.entities.Subscription.update(subscription_id, {
         status: "active",
         start_date: activationDate,
         end_date: expirationDate,
-        notes: `Ativado automaticamente via IA | Banco: ${analysis.bank || 'N/A'} | Confiança: ${analysis.confidence}`
+        transaction_id: xhopanDebitResult?.transaction_id || null,
+        notes: `Ativado automaticamente via IA | Banco: ${analysis.bank || 'N/A'} | Confiança: ${analysis.confidence} | Xhopan TX: ${xhopanDebitResult?.transaction_id || 'Não processado'}`
       });
 
       // ✅ Atualizar usuário via entities (não existe updateUser no auth)
