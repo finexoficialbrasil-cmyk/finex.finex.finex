@@ -9,7 +9,8 @@ export default function XhopanPaymentFlow({ selectedPlan, user, xhopanState, set
   const MAX_POLLS = 120; // 10 minutos (a cada 5s)
 
   useEffect(() => {
-    if (!xhopanState.token && !xhopanState.loading && !xhopanState.error) {
+    // Gerar token APENAS na primeira vez - não regenerar
+    if (!xhopanState.token && !xhopanState.loading && !xhopanState.error && !xhopanState.attempted) {
       generateToken();
     }
   }, []);
@@ -44,7 +45,7 @@ export default function XhopanPaymentFlow({ selectedPlan, user, xhopanState, set
   };
 
   const generateToken = async () => {
-    setXhopanState(s => ({ ...s, loading: true, error: null }));
+    setXhopanState(s => ({ ...s, loading: true, error: null, attempted: true }));
     try {
       const res = await xhopanPayment({
         action: "generate_payment_token",
@@ -59,13 +60,14 @@ export default function XhopanPaymentFlow({ selectedPlan, user, xhopanState, set
           loading: false,
           token: data.payment_token || data.token,
           qrcode: data.qrcode || data.qr_code,
-          qrcode_base64: data.qrcode_base64 || data.qr_code_base64
+          qrcode_base64: data.qrcode_base64 || data.qr_code_base64,
+          attempted: true
         }));
       } else {
-        setXhopanState(s => ({ ...s, loading: false, error: data.error || "Erro ao gerar QR Code" }));
+        setXhopanState(s => ({ ...s, loading: false, error: data.error || "Erro ao gerar QR Code", attempted: true }));
       }
     } catch (err) {
-      setXhopanState(s => ({ ...s, loading: false, error: err.message }));
+      setXhopanState(s => ({ ...s, loading: false, error: err.message, attempted: true }));
     }
   };
 
