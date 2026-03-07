@@ -161,6 +161,23 @@ export default function XhopanPaymentFlow({ selectedPlan, user, xhopanState, set
             <p className="text-cyan-300 text-sm mt-3">📱 Abra o Banco Xhopan e escaneie este QR Code</p>
           </div>
 
+          {/* Copiar token para compartilhar */}
+          <div className="flex gap-2 items-center bg-cyan-900/20 border border-cyan-700/40 rounded-xl p-3">
+            <code className="flex-1 text-cyan-200 text-xs font-mono break-all">{xhopanState.token}</code>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => {
+                navigator.clipboard.writeText(xhopanState.token);
+                alert("✅ Token copiado! Envie para outro usuário pagar.");
+              }}
+              className="shrink-0 bg-cyan-600 hover:bg-cyan-700 text-white text-xs"
+            >
+              📋 Copiar
+            </Button>
+          </div>
+          <p className="text-cyan-400 text-xs text-center -mt-2">Compartilhe este código para outra pessoa pagar pelo app Xhopan</p>
+
           {/* Instruções simplificadas */}
           <div className="bg-blue-900/20 p-4 rounded-lg border border-blue-700/30">
             <ol className="text-blue-200 text-sm space-y-2 list-decimal list-inside">
