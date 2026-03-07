@@ -525,6 +525,14 @@ export default function Plans() {
 
       const result = response.data;
 
+      // 🚫 COMPROVANTE DUPLICADO
+      if (result.duplicate_proof) {
+        await Subscription.delete(newSubscription.id);
+        setErrorMessage(`DUPLICATE:${result.used_by_email}`);
+        setIsSubmitting(false);
+        return;
+      }
+
       if (result.success && result.auto_approved) {
         // ✅ APROVADO - Mostrar sucesso e recarregar
         setShowPaymentModal(false);
