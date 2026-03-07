@@ -139,7 +139,7 @@ Retorne JSON:
       if (parsedDate && !isNaN(parsedDate)) {
         const now = new Date();
         const diffHours = (now - parsedDate) / (1000 * 60 * 60);
-        dateIsValid = diffHours >= -2 && diffHours <= 72; // 72h tolerância + 2h futuro
+        dateIsValid = diffHours >= -2 && diffHours <= 720; // 30 dias (720h) tolerância + 2h futuro
       }
     } catch (e) {
       console.error("Erro ao validar data:", e);
