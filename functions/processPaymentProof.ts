@@ -158,19 +158,28 @@ Retorne JSON:
     console.log("📅 Data:", dateIsValid ? "✅ OK" : `❌ Fora do prazo (${analysis.transaction_date})`);
 
     // ✅ Verificar duplicata pela "impressão digital" da transação (valor + data + banco)
-    // Isso detecta o mesmo comprovante mesmo que o arquivo seja re-uploadado com nova URL
+    // Estratégia: salvar fingerprint AGORA na subscription atual (reservar),
+    // depois buscar se outra subscription já tem o mesmo fingerprint
+    let transactionFingerprint = null;
     if (analysis.is_valid && analysis.amount_paid && analysis.transaction_date) {
-      const transactionFingerprint = `${analysis.amount_paid}|${analysis.transaction_date}|${(analysis.bank || '').toLowerCase()}`;
+      transactionFingerprint = `${analysis.amount_paid}|${analysis.transaction_date}|${(analysis.bank || '').toLowerCase()}`;
       console.log("🔍 Fingerprint da transação:", transactionFingerprint);
 
+      // Salvar fingerprint IMEDIATAMENTE na subscription atual (para bloquear concorrência)
+      await base44.asServiceRole.entities.Subscription.update(subscription_id, {
+        transaction_id: transactionFingerprint
+      });
+
+      // Buscar TODAS as subscriptions com o mesmo fingerprint (exceto a atual)
       const allSubscriptions = await base44.asServiceRole.entities.Subscription.list();
-      const duplicate = allSubscriptions.find(s =>
+      const duplicates = allSubscriptions.filter(s =>
         s.id !== subscription_id &&
-        s.status === "active" &&
-        s.transaction_id === transactionFingerprint
+        s.transaction_id === transactionFingerprint &&
+        (s.status === "active" || s.status === "pending")
       );
 
-      if (duplicate) {
+      if (duplicates.length > 0) {
+        const duplicate = duplicates.find(s => s.status === "active") || duplicates[0];
         console.log(`🚫 TRANSAÇÃO DUPLICADA! Já usada pela conta: ${duplicate.user_email}`);
         await base44.asServiceRole.entities.Subscription.update(subscription_id, {
           status: "cancelled",
