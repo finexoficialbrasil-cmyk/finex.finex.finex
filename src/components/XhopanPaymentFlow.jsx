@@ -191,12 +191,21 @@ export default function XhopanPaymentFlow({ selectedPlan, user, xhopanState, set
         </>
       )}
 
-      {/* Confirmado */}
+      {/* Confirmado - Mensagem verde de sucesso */}
       {xhopanState.confirmed && (
         <div className="text-center py-8 space-y-4">
-          <CheckCircle className="w-16 h-16 text-green-400 mx-auto" />
-          <p className="text-green-300 text-xl font-bold">Pagamento Detectado!</p>
-          <p className="text-green-200 text-sm">Ativando sua assinatura...</p>
+          <div className="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center mx-auto">
+            <CheckCircle className="w-12 h-12 text-green-400" />
+          </div>
+          <div>
+            <p className="text-green-300 text-2xl font-bold">✅ Pagamento Realizado!</p>
+            <p className="text-green-200 text-lg mt-1">Desfrute do seu FINEX 🚀</p>
+          </div>
+          <div className="bg-green-900/30 border border-green-600/40 rounded-xl p-4">
+            <p className="text-green-300 text-sm">🎉 Sua assinatura <strong>{selectedPlan?.name}</strong> foi ativada com sucesso!</p>
+            <p className="text-green-400 text-xs mt-2">Redirecionando em instantes...</p>
+          </div>
+          <Loader2 className="w-5 h-5 text-green-400 animate-spin mx-auto" />
         </div>
       )}
     </div>
