@@ -2,7 +2,6 @@ import React, { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle, AlertTriangle } from "lucide-react";
 import { xhopanPayment } from "@/functions/xhopanPayment";
-import { base44 } from "@/api/base44Client";
 
 export default function XhopanPaymentFlow({ selectedPlan, user, xhopanState, setXhopanState, onSuccess, onCancel }) {
   const pollingRef = useRef(null);
@@ -77,45 +76,14 @@ export default function XhopanPaymentFlow({ selectedPlan, user, xhopanState, set
         token: xhopanState.token
       });
       const data = res.data;
-      
-      // ✅ SÓ confirmar se Xhopan validar o pagamento com sucesso
-      if (data.success && data.confirmed && data.debited) {
+      if (data.success || data.confirmed) {
         stopPolling();
-        
-        // ✅ NOVO: Chamar função para ativar assinatura no FINEX
-        console.log("🔄 Ativando assinatura no FINEX...");
-        try {
-          const activationRes = await base44.functions.invoke('activateXhopanPayment', {
-            token: xhopanState.token,
-            plan_type: selectedPlan.plan_type,
-            amount: selectedPlan.price
-          });
-          
-          if (activationRes.data?.success) {
-            console.log("✅ Assinatura ativada com sucesso!");
-            setXhopanState(s => ({ ...s, confirmed: true }));
-            onSuccess();
-          } else {
-            console.error("❌ Erro ao ativar assinatura:", activationRes.data?.error);
-            setXhopanState(s => ({ 
-              ...s, 
-              error: activationRes.data?.error || "Erro ao ativar assinatura"
-            }));
-          }
-        } catch (activateErr) {
-          console.error("❌ Erro ao chamar ativação:", activateErr);
-          setXhopanState(s => ({ 
-            ...s, 
-            error: "Erro ao processar ativação: " + activateErr.message
-          }));
-        }
-      } else {
-        // Se ainda não foi debitado, continua aguardando
-        console.log("⏳ Pagamento não detectado ainda. Token:", xhopanState.token);
+        setXhopanState(s => ({ ...s, confirmed: true }));
+        onSuccess();
       }
+      // Se não confirmado ainda, polling continua silenciosamente
     } catch (err) {
-      console.log("⏳ Verificando pagamento... (continuando)", err.message);
-      // Continuar tentando
+      // Ignorar erros de polling, continuar tentando
     }
   };
 
@@ -193,57 +161,6 @@ export default function XhopanPaymentFlow({ selectedPlan, user, xhopanState, set
             <p className="text-cyan-300 text-sm mt-3">📱 Abra o Banco Xhopan e escaneie este QR Code</p>
           </div>
 
-          {/* Copiar token para compartilhar */}
-          <div className="flex gap-2 items-center bg-cyan-900/20 border border-cyan-700/40 rounded-xl p-3">
-            <code className="flex-1 text-cyan-200 text-xs font-mono break-all">{xhopanState.token}</code>
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => {
-                navigator.clipboard.writeText(xhopanState.token);
-                alert("✅ Token copiado! Envie para outro usuário pagar.");
-              }}
-              className="shrink-0 bg-cyan-600 hover:bg-cyan-700 text-white text-xs"
-            >
-              📋 Copiar
-            </Button>
-          </div>
-          <p className="text-cyan-400 text-xs text-center -mt-2">Compartilhe este código para outra pessoa pagar pelo app Xhopan</p>
-
-          {/* Botão para gerar novo token se necessário */}
-          <div className="text-center">
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => {
-                setXhopanState(s => ({
-                  loading: false,
-                  token: null,
-                  qrcode: null,
-                  qrcode_base64: null,
-                  confirmed: false,
-                  error: null
-                }));
-                setTimeout(generateToken, 100);
-              }}
-              variant="outline"
-              className="border-cyan-700/50 text-cyan-200 hover:bg-cyan-900/30 text-xs"
-            >
-              🔄 Gerar Novo QR Code
-            </Button>
-          </div>
-
-          {/* ⚠️ AVISO IMPORTANTE */}
-          <div className="bg-red-900/20 p-4 rounded-lg border border-red-700/40">
-            <p className="text-red-300 text-sm font-bold flex items-start gap-2">
-              <span className="text-lg">⚠️</span>
-              <span>
-                <strong>IMPORTANTE:</strong> Só abra o QR Code quando estiver pronto para PAGAR IMEDIATAMENTE. 
-                Abrir sem pagar tornará o token inválido.
-              </span>
-            </p>
-          </div>
-
           {/* Instruções simplificadas */}
           <div className="bg-blue-900/20 p-4 rounded-lg border border-blue-700/30">
             <ol className="text-blue-200 text-sm space-y-2 list-decimal list-inside">
@@ -251,17 +168,15 @@ export default function XhopanPaymentFlow({ selectedPlan, user, xhopanState, set
               <li>Vá em <strong>PIX → Pagar / Escanear</strong></li>
               <li>Aponte a câmera para o QR Code acima</li>
               <li>Confirme o débito de <strong>R$ {selectedPlan?.price?.toFixed(2)}</strong> do seu saldo</li>
-              <li>✅ O pagamento será confirmado automaticamente</li>
             </ol>
           </div>
 
           {/* Status de detecção automática */}
-          <div className="flex items-center justify-center gap-3 p-3 rounded-xl bg-blue-900/20 border border-blue-700/30">
-            <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
-            <div className="text-blue-300 text-sm">
-              <p className="font-semibold">⏳ Aguardando confirmação do Banco Xhopan...</p>
-              <p className="text-xs mt-1 text-blue-400">Certifique-se de que o pagamento foi realizado no app Xhopan</p>
-            </div>
+          <div className="flex items-center justify-center gap-3 p-3 rounded-xl bg-green-900/20 border border-green-700/30">
+            <Loader2 className="w-5 h-5 text-green-400 animate-spin" />
+            <p className="text-green-300 text-sm font-semibold">
+              ⚡ Detectando pagamento automaticamente...
+            </p>
           </div>
 
           {/* Botão cancelar */}

@@ -62,35 +62,17 @@ Deno.serve(async (req) => {
 
     if (action === "confirm_payment_token") {
       const { token } = body;
-      
-      if (!token) {
-        return Response.json({ 
-          error: 'Token é obrigatório',
-          success: false,
-          confirmed: false,
-          debited: false
-        }, { status: 400 });
-      }
-      
       const res = await fetch(XHOPAN_API_URL, {
         method: "POST",
         headers,
         body: JSON.stringify({
           action: "confirm_payment_token",
-          payment_token: token
+          token: token
         })
       });
 
       const data = await res.json();
-      
-      // ✅ Garantir que a resposta tenha os campos esperados
-      return Response.json({
-        success: data.success === true,
-        confirmed: data.confirmed === true,
-        debited: data.debited === true,  // ✅ CRÍTICO: Só confirmar se realmente debitou
-        error: data.error || null,
-        message: data.message || null
-      }, { status: res.status });
+      return Response.json(data, { status: res.status });
     }
 
     return Response.json({ error: 'Action inválida' }, { status: 400 });

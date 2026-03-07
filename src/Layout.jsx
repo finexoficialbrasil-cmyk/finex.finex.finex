@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import {
@@ -729,7 +729,6 @@ function LayoutContent({ children }) {
       <WelcomeEmailSender />
       <PhoneVerificationModal user={user} onPhoneUpdated={handlePhoneUpdated} />
       <TermsOfServiceModal user={user} onAccepted={handleTermsAccepted} />
-      {/* SystemNotifications temporarily disabled */}
       
       <div className={`min-h-screen flex w-full bg-gradient-to-br ${themeColors.bg}`}>
         <Sidebar>

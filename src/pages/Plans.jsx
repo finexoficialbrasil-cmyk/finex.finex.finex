@@ -1076,23 +1076,19 @@ export default function Plans() {
                     payment_method: "pix",
                     notes: `Pagamento via Banco Xhopan - token: ${xhopanState.token}`
                   });
-                  const result = await base44.functions.invoke('processPaymentProof', {
+                  await base44.functions.invoke('processPaymentProof', {
                     subscription_id: sub.id,
                     proof_url: null,
                     expected_amount: selectedPlan.price,
                     plan_type: selectedPlan.plan_type,
                     xhopan_confirmed: true
                   });
-
-                  console.log("✅ Xhopan - Assinatura ativada:", result.data);
-
-                  // ✅ SÓ FECHAR O MODAL DEPOIS de confirmar que foi ativado
+                  setXhopanState(s => ({ ...s, confirmed: true, successMessage: true }));
                   setTimeout(() => {
                     setShowPaymentModal(false);
                     window.location.reload();
-                  }, 4000);
+                  }, 3000);
                 } catch (err) {
-                  console.error("❌ Erro ao ativar assinatura:", err);
                   alert("❌ Erro ao ativar assinatura: " + err.message);
                 }
               }}
