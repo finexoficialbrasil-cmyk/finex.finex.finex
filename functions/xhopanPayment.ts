@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
 
-const XHOPAN_API_URL = "https://api.xhopan/api/xhopan";
+const XHOPAN_API_URL = "https://api.base44.app/api/apps/6983682c6d8afe8c8522e760/functions/xhopanPayAPI";
 
 Deno.serve(async (req) => {
   try {
@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
 
     const headers = {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${apiKey}`
+      "Authorization": `Bearer sk_finex_8a9f7e4c2b1d9e3f5a8c7b2d9e1f3a5b`
     };
 
     console.log(`🔄 Xhopan Action: ${action} | User: ${user.email}`);
