@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle, AlertTriangle } from "lucide-react";
 import { xhopanPayment } from "@/functions/xhopanPayment";
+import { base44 } from "@/api/base44Client";
 
 export default function XhopanPaymentFlow({ selectedPlan, user, xhopanState, setXhopanState, onSuccess, onCancel }) {
   const pollingRef = useRef(null);
