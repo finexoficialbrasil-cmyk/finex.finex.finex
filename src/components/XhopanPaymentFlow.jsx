@@ -76,14 +76,20 @@ export default function XhopanPaymentFlow({ selectedPlan, user, xhopanState, set
         token: xhopanState.token
       });
       const data = res.data;
-      if (data.success || data.confirmed) {
+      
+      // ✅ SÓ confirmar se Xhopan validar o pagamento com sucesso
+      // Não é suficiente só ter o token - precisa ter EVIDÊNCIA de debitação
+      if (data.success && data.confirmed && data.debited) {
         stopPolling();
         setXhopanState(s => ({ ...s, confirmed: true }));
         onSuccess();
+      } else {
+        // Se ainda não foi debitado, continua aguardando
+        console.log("⏳ Pagamento não detectado ainda. Token:", xhopanState.token);
       }
-      // Se não confirmado ainda, polling continua silenciosamente
     } catch (err) {
-      // Ignorar erros de polling, continuar tentando
+      console.log("⏳ Verificando pagamento... (continuando)", err.message);
+      // Continuar tentando
     }
   };
 
