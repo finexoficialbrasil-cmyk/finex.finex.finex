@@ -78,11 +78,36 @@ export default function XhopanPaymentFlow({ selectedPlan, user, xhopanState, set
       const data = res.data;
       
       // ✅ SÓ confirmar se Xhopan validar o pagamento com sucesso
-      // Não é suficiente só ter o token - precisa ter EVIDÊNCIA de debitação
       if (data.success && data.confirmed && data.debited) {
         stopPolling();
-        setXhopanState(s => ({ ...s, confirmed: true }));
-        onSuccess();
+        
+        // ✅ NOVO: Chamar função para ativar assinatura no FINEX
+        console.log("🔄 Ativando assinatura no FINEX...");
+        try {
+          const activationRes = await base44.functions.invoke('activateXhopanPayment', {
+            token: xhopanState.token,
+            plan_type: selectedPlan.plan_type,
+            amount: selectedPlan.price
+          });
+          
+          if (activationRes.data?.success) {
+            console.log("✅ Assinatura ativada com sucesso!");
+            setXhopanState(s => ({ ...s, confirmed: true }));
+            onSuccess();
+          } else {
+            console.error("❌ Erro ao ativar assinatura:", activationRes.data?.error);
+            setXhopanState(s => ({ 
+              ...s, 
+              error: activationRes.data?.error || "Erro ao ativar assinatura"
+            }));
+          }
+        } catch (activateErr) {
+          console.error("❌ Erro ao chamar ativação:", activateErr);
+          setXhopanState(s => ({ 
+            ...s, 
+            error: "Erro ao processar ativação: " + activateErr.message
+          }));
+        }
       } else {
         // Se ainda não foi debitado, continua aguardando
         console.log("⏳ Pagamento não detectado ainda. Token:", xhopanState.token);
