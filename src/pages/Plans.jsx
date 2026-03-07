@@ -1154,15 +1154,19 @@ export default function Plans() {
 
               {/* QR Code */}
               {paymentData.pix_qrcode_base64 && (
-                <div className="text-center">
-                  <div className="bg-white p-4 rounded-xl inline-block">
+                <div className="text-center space-y-4">
+                  <div className="bg-white p-8 rounded-2xl inline-block shadow-2xl shadow-green-500/30 border-4 border-white">
                     <img
                       src={`data:image/png;base64,${paymentData.pix_qrcode_base64}`}
                       alt="QR Code PIX"
-                      className="w-64 h-64 mx-auto"
+                      className="w-72 h-72"
+                      style={{ imageRendering: 'crisp-edges' }}
                     />
                   </div>
-                  <p className="text-purple-400 text-sm mt-3">Escaneie com o app do seu banco</p>
+                  <div className="space-y-2">
+                    <p className="text-white font-bold text-lg">📱 Escaneie com seu banco</p>
+                    <p className="text-purple-300 text-sm">Aponte a câmera para o QR Code acima</p>
+                  </div>
                 </div>
               )}
 
