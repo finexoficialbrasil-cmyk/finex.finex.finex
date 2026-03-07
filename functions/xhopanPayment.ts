@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === "check_balance") {
-      const res = await fetch(`${XHOPAN_API_URL}/`, {
+      const res = await fetch(XHOPAN_API_URL, {
         method: "POST",
         headers,
         body: JSON.stringify({
