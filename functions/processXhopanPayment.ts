@@ -4,6 +4,10 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
+    
+    console.log(`\n\n🎯 === PROCESSANDO PAGAMENTO XHOPAN === 🎯`);
+    console.log(`👤 Usuário: ${user?.email}`);
+    console.log(`⏰ Timestamp: ${new Date().toISOString()}\n`);
 
     if (!user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
