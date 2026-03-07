@@ -128,7 +128,7 @@ export default function XhopanPaymentFlow({ selectedPlan, user, xhopanState, set
             ) : (
               <div className="bg-white p-4 rounded-xl inline-block shadow-lg shadow-cyan-500/20">
                 <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=224x224&data=${encodeURIComponent(xhopanState.token)}`}
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=224x224&data=${encodeURIComponent(generatePixPayload(xhopanState.token, selectedPlan?.price))}`}
                   alt="QR Code Xhopan"
                   className="w-56 h-56 mx-auto"
                 />
