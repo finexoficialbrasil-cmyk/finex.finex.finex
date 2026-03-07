@@ -59,7 +59,6 @@ const CashFlowChart = React.lazy(() => import("../components/dashboard/CashFlowC
 const GoalsProgress = React.lazy(() => import("../components/dashboard/GoalsProgress"));
 const QuickActions = React.lazy(() => import("../components/dashboard/QuickActions"));
 const VoiceAssistant = React.lazy(() => import("../components/VoiceAssistant"));
-const SystemNotifications = React.lazy(() => import("../components/SystemNotifications"));
 const ReceivablesNotification = React.lazy(() => import("../components/ReceivablesNotification"));
 
 export default function Dashboard() {
@@ -585,7 +584,6 @@ export default function Dashboard() {
 
         <React.Suspense fallback={null}>
           <ReceivablesNotification />
-          <SystemNotifications />
         </React.Suspense>
 
         {alerts.length > 0 && (
