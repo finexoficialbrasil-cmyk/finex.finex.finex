@@ -993,8 +993,31 @@ export default function Plans() {
             </DialogTitle>
           </DialogHeader>
 
-          {/* ✅ NOVO: Mostrar erro se houver */}
-          {errorMessage && (
+          {/* ✅ Mostrar erro se houver */}
+          {errorMessage && errorMessage.startsWith("DUPLICATE:") ? (
+            <div className="bg-red-950/60 border-2 border-red-500 rounded-xl p-5 mb-4 shadow-lg shadow-red-900/40">
+              <div className="flex flex-col items-center gap-3 text-center">
+                <div className="w-14 h-14 rounded-full bg-red-500/20 flex items-center justify-center">
+                  <AlertTriangle className="w-8 h-8 text-red-400" />
+                </div>
+                <div>
+                  <p className="text-red-300 font-bold text-lg mb-1">⛔ Comprovante Já Utilizado!</p>
+                  <p className="text-red-200 text-sm mb-3">
+                    Este comprovante de pagamento já foi usado para ativar outra conta.
+                  </p>
+                  <div className="bg-red-900/50 border border-red-600/50 rounded-lg px-4 py-3 inline-block">
+                    <p className="text-red-400 text-xs font-semibold uppercase tracking-wide mb-1">Conta que utilizou este comprovante:</p>
+                    <p className="text-red-200 font-bold text-base tracking-wide">
+                      {errorMessage.replace("DUPLICATE:", "")}
+                    </p>
+                  </div>
+                  <p className="text-red-300 text-xs mt-3">
+                    Por favor, envie um comprovante diferente ou entre em contato com o suporte.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : errorMessage ? (
             <div className="bg-red-900/30 border-2 border-red-500/50 rounded-xl p-4 mb-4">
               <div className="flex items-start gap-3">
                 <AlertTriangle className="w-6 h-6 text-red-400 flex-shrink-0 mt-1" />
@@ -1004,7 +1027,7 @@ export default function Plans() {
                 </div>
               </div>
             </div>
-          )}
+          ) : null}
 
           {/* ✅ Seleção de Método de Pagamento */}
           {!paymentData.pix_code && (
