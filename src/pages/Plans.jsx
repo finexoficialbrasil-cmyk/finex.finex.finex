@@ -1067,7 +1067,6 @@ export default function Plans() {
               xhopanState={xhopanState}
               setXhopanState={setXhopanState}
               onSuccess={async () => {
-                // Cria subscription e ativa
                 try {
                   const sub = await Subscription.create({
                     user_email: user.email,
@@ -1077,16 +1076,18 @@ export default function Plans() {
                     payment_method: "pix",
                     notes: `Pagamento via Banco Xhopan - token: ${xhopanState.token}`
                   });
-                  const response = await base44.functions.invoke('processPaymentProof', {
+                  await base44.functions.invoke('processPaymentProof', {
                     subscription_id: sub.id,
                     proof_url: null,
                     expected_amount: selectedPlan.price,
                     plan_type: selectedPlan.plan_type,
                     xhopan_confirmed: true
                   });
-                  setShowPaymentModal(false);
-                  alert(`✅ Pagamento confirmado!\n\n🎉 Sua assinatura ${selectedPlan.name} foi ativada!\n\n🚀 Recarregando...`);
-                  setTimeout(() => window.location.reload(), 1500);
+                  setXhopanState(s => ({ ...s, confirmed: true, successMessage: true }));
+                  setTimeout(() => {
+                    setShowPaymentModal(false);
+                    window.location.reload();
+                  }, 3000);
                 } catch (err) {
                   alert("❌ Erro ao ativar assinatura: " + err.message);
                 }
