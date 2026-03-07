@@ -16,37 +16,12 @@ Deno.serve(async (req) => {
     console.log("📊 Valor esperado:", expected_amount);
     console.log("📋 Tipo de plano:", plan_type);
 
-    // ✅ Verificar se comprovante já foi usado (por URL) — bloqueia ANTES de qualquer ativação
+    // ✅ Salvar proof_url na subscription atual
     const proofUrl = proof_url;
     if (proofUrl) {
-      // Primeiro: marcar esta subscription com o proof_url para reservar/bloquear
       await base44.asServiceRole.entities.Subscription.update(subscription_id, {
         payment_proof_url: proofUrl
       });
-
-      // Buscar TODAS as subscriptions que usam este mesmo comprovante
-      const allSubscriptions = await base44.asServiceRole.entities.Subscription.list();
-      const duplicates = allSubscriptions.filter(s =>
-        s.payment_proof_url === proofUrl &&
-        s.id !== subscription_id &&
-        (s.status === "active" || s.status === "pending")
-      );
-
-      if (duplicates.length > 0) {
-        // Pegar a subscription mais relevante (active tem prioridade)
-        const duplicate = duplicates.find(s => s.status === "active") || duplicates[0];
-        console.log(`🚫 Comprovante duplicado! Já usado pela conta: ${duplicate.user_email}`);
-        await base44.asServiceRole.entities.Subscription.update(subscription_id, {
-          status: "cancelled",
-          notes: `❌ COMPROVANTE DUPLICADO - Já utilizado pela conta: ${duplicate.user_email}`
-        });
-        return Response.json({
-          success: false,
-          duplicate_proof: true,
-          used_by_email: duplicate.user_email,
-          message: `Este comprovante já foi utilizado para ativar a conta ${duplicate.user_email}`
-        });
-      }
     }
 
     // ✅ Buscar nome esperado do recebedor PIX
