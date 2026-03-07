@@ -157,6 +157,34 @@ Retorne JSON:
     console.log("👤 Nome:", receiverNameMatches ? "✅ OK" : `❌ Incorreto (${analysis.receiver_name})`);
     console.log("📅 Data:", dateIsValid ? "✅ OK" : `❌ Fora do prazo (${analysis.transaction_date})`);
 
+    // ✅ Verificar duplicata pela "impressão digital" da transação (valor + data + banco)
+    // Isso detecta o mesmo comprovante mesmo que o arquivo seja re-uploadado com nova URL
+    if (analysis.is_valid && analysis.amount_paid && analysis.transaction_date) {
+      const transactionFingerprint = `${analysis.amount_paid}|${analysis.transaction_date}|${(analysis.bank || '').toLowerCase()}`;
+      console.log("🔍 Fingerprint da transação:", transactionFingerprint);
+
+      const allSubscriptions = await base44.asServiceRole.entities.Subscription.list();
+      const duplicate = allSubscriptions.find(s =>
+        s.id !== subscription_id &&
+        s.status === "active" &&
+        s.transaction_id === transactionFingerprint
+      );
+
+      if (duplicate) {
+        console.log(`🚫 TRANSAÇÃO DUPLICADA! Já usada pela conta: ${duplicate.user_email}`);
+        await base44.asServiceRole.entities.Subscription.update(subscription_id, {
+          status: "cancelled",
+          notes: `❌ COMPROVANTE DUPLICADO - Mesma transação já utilizada pela conta: ${duplicate.user_email}`
+        });
+        return Response.json({
+          success: false,
+          duplicate_proof: true,
+          used_by_email: duplicate.user_email,
+          message: `Este comprovante já foi utilizado para ativar a conta ${duplicate.user_email}`
+        });
+      }
+    }
+
     let subscriptionStatus = "pending";
     let activationDate = null;
     let expirationDate = null;
