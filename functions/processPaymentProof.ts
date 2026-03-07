@@ -183,12 +183,8 @@ Retorne JSON:
       };
       const normalizedCurrent = normalizeFingerprint(transactionFingerprint);
       // ✅ Verificar em TODAS as subscriptions (incluindo canceladas/expiradas)
-      // para evitar reutilização do mesmo comprovante
+      // para evitar reutilização do mesmo comprovante em qualquer conta
       const duplicates = allSubscriptions.filter(s =>
-        s.id !== subscription_id &&
-        s.status !== "cancelled" || // subscriptions ativas/pendentes/expiradas
-        (s.transaction_id && normalizeFingerprint(s.transaction_id) === normalizedCurrent && s.id !== subscription_id)
-      ).filter(s =>
         s.id !== subscription_id &&
         s.transaction_id &&
         normalizeFingerprint(s.transaction_id) === normalizedCurrent
