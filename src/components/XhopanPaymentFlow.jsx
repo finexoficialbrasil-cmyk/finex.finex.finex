@@ -1,16 +1,47 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Loader2, CheckCircle, AlertTriangle, Wallet } from "lucide-react";
+import { Loader2, CheckCircle, AlertTriangle } from "lucide-react";
 import { xhopanPayment } from "@/functions/xhopanPayment";
 
 export default function XhopanPaymentFlow({ selectedPlan, user, xhopanState, setXhopanState, onSuccess, onCancel }) {
+  const pollingRef = useRef(null);
+  const pollingCountRef = useRef(0);
+  const MAX_POLLS = 60; // 5 minutos (a cada 5s)
 
-  // Ao montar, gerar token + QR Code automaticamente
   useEffect(() => {
     if (!xhopanState.token && !xhopanState.loading && !xhopanState.error) {
       generateToken();
     }
   }, []);
+
+  // Iniciar polling quando tiver token
+  useEffect(() => {
+    if (xhopanState.token && !xhopanState.confirmed && !xhopanState.loading) {
+      startPolling();
+    }
+    return () => stopPolling();
+  }, [xhopanState.token]);
+
+  const startPolling = () => {
+    stopPolling();
+    pollingCountRef.current = 0;
+    pollingRef.current = setInterval(async () => {
+      pollingCountRef.current++;
+      if (pollingCountRef.current >= MAX_POLLS) {
+        stopPolling();
+        setXhopanState(s => ({ ...s, error: "Tempo de pagamento expirado. Gere um novo QR Code." }));
+        return;
+      }
+      await checkPayment();
+    }, 5000);
+  };
+
+  const stopPolling = () => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+  };
 
   const generateToken = async () => {
     setXhopanState(s => ({ ...s, loading: true, error: null }));
@@ -38,8 +69,7 @@ export default function XhopanPaymentFlow({ selectedPlan, user, xhopanState, set
     }
   };
 
-  const confirmPayment = async () => {
-    setXhopanState(s => ({ ...s, loading: true, error: null }));
+  const checkPayment = async () => {
     try {
       const res = await xhopanPayment({
         action: "confirm_payment_token",
@@ -47,13 +77,13 @@ export default function XhopanPaymentFlow({ selectedPlan, user, xhopanState, set
       });
       const data = res.data;
       if (data.success || data.confirmed) {
-        setXhopanState(s => ({ ...s, loading: false, confirmed: true }));
+        stopPolling();
+        setXhopanState(s => ({ ...s, confirmed: true }));
         onSuccess();
-      } else {
-        setXhopanState(s => ({ ...s, loading: false, error: data.error || "Pagamento não confirmado ainda. Verifique se escaneou o QR Code no Banco Xhopan." }));
       }
+      // Se não confirmado ainda, polling continua silenciosamente
     } catch (err) {
-      setXhopanState(s => ({ ...s, loading: false, error: err.message }));
+      // Ignorar erros de polling, continuar tentando
     }
   };
 
@@ -77,13 +107,11 @@ export default function XhopanPaymentFlow({ selectedPlan, user, xhopanState, set
         <p className="text-cyan-300 text-xs mt-1">{selectedPlan?.name}</p>
       </div>
 
-      {/* Loading */}
+      {/* Loading inicial */}
       {xhopanState.loading && (
         <div className="flex flex-col items-center justify-center py-10 gap-4">
           <Loader2 className="w-12 h-12 text-cyan-400 animate-spin" />
-          <p className="text-cyan-300 text-sm">
-            {xhopanState.confirmed ? "Ativando assinatura..." : xhopanState.token ? "Confirmando pagamento..." : "Gerando QR Code..."}
-          </p>
+          <p className="text-cyan-300 text-sm">Gerando QR Code...</p>
         </div>
       )}
 
@@ -105,69 +133,71 @@ export default function XhopanPaymentFlow({ selectedPlan, user, xhopanState, set
         </div>
       )}
 
-      {/* QR Code gerado */}
-      {xhopanState.token && !xhopanState.loading && !xhopanState.confirmed && (
+      {/* QR Code gerado - aguardando pagamento automaticamente */}
+      {xhopanState.token && !xhopanState.loading && !xhopanState.confirmed && !xhopanState.error && (
         <>
           <div className="text-center">
-            {xhopanState.qrcode_base64 ? (
-              <div className="bg-white p-4 rounded-xl inline-block shadow-lg shadow-cyan-500/20">
+            <div className="bg-white p-4 rounded-xl inline-block shadow-lg shadow-cyan-500/20">
+              {xhopanState.qrcode_base64 ? (
                 <img
                   src={`data:image/png;base64,${xhopanState.qrcode_base64}`}
                   alt="QR Code Xhopan"
                   className="w-56 h-56 mx-auto"
                 />
-              </div>
-            ) : xhopanState.qrcode ? (
-              <div className="bg-white p-4 rounded-xl inline-block shadow-lg shadow-cyan-500/20">
+              ) : xhopanState.qrcode ? (
                 <img
                   src={xhopanState.qrcode}
                   alt="QR Code Xhopan"
                   className="w-56 h-56 mx-auto"
                 />
-              </div>
-            ) : (
-              <div className="bg-white p-4 rounded-xl inline-block shadow-lg shadow-cyan-500/20">
+              ) : (
                 <img
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=224x224&data=${encodeURIComponent(xhopanState.token)}`}
                   alt="QR Code Xhopan"
                   className="w-56 h-56 mx-auto"
                 />
-              </div>
-            )}
+              )}
+            </div>
             <p className="text-cyan-300 text-sm mt-3">📱 Abra o Banco Xhopan e escaneie este QR Code</p>
           </div>
 
-          {/* Instruções */}
+          {/* Instruções simplificadas */}
           <div className="bg-blue-900/20 p-4 rounded-lg border border-blue-700/30">
             <ol className="text-blue-200 text-sm space-y-2 list-decimal list-inside">
               <li>Abra o app <strong>Banco Xhopan</strong> em <a href="https://xhopan.base44.app" target="_blank" rel="noopener noreferrer" className="text-cyan-400 underline">xhopan.base44.app</a></li>
               <li>Vá em <strong>PIX → Pagar / Escanear</strong></li>
               <li>Aponte a câmera para o QR Code acima</li>
               <li>Confirme o débito de <strong>R$ {selectedPlan?.price?.toFixed(2)}</strong> do seu saldo</li>
-              <li>Clique em <strong>"Confirmar Pagamento"</strong> abaixo</li>
             </ol>
           </div>
 
-          {/* Botões */}
-          <div className="flex gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onCancel}
-              className="flex-1 border-purple-700/50 text-purple-200 hover:bg-purple-900/30"
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="button"
-              onClick={confirmPayment}
-              className="flex-1 bg-gradient-to-r from-cyan-600 to-blue-600 hover:opacity-90"
-            >
-              <CheckCircle className="w-4 h-4 mr-2" />
-              Confirmar Pagamento
-            </Button>
+          {/* Status de detecção automática */}
+          <div className="flex items-center justify-center gap-3 p-3 rounded-xl bg-green-900/20 border border-green-700/30">
+            <Loader2 className="w-5 h-5 text-green-400 animate-spin" />
+            <p className="text-green-300 text-sm font-semibold">
+              ⚡ Detectando pagamento automaticamente...
+            </p>
           </div>
+
+          {/* Botão cancelar */}
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => { stopPolling(); onCancel(); }}
+            className="w-full border-purple-700/50 text-purple-200 hover:bg-purple-900/30"
+          >
+            Cancelar
+          </Button>
         </>
+      )}
+
+      {/* Confirmado */}
+      {xhopanState.confirmed && (
+        <div className="text-center py-8 space-y-4">
+          <CheckCircle className="w-16 h-16 text-green-400 mx-auto" />
+          <p className="text-green-300 text-xl font-bold">Pagamento Detectado!</p>
+          <p className="text-green-200 text-sm">Ativando sua assinatura...</p>
+        </div>
       )}
     </div>
   );
