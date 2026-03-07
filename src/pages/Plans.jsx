@@ -1068,74 +1068,43 @@ export default function Plans() {
               setXhopanState={setXhopanState}
               onSuccess={async () => {
                 try {
-                  // 1️⃣ DEBITAR SALDO DO XHOPAN
-                  const debitResponse = await xhopanPayment({
-                    action: "debit",
+                  // ✅ Criar subscription AGORA (antes de qualquer processamento)
+                  console.log("📝 Criando registro de subscription...");
+                  const newSubscription = await Subscription.create({
+                    user_email: user.email,
                     plan_type: selectedPlan.plan_type,
-                    plan_name: selectedPlan.name,
+                    status: "pending",
+                    amount_paid: selectedPlan.price,
+                    payment_method: "xhopan",
+                    notes: `Pagamento via Banco Xhopan - Aguardando processamento`
+                  });
+
+                  console.log("✅ Subscription criado:", newSubscription.id);
+
+                  // ✅ Chamar função de processamento automático
+                  console.log("🔄 Processando pagamento...");
+                  const processRes = await base44.functions.invoke('processXhopanPayment', {
+                    subscription_id: newSubscription.id,
+                    plan_type: selectedPlan.plan_type,
                     amount: selectedPlan.price
                   });
 
-                  if (!debitResponse.data?.success) {
-                    throw new Error("❌ Falha ao debitar saldo. Transação não processada.");
+                  if (processRes.data?.success) {
+                    console.log("✅ Pagamento processado com sucesso!");
+                    setXhopanState(s => ({ ...s, confirmed: true }));
+
+                    setTimeout(() => {
+                      alert(`✅ PAGAMENTO CONFIRMADO!\n\n🎉 Sua assinatura foi ativada com sucesso!\n\nPlano: ${selectedPlan.name}\nValor: R$ ${selectedPlan.price.toFixed(2)}\n\n🚀 Recarregando...`);
+                      setShowPaymentModal(false);
+                      window.location.reload();
+                    }, 1000);
+                  } else {
+                    throw new Error(processRes.data?.message || "Erro ao processar pagamento");
                   }
-
-                  console.log("✅ Saldo debitado com sucesso:", {
-                    new_balance: debitResponse.data.new_balance,
-                    transaction_id: debitResponse.data.transaction_id
-                  });
-
-                  // 2️⃣ ATIVAR ASSINATURA
-                  const now = new Date();
-                  const startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                  const endDate = new Date(startDate);
-
-                  // Calcular data de término
-                  if (selectedPlan.plan_type === 'monthly') {
-                    endDate.setMonth(endDate.getMonth() + 1);
-                  } else if (selectedPlan.plan_type === 'semester') {
-                    endDate.setMonth(endDate.getMonth() + 6);
-                  } else if (selectedPlan.plan_type === 'annual') {
-                    endDate.setFullYear(endDate.getFullYear() + 1);
-                  } else if (selectedPlan.plan_type === 'lifetime') {
-                    endDate.setFullYear(9999); // Vitalício
-                  }
-
-                  const startDateStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
-                  const endDateStr = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
-
-                  // 3️⃣ CRIAR REGISTRO DE ASSINATURA ATIVA
-                  await Subscription.create({
-                    user_email: user.email,
-                    plan_type: selectedPlan.plan_type,
-                    status: "active",
-                    amount_paid: selectedPlan.price,
-                    payment_method: "xhopan_debit",
-                    transaction_id: debitResponse.data.transaction_id,
-                    start_date: startDateStr,
-                    end_date: endDateStr,
-                    notes: `Pagamento via Banco Xhopan - Débito automático. Transação: ${debitResponse.data.transaction_id}`
-                  });
-
-                  // 4️⃣ ATUALIZAR USUÁRIO COM NOVO PLANO
-                  await User.updateMyUserData({
-                    subscription_plan: selectedPlan.plan_type,
-                    subscription_status: 'active',
-                    subscription_start_date: startDateStr,
-                    subscription_end_date: endDateStr
-                  });
-
-                  console.log("✅ Assinatura ativada com sucesso!");
-
-                  setXhopanState(s => ({ ...s, confirmed: true, successMessage: true }));
-                  setTimeout(() => {
-                    setShowPaymentModal(false);
-                    window.location.reload();
-                  }, 2000);
                 } catch (err) {
                   console.error("❌ Erro:", err);
-                  alert("❌ Erro ao processar pagamento:\n\n" + err.message);
                   setXhopanState(s => ({ ...s, error: err.message }));
+                  alert("❌ Erro ao processar pagamento:\n\n" + err.message);
                 }
               }}
               onCancel={() => setShowPaymentModal(false)}
