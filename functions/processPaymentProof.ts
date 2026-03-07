@@ -28,19 +28,26 @@ Deno.serve(async (req) => {
       analysisResult = await base44.asServiceRole.integrations.Core.InvokeLLM({
         prompt: `Você é um especialista em validação de comprovantes bancários PIX brasileiros.
 
-ANALISE ESTA IMAGEM e extraia:
+ANALISE ESTE ARQUIVO (pode ser imagem ou PDF) e extraia as informações de pagamento PIX.
 
-1. É um COMPROVANTE BANCÁRIO VÁLIDO de PIX? (tem logo de banco, dados de transferência, valor, etc)
-2. VALOR PAGO (número exato em reais - ex: 7.99, 50.00, 100.00)
-3. NOME DO RECEBEDOR PIX (destinatário do pagamento)
-4. DATA DA TRANSAÇÃO (formato: DD/MM/YYYY ou YYYY-MM-DD)
+TIPOS DE COMPROVANTE ACEITOS (todos são válidos):
+- Comprovante de qualquer banco brasileiro: Nubank, Itaú, Bradesco, Sicredi, Caixa, BB, Santander, Inter, XP, C6, PagBank, Picpay, etc.
+- Comprovante em PDF (ex: Sicredi gera PDFs com "Comprovante de Pagamento Pix")
+- Print/screenshot da tela do app bancário
+- Comprovante com logo de banco ou cooperativa (ex: Sicredi)
+- O pagador pode ser pessoa física OU jurídica (CNPJ é válido)
 
-REGRAS IMPORTANTES:
-- Se NÃO for um comprovante bancário (foto qualquer, print de conversa, etc) → is_valid = false
-- Se for comprovante válido de PIX → is_valid = true
-- Valor esperado: R$ ${expected_amount.toFixed(2)}
+EXTRAIA:
+1. É um COMPROVANTE BANCÁRIO VÁLIDO de PIX? (tem dados de transferência, valor, destinatário)
+2. VALOR PAGO (número exato - ex: se escrito "R$ 7,99" retorne 7.99)
+3. NOME DO DESTINATÁRIO/RECEBEDOR (campo "Nome do destinatário" ou similar)
+4. DATA DA TRANSAÇÃO (campo "Realizado em" ou "Data")
+
+REGRAS:
+- PDF de banco = comprovante válido → is_valid = true
+- Valor "R$ 7,99" = 7.99 (vírgula brasileira → ponto decimal)
 - Nome esperado do recebedor: "${pixReceiverName}"
-- Tolerância de valor: até R$ 0,50 centavos
+- Tolerância de valor: até R$ 0,50
 
 Retorne JSON:
 {
