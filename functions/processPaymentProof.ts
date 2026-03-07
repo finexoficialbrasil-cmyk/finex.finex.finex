@@ -16,16 +16,25 @@ Deno.serve(async (req) => {
     console.log("📊 Valor esperado:", expected_amount);
     console.log("📋 Tipo de plano:", plan_type);
 
-    // ✅ Verificar se comprovante já foi usado (por URL)
+    // ✅ Verificar se comprovante já foi usado (por URL) — bloqueia ANTES de qualquer ativação
     const proofUrl = proof_url;
     if (proofUrl) {
+      // Primeiro: marcar esta subscription com o proof_url para reservar/bloquear
+      await base44.asServiceRole.entities.Subscription.update(subscription_id, {
+        payment_proof_url: proofUrl
+      });
+
+      // Buscar TODAS as subscriptions que usam este mesmo comprovante
       const allSubscriptions = await base44.asServiceRole.entities.Subscription.list();
-      const duplicate = allSubscriptions.find(s =>
+      const duplicates = allSubscriptions.filter(s =>
         s.payment_proof_url === proofUrl &&
-        s.status === "active" &&
-        s.id !== subscription_id
+        s.id !== subscription_id &&
+        (s.status === "active" || s.status === "pending")
       );
-      if (duplicate) {
+
+      if (duplicates.length > 0) {
+        // Pegar a subscription mais relevante (active tem prioridade)
+        const duplicate = duplicates.find(s => s.status === "active") || duplicates[0];
         console.log(`🚫 Comprovante duplicado! Já usado pela conta: ${duplicate.user_email}`);
         await base44.asServiceRole.entities.Subscription.update(subscription_id, {
           status: "cancelled",
