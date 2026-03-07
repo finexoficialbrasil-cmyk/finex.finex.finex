@@ -52,13 +52,11 @@ import Admin from './pages/Admin';
 import Bills from './pages/Bills';
 import Categories from './pages/Categories';
 import Consultor from './pages/Consultor';
-import Dashboard from './pages/Dashboard';
 import DownloadApp from './pages/DownloadApp';
 import Goals from './pages/Goals';
 import Home from './pages/Home';
 import Import from './pages/Import';
 import Payables from './pages/Payables';
-import Plans from './pages/Plans';
 import Profile from './pages/Profile';
 import Receivables from './pages/Receivables';
 import Reports from './pages/Reports';
@@ -66,6 +64,8 @@ import Statement from './pages/Statement';
 import TermsOfService from './pages/TermsOfService';
 import Transactions from './pages/Transactions';
 import Tutorials from './pages/Tutorials';
+import Dashboard from './pages/Dashboard';
+import Plans from './pages/Plans';
 import __Layout from './Layout.jsx';
 
 
@@ -75,13 +75,11 @@ export const PAGES = {
     "Bills": Bills,
     "Categories": Categories,
     "Consultor": Consultor,
-    "Dashboard": Dashboard,
     "DownloadApp": DownloadApp,
     "Goals": Goals,
     "Home": Home,
     "Import": Import,
     "Payables": Payables,
-    "Plans": Plans,
     "Profile": Profile,
     "Receivables": Receivables,
     "Reports": Reports,
@@ -89,6 +87,8 @@ export const PAGES = {
     "TermsOfService": TermsOfService,
     "Transactions": Transactions,
     "Tutorials": Tutorials,
+    "Dashboard": Dashboard,
+    "Plans": Plans,
 }
 
 export const pagesConfig = {
