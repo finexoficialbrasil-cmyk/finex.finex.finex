@@ -126,9 +126,12 @@ export default function XhopanPaymentFlow({ selectedPlan, user, xhopanState, set
                 />
               </div>
             ) : (
-              <div className="bg-cyan-900/30 border-2 border-dashed border-cyan-700 rounded-xl p-8 text-cyan-400">
-                <Wallet className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">QR Code gerado! Token: <code className="font-mono text-xs">{xhopanState.token?.substring(0, 20)}...</code></p>
+              <div className="bg-white p-4 rounded-xl inline-block shadow-lg shadow-cyan-500/20">
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=224x224&data=${encodeURIComponent(xhopanState.token)}`}
+                  alt="QR Code Xhopan"
+                  className="w-56 h-56 mx-auto"
+                />
               </div>
             )}
             <p className="text-cyan-300 text-sm mt-3">📱 Abra o Banco Xhopan e escaneie este QR Code</p>
