@@ -162,7 +162,10 @@ Retorne JSON:
     // depois buscar se outra subscription já tem o mesmo fingerprint
     let transactionFingerprint = null;
     if (analysis.is_valid && analysis.amount_paid && analysis.transaction_date) {
-      transactionFingerprint = `${analysis.amount_paid}|${analysis.transaction_date}|${(analysis.bank || '').toLowerCase()}`;
+      // Normalizar data: extrair apenas dd/mm/yyyy (ignorar horário, que varia entre chamadas da IA)
+      const rawDate = analysis.transaction_date || "";
+      const dateOnly = rawDate.split(" ")[0].split("T")[0].trim(); // pega só "02/03/2026" ou "2026-03-02"
+      transactionFingerprint = `${analysis.amount_paid}|${dateOnly}|${(analysis.bank || '').toLowerCase()}`;
       console.log("🔍 Fingerprint da transação:", transactionFingerprint);
 
       // Salvar fingerprint IMEDIATAMENTE na subscription atual (para bloquear concorrência)
