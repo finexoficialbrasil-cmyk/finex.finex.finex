@@ -2,7 +2,6 @@ import React, { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle, AlertTriangle } from "lucide-react";
 import { xhopanPayment } from "@/functions/xhopanPayment";
-import { processXhopanPayment } from "@/functions/processXhopanPayment";
 
 export default function XhopanPaymentFlow({ selectedPlan, user, xhopanState, setXhopanState, onSuccess, onCancel }) {
   const pollingRef = useRef(null);
@@ -82,34 +81,9 @@ export default function XhopanPaymentFlow({ selectedPlan, user, xhopanState, set
       
       if (data.success || data.confirmed || (data.error && data.error.includes("already used"))) {
         stopPolling();
-        
-        // ✅ Processar o pagamento (debitar + ativar assinatura)
-        try {
-          console.log("🔄 Processando pagamento confirmado...");
-          const processRes = await processXhopanPayment({
-            subscription_id: data.subscription_id,
-            plan_type: selectedPlan.plan_type,
-            amount: selectedPlan.price
-          });
-          
-          if (processRes.data?.success) {
-            console.log("✅ Pagamento processado com sucesso!");
-            setXhopanState(s => ({ ...s, confirmed: true }));
-            onSuccess();
-          } else {
-            console.error("❌ Erro ao processar pagamento:", processRes.data?.error);
-            setXhopanState(s => ({ 
-              ...s, 
-              error: processRes.data?.message || "Erro ao ativar assinatura",
-              confirmed: false 
-            }));
-          }
-        } catch (processError) {
-          console.error("❌ Erro ao chamar processamento:", processError);
-          // Mesmo com erro, pagamento foi confirmado no Xhopan
-          setXhopanState(s => ({ ...s, confirmed: true }));
-          onSuccess();
-        }
+        setXhopanState(s => ({ ...s, confirmed: true }));
+        // ✅ Pagamento confirmado no Xhopan - chamar onSuccess para processar no Plan
+        onSuccess();
       }
       // Se não confirmado ainda, polling continua silenciosamente
     } catch (err) {
