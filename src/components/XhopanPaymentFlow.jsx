@@ -195,11 +195,12 @@ export default function XhopanPaymentFlow({ selectedPlan, user, xhopanState, set
           </div>
 
           {/* Status de detecção automática */}
-          <div className="flex items-center justify-center gap-3 p-3 rounded-xl bg-green-900/20 border border-green-700/30">
-            <Loader2 className="w-5 h-5 text-green-400 animate-spin" />
-            <p className="text-green-300 text-sm font-semibold">
-              ⚡ Detectando pagamento automaticamente...
-            </p>
+          <div className="flex items-center justify-center gap-3 p-3 rounded-xl bg-blue-900/20 border border-blue-700/30">
+            <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
+            <div className="text-blue-300 text-sm">
+              <p className="font-semibold">⏳ Aguardando confirmação do Banco Xhopan...</p>
+              <p className="text-xs mt-1 text-blue-400">Certifique-se de que o pagamento foi realizado no app Xhopan</p>
+            </div>
           </div>
 
           {/* Botão cancelar */}
