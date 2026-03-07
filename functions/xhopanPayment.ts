@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
-const XHOPAN_API_URL = "https://api.base44.app/api/apps/6983682c6d8afe8c8522e760/functions/xhopanPayAPI";
+const XHOPAN_API_URL = "https://api.base44.app/api/apps/6983682c6d8afe8c8522e760/functions";
 
 Deno.serve(async (req) => {
   try {
