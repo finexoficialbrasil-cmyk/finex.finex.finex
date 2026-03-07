@@ -335,30 +335,39 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
         </div>
 
         {/* Footer Fixo */}
-        <DialogFooter className="p-4 sm:p-6 border-t border-purple-700/30 flex-shrink-0 bg-[#1a1a2e]/95 backdrop-blur-sm">
+        <DialogFooter className="p-4 sm:p-6 border-t-2 border-yellow-500/50 flex-shrink-0 bg-[#0d0d1a] backdrop-blur-sm">
           <div className="w-full space-y-3">
-            {/* Checkbox de Aceitação */}
-            <div className="bg-purple-900/20 border border-purple-700/30 p-3 sm:p-4 rounded-lg">
-              <div className="flex items-start gap-3">
-                <Checkbox
-                  id="accept-terms"
-                  checked={accepted}
-                  onCheckedChange={setAccepted}
-                  className="mt-0.5 flex-shrink-0"
-                />
-                <label 
-                  htmlFor="accept-terms" 
-                  className="text-xs sm:text-sm text-purple-200 cursor-pointer flex-1"
-                >
-                  Li e aceito os <strong className="text-white">Termos de Uso</strong> e a <strong className="text-white">Política de Privacidade</strong> do FINEX. Concordo em usar o sistema de acordo com as regras estabelecidas.
+
+            {/* ⚠️ Seta indicativa */}
+            <div className="flex items-center justify-center gap-2 animate-pulse">
+              <span className="text-yellow-400 text-sm font-bold">👇 MARQUE A CAIXA ABAIXO PARA CONTINUAR 👇</span>
+            </div>
+
+            {/* Checkbox de Aceitação — destaque máximo */}
+            <div
+              onClick={() => setAccepted(!accepted)}
+              className={`cursor-pointer border-2 rounded-xl p-4 transition-all duration-300 ${
+                accepted
+                  ? "bg-green-900/40 border-green-400 shadow-lg shadow-green-500/30"
+                  : "bg-yellow-950/60 border-yellow-400 shadow-lg shadow-yellow-500/30 hover:bg-yellow-900/40"
+              }`}
+            >
+              <div className="flex items-center gap-4">
+                <div className={`w-7 h-7 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                  accepted ? "bg-green-500 border-green-400" : "bg-transparent border-yellow-400"
+                }`}>
+                  {accepted && <CheckCircle className="w-5 h-5 text-white" />}
+                </div>
+                <label className="text-sm sm:text-base text-white font-semibold cursor-pointer flex-1 leading-snug">
+                  ✅ Li e aceito os <span className="text-yellow-300 underline">Termos de Uso</span> e a <span className="text-yellow-300 underline">Política de Privacidade</span> do FINEX. Concordo em usar o sistema de acordo com as regras estabelecidas.
                 </label>
               </div>
             </div>
 
             {/* Info de Segurança */}
-            <div className="bg-green-900/20 border border-green-700/30 p-2 sm:p-3 rounded-lg">
+            <div className="bg-green-900/30 border border-green-500/40 p-2 sm:p-3 rounded-lg">
               <div className="flex items-start gap-2">
-                <Shield className="w-3 h-3 sm:w-4 sm:h-4 text-green-400 flex-shrink-0 mt-0.5" />
+                <Shield className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" />
                 <p className="text-green-200 text-xs">
                   <strong className="text-green-300">🔒 Registro Legal:</strong> Sua aceitação será registrada com data, hora e IP para fins legais.
                 </p>
@@ -369,17 +378,21 @@ export default function TermsOfServiceModal({ user, onAccepted }) {
             <Button
               onClick={handleAccept}
               disabled={!accepted || isSubmitting}
-              className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-sm sm:text-base py-4 sm:py-5"
+              className={`w-full text-sm sm:text-base py-5 sm:py-6 font-bold text-lg transition-all duration-300 ${
+                accepted
+                  ? "bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-lg shadow-green-500/40 scale-100"
+                  : "bg-gradient-to-r from-gray-700 to-gray-600 cursor-not-allowed opacity-60"
+              }`}
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 mr-2 animate-spin" />
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                   Registrando...
                 </>
               ) : (
                 <>
-                  <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                  Aceitar e Continuar
+                  <CheckCircle className="w-5 h-5 mr-2" />
+                  {accepted ? "✅ Aceitar e Continuar" : "Marque a caixa acima para continuar"}
                 </>
               )}
             </Button>
