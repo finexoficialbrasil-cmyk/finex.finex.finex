@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
         headers,
         body: JSON.stringify({
           action: "confirm_payment_token",
-          token: token
+          payment_token: token
         })
       });
 
