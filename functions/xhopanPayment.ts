@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
 
     const headers = {
       "Content-Type": "application/json",
-      "Authorization": `Bearer sk_finex_8a9f7e4c2b1d9e3f5a8c7b2d9e1f3a5b`
+      "Authorization": `Bearer ${apiKey}`
     };
 
     console.log(`🔄 Xhopan Action: ${action} | User: ${user.email}`);
