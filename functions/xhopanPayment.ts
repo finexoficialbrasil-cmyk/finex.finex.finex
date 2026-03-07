@@ -44,14 +44,7 @@ Deno.serve(async (req) => {
       const data = await res.json();
       console.log(`✅ Token gerado:`, { success: !!data.token, expires_in: data.expires_in });
       
-      return Response.json({
-        success: !!data.token,
-        token: data.token,
-        qr_code: data.qr_code,
-        payment_token: data.token,
-        qrcode: data.qr_code,
-        expires_in: data.expires_in
-      }, { status: res.status });
+      return Response.json(data, { status: res.status });
     }
 
     if (action === "check_balance") {
@@ -88,13 +81,7 @@ Deno.serve(async (req) => {
       const data = await res.json();
       console.log(`✅ Confirmação:`, { success: data.success, new_balance: data.new_balance });
       
-      return Response.json({
-        success: data.success,
-        confirmed: data.success,
-        message: data.message,
-        new_balance: data.new_balance,
-        transaction_id: data.transaction_id
-      }, { status: res.status });
+      return Response.json(data, { status: res.status });
     }
 
     if (action === "debit") {
@@ -114,11 +101,7 @@ Deno.serve(async (req) => {
       const data = await res.json();
       console.log(`✅ Débito realizado:`, { success: data.success, new_balance: data.new_balance });
       
-      return Response.json({
-        success: data.success,
-        new_balance: data.new_balance,
-        transaction_id: data.transaction_id
-      }, { status: res.status });
+      return Response.json(data, { status: res.status });
     }
 
     return Response.json({ error: 'Action inválida' }, { status: 400 });
