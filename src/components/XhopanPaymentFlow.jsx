@@ -184,6 +184,29 @@ export default function XhopanPaymentFlow({ selectedPlan, user, xhopanState, set
           </div>
           <p className="text-cyan-400 text-xs text-center -mt-2">Compartilhe este código para outra pessoa pagar pelo app Xhopan</p>
 
+          {/* Botão para gerar novo token se necessário */}
+          <div className="text-center">
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => {
+                setXhopanState(s => ({
+                  loading: false,
+                  token: null,
+                  qrcode: null,
+                  qrcode_base64: null,
+                  confirmed: false,
+                  error: null
+                }));
+                setTimeout(generateToken, 100);
+              }}
+              variant="outline"
+              className="border-cyan-700/50 text-cyan-200 hover:bg-cyan-900/30 text-xs"
+            >
+              🔄 Gerar Novo QR Code
+            </Button>
+          </div>
+
           {/* Instruções simplificadas */}
           <div className="bg-blue-900/20 p-4 rounded-lg border border-blue-700/30">
             <ol className="text-blue-200 text-sm space-y-2 list-decimal list-inside">
