@@ -345,33 +345,41 @@ export default function Payables() {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm("Tem certeza que deseja excluir esta conta?\n\n⚠️ As transações relacionadas também serão excluídas!")) {
+    if (!confirm("Tem certeza que deseja excluir esta conta?\n\n⚠️ A transação do mesmo mês também será excluída, mas o histórico de meses anteriores será mantido!")) {
       return;
     }
 
     try {
       // ✅ Buscar a conta antes de deletar
       const bill = bills.find(b => b.id === id);
-      
+
       // ✅ Buscar transações relacionadas pela descrição
       const relatedTransactions = await Transaction.filter({ 
         description: bill?.description 
       });
-      
-      console.log(`🗑️ Excluindo conta a pagar e ${relatedTransactions.length} transação(ões) relacionada(s)`);
-      
-      // ✅ Deletar transações relacionadas
-      if (relatedTransactions.length > 0) {
+
+      // ✅ CORREÇÃO: Filtrar apenas transações do mesmo mês/ano da conta
+      // Não deletar transações de meses anteriores (histórico)
+      const billMonth = bill?.due_date?.substring(0, 7); // YYYY-MM
+      const transactionsToDelete = relatedTransactions.filter(tx => {
+        const txMonth = tx.date?.substring(0, 7); // YYYY-MM
+        return txMonth === billMonth;
+      });
+
+      console.log(`🗑️ Excluindo conta a pagar e ${transactionsToDelete.length} transação(ões) do mês ${billMonth} (${relatedTransactions.length - transactionsToDelete.length} mantidas de meses anteriores)`);
+
+      // ✅ Deletar apenas transações do mesmo mês
+      if (transactionsToDelete.length > 0) {
         await Promise.all(
-          relatedTransactions.map(tx => Transaction.delete(tx.id))
+          transactionsToDelete.map(tx => Transaction.delete(tx.id))
         );
       }
-      
+
       // ✅ Deletar a conta
       await Bill.delete(id);
-      
+
       loadData();
-      alert(`✅ Conta e ${relatedTransactions.length} transação(ões) excluídas!`);
+      alert(`✅ Conta excluída! ${transactionsToDelete.length} transação(ões) do mês removida(s). Histórico anterior preservado.`);
     } catch (error) {
       console.error("❌ Erro ao deletar conta:", error);
 
