@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import FeatureGuard from "../components/FeatureGuard";
 import { Bill } from "@/entities/Bill";
+import { User } from "@/entities/User";
 import { Account } from "@/entities/Account";
 import { Category } from "@/entities/Category";
 import { Transaction } from "@/entities/Transaction";
@@ -68,8 +69,9 @@ export default function Receivables() {
   const [editingBill, setEditingBill] = useState(null);
   const [showReceipt, setShowReceipt] = useState(false);
   const [receiptData, setReceiptData] = useState(null);
-  const [isLoading, setIsLoading] = useState(true); // Added isLoading state
-  const [isSubmitting, setIsSubmitting] = useState(false); // ✅ NOVO: Estado de submissão
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showDeleted, setShowDeleted] = useState(false);
   const [formData, setFormData] = useState({
     description: "",
     amount: "",
@@ -241,46 +243,37 @@ export default function Receivables() {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm("Tem certeza que deseja excluir esta conta?\n\n⚠️ As transações relacionadas também serão excluídas!")) {
+    if (!confirm("Tem certeza que deseja excluir esta conta?\n\n⚠️ A transação do mesmo mês também será excluída, mas o histórico de meses anteriores será mantido!")) {
       return;
     }
 
-    setIsLoading(true);
     try {
-      // ✅ Buscar a conta antes de deletar
       const bill = bills.find(b => b.id === id);
-      
-      // ✅ Buscar transações relacionadas pela descrição
-      const relatedTransactions = await Transaction.filter({ 
-        description: bill?.description 
+      const user = await User.me();
+
+      // Soft delete da conta
+      await Bill.update(id, {
+        ...bill,
+        deleted: true,
+        deleted_at: new Date().toISOString(),
+        deleted_by: user.email
       });
-      
-      console.log(`🗑️ Excluindo conta a receber e ${relatedTransactions.length} transação(ões) relacionada(s)`);
-      
-      // ✅ Deletar transações relacionadas
-      if (relatedTransactions.length > 0) {
-        await Promise.all(
-          relatedTransactions.map(tx => Transaction.delete(tx.id))
-        );
+
+      // Deletar transações do mesmo mês
+      const relatedTransactions = await Transaction.filter({ description: bill?.description });
+      const billMonth = bill?.due_date?.substring(0, 7);
+      const transactionsToDelete = relatedTransactions.filter(tx => tx.date?.substring(0, 7) === billMonth);
+
+      if (transactionsToDelete.length > 0) {
+        await Promise.all(transactionsToDelete.map(tx => Transaction.delete(tx.id)));
       }
-      
-      // ✅ Deletar a conta
-      await Bill.delete(id);
-      
-      await loadData(); // Reload data to reflect changes
-      alert(`✅ Conta e ${relatedTransactions.length} transação(ões) excluídas!`);
+
+      await loadData();
+      alert(`✅ Conta excluída! ${transactionsToDelete.length} transação(ões) do mês removida(s). Histórico anterior preservado.`);
     } catch (error) {
       console.error("❌ Erro ao deletar conta:", error);
-      
-      if (error.response?.status === 404) {
-        alert("⚠️ Esta conta já foi excluída. Atualizando a lista...");
-      } else {
-        alert("❌ Erro ao excluir conta. Tente novamente.");
-      }
-      
-      await loadData(); // Reload data even on error to sync state
-    } finally {
-      setIsLoading(false);
+      alert("❌ Erro ao excluir conta. Tente novamente.");
+      await loadData();
     }
   };
 
@@ -549,26 +542,26 @@ Agradecemos pela atenção e confiança!
     return null;
   };
 
-  // Client-side filtering and sorting
   const filteredAndSortedBills = bills
     .filter(bill => {
+      if (showDeleted) {
+        if (!bill.deleted) return false;
+      } else {
+        if (bill.deleted) return false;
+      }
       const matchesStatus = filterStatus === "all" || bill.status === filterStatus;
       const matchesCategory = filterCategory === "all" || bill.category_id === filterCategory;
       const matchesAccount = filterAccount === "all" || bill.account_id === filterAccount;
-      const matchesSearch = searchTerm === "" || 
+      const matchesSearch = searchTerm === "" ||
         bill.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
         bill.contact_name?.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      // ✅ Filtrar por mês selecionado
-      const billMonth = bill.due_date.substring(0, 7); // YYYY-MM
+      const billMonth = bill.due_date.substring(0, 7);
       const matchesMonth = selectedMonth === "todos" ? true : billMonth === selectedMonth;
-      
       return matchesStatus && matchesCategory && matchesAccount && matchesSearch && matchesMonth;
     })
     .sort((a, b) => {
       const order = sortBy.startsWith('-') ? -1 : 1;
       const field = sortBy.startsWith('-') || sortBy.startsWith('+') ? sortBy.substring(1) : sortBy;
-
       let valA, valB;
       if (field === 'created_date' || field === 'due_date') {
         valA = new Date(a[field]);
@@ -577,9 +570,8 @@ Agradecemos pela atenção e confiança!
         valA = a[field];
         valB = b[field];
       } else {
-        return 0; // No specific sorting for other fields
+        return 0;
       }
-
       if (valA < valB) return -1 * order;
       if (valA > valB) return 1 * order;
       return 0;
@@ -867,6 +859,43 @@ Agradecemos pela atenção e confiança!
                     <TabsTrigger value="paid" className="flex-1 text-xs lg:text-sm py-2">Recebidas</TabsTrigger>
                   </TabsList>
                 </Tabs>
+
+                {/* Toggle Lançamentos Excluídos */}
+                <div
+                  className={`relative p-4 rounded-xl border-2 transition-all cursor-pointer mt-2 ${
+                    showDeleted
+                      ? 'bg-gradient-to-r from-red-900/40 to-orange-900/40 border-red-500/50 shadow-lg shadow-red-500/20'
+                      : 'bg-purple-900/10 border-purple-700/30 hover:border-purple-600/50'
+                  }`}
+                  onClick={() => setShowDeleted(!showDeleted)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-lg ${showDeleted ? 'bg-red-500/20' : 'bg-purple-600/20'}`}>
+                        <Trash2 className={`w-5 h-5 ${showDeleted ? 'text-red-400' : 'text-purple-400'}`} />
+                      </div>
+                      <div>
+                        <p className={`font-semibold ${showDeleted ? 'text-red-300' : 'text-purple-200'}`}>
+                          Lançamentos Excluídos
+                        </p>
+                        <p className="text-xs text-purple-400">
+                          {showDeleted ? 'Clique para voltar aos lançamentos normais' : 'Clique para ver os excluídos'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className={`relative w-14 h-7 rounded-full transition-colors ${showDeleted ? 'bg-red-500' : 'bg-purple-700/50'}`}>
+                      <div className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-transform ${showDeleted ? 'translate-x-7' : 'translate-x-0'}`} />
+                    </div>
+                  </div>
+                  {showDeleted && (
+                    <div className="mt-3 pt-3 border-t border-red-500/30">
+                      <p className="text-xs text-red-300 flex items-center gap-2">
+                        <AlertCircle className="w-3 h-3" />
+                        Você está visualizando apenas lançamentos excluídos
+                      </p>
+                    </div>
+                  )}
+                </div>
             </CardHeader>
             <CardContent className="p-4 md:p-6">
               <AnimatePresence>

@@ -5,6 +5,7 @@ import { Account } from "@/entities/Account";
 import { Category } from "@/entities/Category";
 import { Transaction } from "@/entities/Transaction";
 import { SystemCategory } from "@/entities/SystemCategory";
+import { User } from "@/entities/User";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,8 +68,9 @@ export default function Payables() {
   const [editingBill, setEditingBill] = useState(null);
   const [showReceipt, setShowReceipt] = useState(false);
   const [receiptData, setReceiptData] = useState(null);
-  const [isLoading, setIsLoading] = useState(true); // ✅ NOVO: Estado de carregamento
-  const [isSubmitting, setIsSubmitting] = useState(false); // ✅ NOVO: Estado de submissão
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showDeleted, setShowDeleted] = useState(false);
   const [formData, setFormData] = useState({
     description: "",
     amount: "",
@@ -103,28 +105,24 @@ export default function Payables() {
   }, [sortBy]); // ✅ Manter sortBy para preservar a funcionalidade de ordenação
 
   const loadData = async () => {
-    setIsLoading(true); // ✅ NOVO: Inicia o carregamento
+    setIsLoading(true);
     try {
-      // ✅ OTIMIZADO: Carregar com limites e em paralelo
       const [billsData, accsData, userCats, sysCats] = await Promise.all([
-        Bill.list(sortBy), // ✅ SEM LIMITE
-        Account.list("-created_date"), // ✅ SEM LIMITE
-        Category.list("-created_date"), // ✅ SEM LIMITE
-        SystemCategory.list() // ✅ SEM LIMITE
+        Bill.list(sortBy),
+        Account.list("-created_date"),
+        Category.list("-created_date"),
+        SystemCategory.list()
       ]);
-
-      console.log(`✅ Contas a pagar carregadas: ${billsData.length}`);
 
       const allCategories = [
         ...sysCats,
         ...userCats
       ];
 
-      // Filtrar as categorias para exibir apenas as de despesa, relevante para Contas a Pagar
       setCategories(allCategories.filter(c => c.type === "expense"));
 
       const today = new Date();
-      const payableBills = billsData.filter(b => b.type === "payable"); // Only show payables in this component
+      const payableBills = billsData.filter(b => b.type === "payable");
 
       const todayLocal = new Date(today.getFullYear(), today.getMonth(), today.getDate());
       
@@ -350,33 +348,25 @@ export default function Payables() {
     }
 
     try {
-      // ✅ Buscar a conta antes de deletar
       const bill = bills.find(b => b.id === id);
+      const user = await User.me();
 
-      // ✅ Buscar transações relacionadas pela descrição
-      const relatedTransactions = await Transaction.filter({ 
-        description: bill?.description 
+      // Soft delete da conta
+      await Bill.update(id, {
+        ...bill,
+        deleted: true,
+        deleted_at: new Date().toISOString(),
+        deleted_by: user.email
       });
 
-      // ✅ CORREÇÃO: Filtrar apenas transações do mesmo mês/ano da conta
-      // Não deletar transações de meses anteriores (histórico)
-      const billMonth = bill?.due_date?.substring(0, 7); // YYYY-MM
-      const transactionsToDelete = relatedTransactions.filter(tx => {
-        const txMonth = tx.date?.substring(0, 7); // YYYY-MM
-        return txMonth === billMonth;
-      });
+      // Deletar transações do mesmo mês
+      const relatedTransactions = await Transaction.filter({ description: bill?.description });
+      const billMonth = bill?.due_date?.substring(0, 7);
+      const transactionsToDelete = relatedTransactions.filter(tx => tx.date?.substring(0, 7) === billMonth);
 
-      console.log(`🗑️ Excluindo conta a pagar e ${transactionsToDelete.length} transação(ões) do mês ${billMonth} (${relatedTransactions.length - transactionsToDelete.length} mantidas de meses anteriores)`);
-
-      // ✅ Deletar apenas transações do mesmo mês
       if (transactionsToDelete.length > 0) {
-        await Promise.all(
-          transactionsToDelete.map(tx => Transaction.delete(tx.id))
-        );
+        await Promise.all(transactionsToDelete.map(tx => Transaction.delete(tx.id)));
       }
-
-      // ✅ Deletar a conta
-      await Bill.delete(id);
 
       loadData();
       alert(`✅ Conta excluída! ${transactionsToDelete.length} transação(ões) do mês removida(s). Histórico anterior preservado.`);
@@ -658,6 +648,11 @@ export default function Payables() {
       });
 
   const filteredBills = bills.filter(bill => {
+    if (showDeleted) {
+      if (!bill.deleted) return false;
+    } else {
+      if (bill.deleted) return false;
+    }
     const matchesStatus = filterStatus === "all" || bill.status === filterStatus;
     const matchesCategory = filterCategory === "all" || bill.category_id === filterCategory;
     const matchesAccount = filterAccount === "all" || bill.account_id === filterAccount;
@@ -665,19 +660,17 @@ export default function Payables() {
       bill.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       bill.contact_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       bill.supplier_full_name?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    // ✅ Filtrar por mês selecionado
-    const billMonth = bill.due_date.substring(0, 7); // YYYY-MM
+    const billMonth = bill.due_date.substring(0, 7);
     const matchesMonth = selectedMonth === "todos" ? true : billMonth === selectedMonth;
-    
     return matchesStatus && matchesCategory && matchesAccount && matchesSearch && matchesMonth;
   });
 
   // ✅ Calcular quantidades para cada aba
+  const activeBills = bills.filter(b => !b.deleted);
   const counts = {
-    all: bills.length,
-    pending: bills.filter(b => b.status === "pending").length,
-    overdue: bills.filter(b => b.status === "overdue").length,
+    all: activeBills.length,
+    pending: activeBills.filter(b => b.status === "pending").length,
+    overdue: activeBills.filter(b => b.status === "overdue").length,
     paid: currentMonthBills.filter(b => b.status === "paid").length
   };
 
@@ -945,6 +938,43 @@ export default function Payables() {
                     </TabsTrigger>
                   </TabsList>
                 </Tabs>
+
+                {/* Toggle Lançamentos Excluídos */}
+                <div
+                  className={`relative p-4 rounded-xl border-2 transition-all cursor-pointer mt-2 ${
+                    showDeleted
+                      ? 'bg-gradient-to-r from-red-900/40 to-orange-900/40 border-red-500/50 shadow-lg shadow-red-500/20'
+                      : 'bg-purple-900/10 border-purple-700/30 hover:border-purple-600/50'
+                  }`}
+                  onClick={() => setShowDeleted(!showDeleted)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-lg ${showDeleted ? 'bg-red-500/20' : 'bg-purple-600/20'}`}>
+                        <Trash2 className={`w-5 h-5 ${showDeleted ? 'text-red-400' : 'text-purple-400'}`} />
+                      </div>
+                      <div>
+                        <p className={`font-semibold ${showDeleted ? 'text-red-300' : 'text-purple-200'}`}>
+                          Lançamentos Excluídos
+                        </p>
+                        <p className="text-xs text-purple-400">
+                          {showDeleted ? 'Clique para voltar aos lançamentos normais' : 'Clique para ver os excluídos'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className={`relative w-14 h-7 rounded-full transition-colors ${showDeleted ? 'bg-red-500' : 'bg-purple-700/50'}`}>
+                      <div className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-transform ${showDeleted ? 'translate-x-7' : 'translate-x-0'}`} />
+                    </div>
+                  </div>
+                  {showDeleted && (
+                    <div className="mt-3 pt-3 border-t border-red-500/30">
+                      <p className="text-xs text-red-300 flex items-center gap-2">
+                        <AlertCircle className="w-3 h-3" />
+                        Você está visualizando apenas lançamentos excluídos
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             </CardHeader>
             <CardContent className="p-6">
