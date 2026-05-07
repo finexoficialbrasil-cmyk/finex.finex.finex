@@ -106,6 +106,8 @@ export default function TransactionsPage() {
   const [selectedEditHistory, setSelectedEditHistory] = useState(null); // ✅ NOVO: Transação selecionada
   const [showForm, setShowForm] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState(null);
+  const [showReceipt, setShowReceipt] = useState(false);
+  const [receiptTransaction, setReceiptTransaction] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false); // ✅ NOVO: Estado de submissão
   const [isLoading, setIsLoading] = useState(true); // ✅ NOVO: Estado de carregamento inicial
   const [currentPage, setCurrentPage] = useState(1); // ✅ NOVO: Estado para paginação
@@ -1136,6 +1138,15 @@ export default function TransactionsPage() {
                                      <Button
                                        variant="ghost"
                                        size="icon"
+                                       onClick={() => { setReceiptTransaction(tx); setShowReceipt(true); }}
+                                       className="h-8 w-8"
+                                       title="Ver Comprovante"
+                                     >
+                                       <FileText className="w-4 h-4 text-green-400" />
+                                     </Button>
+                                     <Button
+                                       variant="ghost"
+                                       size="icon"
                                        onClick={() => handleEdit(tx)}
                                        className="h-8 w-8"
                                      >
@@ -1327,6 +1338,54 @@ export default function TransactionsPage() {
                   </Button>
                 </div>
               </form>
+            </DialogContent>
+          </Dialog>
+
+          {/* Dialog de Comprovante */}
+          <Dialog open={showReceipt} onOpenChange={setShowReceipt}>
+            <DialogContent className="glass-card border-purple-700/50 text-white max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
+              <DialogHeader className="sticky top-0 bg-[#1a1a2e] z-10 pb-4">
+                <DialogTitle className="text-xl bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-purple-400" />
+                  Comprovante de Transação
+                </DialogTitle>
+              </DialogHeader>
+              {receiptTransaction && (() => {
+                const cat = getCategoryInfo(receiptTransaction.category_id);
+                const acc = getAccountInfo(receiptTransaction.account_id);
+                const isIncome = receiptTransaction.type === "income";
+                return (
+                  <div className="space-y-3 pb-4">
+                    <div className="text-center p-6 bg-purple-900/20 rounded-xl border border-purple-700/30">
+                      <p className="text-4xl font-black mb-1" style={{ color: isIncome ? '#4ade80' : '#f87171' }}>
+                        {isIncome ? '+' : '-'} R$ {formatCurrencyBR(receiptTransaction.amount)}
+                      </p>
+                      <p className="text-purple-300 text-sm">{isIncome ? 'Entrada' : 'Saída'}</p>
+                    </div>
+                    {[
+                      { label: 'Descrição', value: receiptTransaction.description },
+                      { label: 'Data', value: formatDateBR(receiptTransaction.date) },
+                      { label: 'Conta', value: acc.name },
+                      { label: 'Categoria', value: cat.name },
+                      { label: 'Status', value: receiptTransaction.status === 'completed' ? '✅ Concluída' : receiptTransaction.status },
+                      receiptTransaction.notes && { label: 'Observações', value: receiptTransaction.notes },
+                    ].filter(Boolean).map(({ label, value }) => (
+                      <div key={label} className="flex justify-between items-start p-3 rounded-lg bg-purple-900/10 border border-purple-700/20">
+                        <span className="text-purple-400 text-sm">{label}</span>
+                        <span className="text-white text-sm font-medium text-right max-w-[60%]">{value}</span>
+                      </div>
+                    ))}
+                    <div className="text-center pt-2">
+                      <p className="text-xs text-purple-500">ID: {receiptTransaction.id?.substring(0, 12).toUpperCase()}</p>
+                      <p className="text-xs text-purple-500 mt-1">FINEX - Inteligência Financeira</p>
+                    </div>
+                    <div className="flex gap-3 pt-2 sticky bottom-0 bg-[#1a1a2e] pb-2">
+                      <Button onClick={() => setShowReceipt(false)} variant="outline" className="flex-1 border-purple-700 text-purple-300">Fechar</Button>
+                      <Button onClick={() => window.print()} className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600">Imprimir</Button>
+                    </div>
+                  </div>
+                );
+              })()}
             </DialogContent>
           </Dialog>
 

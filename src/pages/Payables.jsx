@@ -1055,6 +1055,22 @@ export default function Payables() {
                               <p className="text-xs text-purple-400 truncate">{account.name}</p>
                             </div>
                             <div className="flex gap-1 sm:gap-2 justify-end order-1 sm:order-none">
+                              {bill.status === "paid" && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => {
+                                    const category = getCategoryInfo(bill.category_id);
+                                    const account = getAccountInfo(bill.account_id);
+                                    setReceiptData({ bill, account, category, paymentDate: bill.payment_date, type: "payment" });
+                                    setShowReceipt(true);
+                                  }}
+                                  className="h-7 w-7 sm:h-8 sm:w-8 text-green-400"
+                                  title="Ver Comprovante"
+                                >
+                                  <FileText className="w-3 h-3 sm:w-4 sm:h-4" />
+                                </Button>
+                              )}
                               {bill.status === "pending" || bill.status === "overdue" ? (
                                 <Button
                                   onClick={() => handlePay(bill)}
