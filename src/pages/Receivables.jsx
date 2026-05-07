@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import React, { useState, useEffect } from "react";
 import FeatureGuard from "../components/FeatureGuard";
 import { Bill } from "@/entities/Bill";
 import { User } from "@/entities/User";
