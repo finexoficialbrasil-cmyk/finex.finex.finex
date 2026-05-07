@@ -1344,44 +1344,40 @@ export default function TransactionsPage() {
 
           {/* Dialog de Comprovante */}
           <Dialog open={showReceipt} onOpenChange={setShowReceipt}>
-            <DialogContent className="max-w-[95vw] sm:max-w-2xl bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50 text-gray-800 max-h-[90vh] overflow-y-auto border-2 border-purple-200/50 shadow-2xl print:max-w-full print:shadow-none print:border-0">
-              <style>{`
-                @media print {
-                  body * { visibility: hidden !important; }
-                  #tx-receipt-content, #tx-receipt-content * { visibility: visible !important; }
-                  #tx-receipt-content { position: fixed !important; left: 0; top: 0; width: 100%; padding: 20px; }
-                  .print\\:hidden { display: none !important; }
-                }
-              `}</style>
+            <DialogContent className="max-w-[95vw] sm:max-w-2xl bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50 text-gray-800 print:shadow-none max-h-[90vh] overflow-y-auto border-2 border-purple-200/50 shadow-2xl print:max-w-full print:shadow-none print:border-0">
               <DialogHeader className="sticky top-0 bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50 z-10 pb-4 print:static">
                 <DialogTitle className="text-xl sm:text-2xl bg-gradient-to-r from-purple-600 via-pink-500 to-rose-500 bg-clip-text text-transparent font-bold print:text-purple-700">
                   ✨ Comprovante de Transação
                 </DialogTitle>
               </DialogHeader>
+
               {receiptTransaction && (() => {
                 const cat = getCategoryInfo(receiptTransaction.category_id);
                 const acc = getAccountInfo(receiptTransaction.account_id);
                 const isIncome = receiptTransaction.type === "income";
                 return (
-                  <div id="tx-receipt-content" className="space-y-4 pb-4">
+                  <div id="tx-receipt-content" className="space-y-4 print:space-y-3">
                     {/* Header */}
-                    <div className="relative overflow-hidden rounded-3xl p-8 bg-gradient-to-br from-white/80 via-purple-50/50 to-pink-50/50 backdrop-blur-xl border border-purple-200/30 shadow-xl print:rounded-2xl print:p-6 print:bg-white print:border-purple-300 print:shadow-none">
-                      <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-purple-300/50 to-transparent"></div>
-                      <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-pink-300/50 to-transparent"></div>
+                    <div className="relative overflow-hidden rounded-3xl p-8 bg-gradient-to-br from-white/80 via-purple-50/50 to-pink-50/50 backdrop-blur-xl border border-purple-200/30 shadow-xl print:rounded-2xl print:p-6 print:bg-white print:border-purple-300 print:shadow-none print:backdrop-blur-none">
+                      <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-purple-300/50 to-transparent print:bg-purple-300"></div>
+                      <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-pink-300/50 to-transparent print:bg-pink-300"></div>
+                      <div className="absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-br from-purple-200/20 to-pink-200/20 rounded-full blur-3xl print:hidden"></div>
+                      <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-gradient-to-br from-blue-200/20 to-indigo-200/20 rounded-full blur-3xl print:hidden"></div>
                       <div className="text-center relative z-10">
                         <h1 className="text-5xl font-black mb-3 bg-gradient-to-r from-purple-600 via-pink-500 to-rose-500 bg-clip-text text-transparent tracking-tight print:text-4xl print:text-purple-700 print:mb-2">
                           FINEX
                         </h1>
-                        <div className="inline-block px-5 py-1.5 rounded-full bg-gradient-to-r from-purple-100/80 to-pink-100/80 border border-purple-200/50 mb-4 print:bg-purple-100 print:mb-3">
+                        <div className="inline-block px-5 py-1.5 rounded-full bg-gradient-to-r from-purple-100/80 to-pink-100/80 border border-purple-200/50 mb-4 backdrop-blur-sm print:bg-purple-100 print:mb-3 print:backdrop-blur-none">
                           <p className="text-purple-700 font-semibold text-xs tracking-widest">INTELIGÊNCIA FINANCEIRA</p>
                         </div>
-                        <div className="flex items-center justify-center gap-2 my-3">
+                        <div className="flex items-center justify-center gap-2 my-4 print:my-3">
                           <div className="h-px w-12 bg-gradient-to-r from-transparent to-purple-300 print:bg-purple-300"></div>
-                          <div className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-purple-400 to-pink-400"></div>
+                          <div className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 print:bg-purple-500"></div>
                           <div className="h-px w-12 bg-gradient-to-l from-transparent to-purple-300 print:bg-purple-300"></div>
                         </div>
-                        <p className="text-purple-700 font-bold text-lg tracking-wide mb-3 print:text-base">Comprovante de Transação</p>
+                        <p className="text-purple-700 font-bold text-lg tracking-wide mb-3 print:text-base print:mb-2">Comprovante de Transação</p>
                         <div className="flex items-center justify-center gap-2 text-purple-600/70 text-sm">
+                          <Calendar className="w-4 h-4 print:w-3 print:h-3" />
                           <span className="font-medium">{format(new Date(), "dd/MM/yyyy 'às' HH:mm")}</span>
                         </div>
                       </div>
@@ -1391,120 +1387,113 @@ export default function TransactionsPage() {
                       <div className="absolute bottom-3 right-3 w-8 h-8 border-b-2 border-r-2 border-pink-300/40 rounded-br-xl print:border-pink-300"></div>
                     </div>
 
-                    {/* Valor destaque */}
-                    <div className={`relative p-6 rounded-2xl backdrop-blur-sm border shadow-lg overflow-hidden print:p-4 print:shadow-none print:backdrop-blur-none ${
-                      isIncome
-                        ? 'bg-gradient-to-br from-emerald-50/80 via-teal-50/80 to-cyan-50/80 border-emerald-200/50 print:bg-emerald-50 print:border-emerald-300'
-                        : 'bg-gradient-to-br from-red-50/80 via-orange-50/80 to-pink-50/80 border-red-200/50 print:bg-red-50 print:border-red-300'
-                    }`}>
-                      <div className="relative z-10">
-                        <p className={`text-xs mb-2 font-bold tracking-widest uppercase print:text-sm ${isIncome ? 'text-emerald-700/80 print:text-emerald-700' : 'text-red-700/80 print:text-red-700'}`}>
-                          {isIncome ? '💰 Valor Recebido' : '💸 Valor Pago'}
-                        </p>
-                        <p className={`text-5xl font-black print:text-4xl ${isIncome ? 'bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent print:text-emerald-700' : 'bg-gradient-to-r from-red-600 via-orange-600 to-pink-600 bg-clip-text text-transparent print:text-red-700'}`}>
-                          {isIncome ? '+' : '-'} R$ {formatCurrencyBR(receiptTransaction.amount)}
-                        </p>
-                        <p className={`text-sm mt-1 font-medium ${isIncome ? 'text-emerald-600' : 'text-red-600'}`}>{isIncome ? 'Entrada' : 'Saída'}</p>
+                    {/* Informações */}
+                    <div className="space-y-3 print:space-y-2">
+                      {/* Descrição */}
+                      <div className="p-4 rounded-2xl bg-white/60 backdrop-blur-sm border border-purple-200/30 shadow-sm print:bg-white print:border-purple-200 print:shadow-none print:backdrop-blur-none print:p-3">
+                        <p className="text-xs text-purple-600/70 mb-1 font-semibold tracking-wide uppercase print:text-purple-700">Descrição</p>
+                        <p className="text-gray-800 font-medium print:text-black">{receiptTransaction.description}</p>
                       </div>
-                    </div>
 
-                    {/* Detalhes */}
-                    <div className="space-y-2 print:space-y-1">
-                      {[
-                        { label: 'Descrição', value: receiptTransaction.description },
-                        { label: 'Data', value: formatDateBR(receiptTransaction.date) },
-                        { label: 'Conta', value: acc.name },
-                        { label: 'Categoria', value: cat.name },
-                        { label: 'Status', value: receiptTransaction.status === 'completed' ? 'Concluída ✅' : receiptTransaction.status },
-                        receiptTransaction.notes && { label: 'Observações', value: receiptTransaction.notes },
-                      ].filter(Boolean).map(({ label, value }) => (
-                        <div key={label} className="p-3 rounded-2xl bg-white/60 backdrop-blur-sm border border-purple-200/30 shadow-sm print:bg-white print:border-purple-200 print:shadow-none print:backdrop-blur-none print:p-2">
-                          <p className="text-xs text-purple-600/70 mb-0.5 font-semibold tracking-wide uppercase print:text-purple-700">{label}</p>
-                          <p className="text-gray-800 font-medium print:text-black">{value}</p>
+                      {/* Valor - Destaque */}
+                      <div className={`relative p-6 rounded-2xl backdrop-blur-sm border shadow-lg overflow-hidden print:p-4 print:shadow-none print:backdrop-blur-none ${
+                        isIncome
+                          ? 'bg-gradient-to-br from-emerald-50/80 via-teal-50/80 to-cyan-50/80 border-emerald-200/50 print:bg-emerald-50 print:border-emerald-300'
+                          : 'bg-gradient-to-br from-red-50/80 via-orange-50/80 to-pink-50/80 border-red-200/50 print:bg-red-50 print:border-red-300'
+                      }`}>
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/10 print:hidden"></div>
+                        <div className="relative z-10">
+                          <p className={`text-xs mb-2 font-bold tracking-widest flex items-center gap-2 uppercase print:text-sm ${isIncome ? 'text-emerald-700/80 print:text-emerald-700' : 'text-red-700/80 print:text-red-700'}`}>
+                            <FileText className={`w-4 h-4 print:w-3 print:h-3`} />
+                            {isIncome ? 'Valor Recebido' : 'Valor Pago'}
+                          </p>
+                          <p className={`text-5xl font-black print:text-4xl ${isIncome ? 'bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent print:text-emerald-700' : 'bg-gradient-to-r from-red-600 via-orange-600 to-pink-600 bg-clip-text text-transparent print:text-red-700'}`}>
+                            {isIncome ? '+' : '-'} R$ {formatCurrencyBR(receiptTransaction.amount)}
+                          </p>
                         </div>
-                      ))}
-                    </div>
+                        <div className="absolute -right-10 -bottom-10 w-32 h-32 bg-gradient-to-br from-white/20 to-transparent rounded-full blur-2xl print:hidden"></div>
+                      </div>
 
-                    {/* Status badge */}
-                    <div className={`relative p-4 rounded-2xl border shadow-md overflow-hidden print:p-3 print:shadow-none ${isIncome ? 'bg-gradient-to-r from-emerald-50/80 to-teal-50/80 border-emerald-200/50 print:bg-green-50 print:border-green-300' : 'bg-gradient-to-r from-green-50/80 to-emerald-50/80 border-green-200/50 print:bg-green-50 print:border-green-300'}`}>
-                      <div className="flex items-center justify-center gap-3">
-                        <div className="p-2 rounded-full bg-gradient-to-br from-green-100 to-emerald-100 border border-green-200/50 print:bg-green-100 print:border-green-300">
-                          <Check className="w-5 h-5 text-green-600" />
+                      {/* Grid de informações */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 print:gap-2">
+                        <div className="p-4 rounded-2xl bg-white/60 backdrop-blur-sm border border-purple-200/30 shadow-sm print:bg-white print:border-purple-200 print:shadow-none print:backdrop-blur-none print:p-3">
+                          <p className="text-xs text-purple-600/70 mb-1 font-semibold tracking-wide uppercase print:text-purple-700">Data</p>
+                          <p className="text-gray-800 font-medium print:text-black">{formatDateBR(receiptTransaction.date)}</p>
                         </div>
-                        <p className="text-2xl font-black bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent tracking-wide print:text-xl print:text-green-700">
-                          CONCLUÍDA
-                        </p>
+                        <div className="p-4 rounded-2xl bg-white/60 backdrop-blur-sm border border-purple-200/30 shadow-sm print:bg-white print:border-purple-200 print:shadow-none print:backdrop-blur-none print:p-3">
+                          <p className="text-xs text-purple-600/70 mb-1 font-semibold tracking-wide uppercase print:text-purple-700">Tipo</p>
+                          <p className={`font-semibold print:text-black ${isIncome ? 'text-emerald-600' : 'text-red-600'}`}>{isIncome ? 'Entrada' : 'Saída'}</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 print:gap-2">
+                        <div className="p-4 rounded-2xl bg-white/60 backdrop-blur-sm border border-purple-200/30 shadow-sm print:bg-white print:border-purple-200 print:shadow-none print:backdrop-blur-none print:p-3">
+                          <p className="text-xs text-purple-600/70 mb-1 font-semibold tracking-wide uppercase print:text-purple-700">Conta</p>
+                          <p className="text-gray-800 font-medium print:text-black">{acc.name}</p>
+                        </div>
+                        <div className="p-4 rounded-2xl bg-white/60 backdrop-blur-sm border border-purple-200/30 shadow-sm print:bg-white print:border-purple-200 print:shadow-none print:backdrop-blur-none print:p-3">
+                          <p className="text-xs text-purple-600/70 mb-1 font-semibold tracking-wide uppercase print:text-purple-700">Categoria</p>
+                          <Badge
+                            className="font-semibold border print:inline-block print:px-2 print:py-1"
+                            style={{ backgroundColor: cat?.color + '15', color: cat?.color, borderColor: cat?.color + '30' }}
+                          >
+                            {cat?.name || "Sem categoria"}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      {receiptTransaction.notes && (
+                        <div className="p-4 rounded-2xl bg-white/60 backdrop-blur-sm border border-purple-200/30 shadow-sm print:bg-white print:border-purple-200 print:shadow-none print:backdrop-blur-none print:p-3">
+                          <p className="text-xs text-purple-600/70 mb-1 font-semibold tracking-wide uppercase print:text-purple-700">Observações</p>
+                          <p className="text-gray-800 text-sm print:text-black">{receiptTransaction.notes}</p>
+                        </div>
+                      )}
+
+                      {/* Status */}
+                      <div className="relative p-5 rounded-2xl bg-gradient-to-r from-green-50/80 to-emerald-50/80 backdrop-blur-sm border border-green-200/50 shadow-md overflow-hidden print:bg-green-50 print:border-green-300 print:shadow-none print:backdrop-blur-none print:p-4">
+                        <div className="absolute inset-0 bg-gradient-to-br from-green-100/10 via-transparent to-emerald-100/10 print:hidden"></div>
+                        <div className="relative z-10 flex items-center justify-center gap-3 print:gap-2">
+                          <div className="p-2.5 rounded-full bg-gradient-to-br from-green-100 to-emerald-100 border border-green-200/50 shadow-sm print:bg-green-100 print:border-green-300 print:shadow-none">
+                            <Check className="w-5 h-5 text-green-600 print:w-4 print:h-4" />
+                          </div>
+                          <p className="text-2xl font-black bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent tracking-wide print:text-xl print:text-green-700">
+                            CONCLUÍDA
+                          </p>
+                        </div>
                       </div>
                     </div>
 
                     {/* Footer */}
-                    <div className="text-center pt-3 border-t border-purple-200/30 space-y-1 print:border-purple-300">
+                    <div className="text-center pt-4 border-t border-purple-200/30 space-y-2 print:border-purple-300 print:pt-3">
                       <p className="text-sm font-bold bg-gradient-to-r from-purple-600 via-pink-500 to-rose-500 bg-clip-text text-transparent print:text-purple-700">
                         FINEX - Sistema de Inteligência Financeira
                       </p>
                       <p className="text-xs text-purple-600/60 print:text-purple-600">Comprovante gerado automaticamente</p>
-                      <p className="text-xs text-purple-500/70 font-mono tracking-wider print:text-purple-600">
-                        ID: {receiptTransaction.id?.substring(0, 12).toUpperCase()}
-                      </p>
-                    </div>
-
-                    <div className="flex gap-3 pt-2 sticky bottom-0 bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50 pb-2 print:hidden">
-                      <Button onClick={() => setShowReceipt(false)} variant="outline" className="flex-1 border-purple-300/50 text-purple-700 hover:bg-purple-50">Fechar</Button>
-                      <Button
-                        onClick={() => {
-                          const printContent = document.getElementById('tx-receipt-content').innerHTML;
-                          const w = window.open('', '_blank');
-                          w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Comprovante FINEX</title><style>
-                            body{font-family:Arial,sans-serif;padding:30px;background:#fff;color:#333;}
-                            .header{text-align:center;margin-bottom:20px;padding-bottom:15px;border-bottom:2px solid #a855f7;}
-                            .title{font-size:36px;font-weight:900;color:#a855f7;margin:0;}
-                            .subtitle{font-size:11px;letter-spacing:3px;color:#7c3aed;margin:5px 0 10px;}
-                            .amount{font-size:42px;font-weight:900;margin:15px 0 5px;}
-                            .amount-income{color:#059669;} .amount-expense{color:#dc2626;}
-                            .amount-box{background:#f9fafb;border:2px solid #e5e7eb;border-radius:12px;padding:20px;text-align:center;margin:15px 0;}
-                            .detail-row{display:flex;justify-content:space-between;padding:10px 14px;border:1px solid #e9d5ff;border-radius:8px;margin:6px 0;background:#faf5ff;}
-                            .detail-label{font-size:11px;color:#7c3aed;font-weight:700;text-transform:uppercase;letter-spacing:1px;}
-                            .detail-value{font-size:13px;color:#1f2937;font-weight:600;text-align:right;max-width:60%;}
-                            .status-box{text-align:center;padding:12px;border-radius:10px;background:#f0fdf4;border:2px solid #86efac;margin:15px 0;}
-                            .status-text{font-size:22px;font-weight:900;color:#15803d;}
-                            .footer{text-align:center;margin-top:20px;padding-top:15px;border-top:1px solid #e9d5ff;}
-                            .footer p{font-size:11px;color:#7c3aed;margin:3px 0;}
-                          </style></head><body>
-                            <div class="header">
-                              <div class="title">FINEX</div>
-                              <div class="subtitle">INTELIGÊNCIA FINANCEIRA</div>
-                              <div style="font-size:14px;font-weight:700;color:#374151;">Comprovante de Transação</div>
-                              <div style="font-size:12px;color:#6b7280;margin-top:5px;">${format(new Date(), "dd/MM/yyyy 'às' HH:mm")}</div>
-                            </div>
-                            <div class="amount-box">
-                              <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:${isIncome ? '#059669' : '#dc2626'};">${isIncome ? 'Valor Recebido' : 'Valor Pago'}</div>
-                              <div class="amount ${isIncome ? 'amount-income' : 'amount-expense'}">${isIncome ? '+' : '-'} R$ ${formatCurrencyBR(receiptTransaction.amount)}</div>
-                              <div style="font-size:13px;color:#6b7280;">${isIncome ? 'Entrada' : 'Saída'}</div>
-                            </div>
-                            <div class="detail-row"><span class="detail-label">Descrição</span><span class="detail-value">${receiptTransaction.description}</span></div>
-                            <div class="detail-row"><span class="detail-label">Data</span><span class="detail-value">${formatDateBR(receiptTransaction.date)}</span></div>
-                            <div class="detail-row"><span class="detail-label">Conta</span><span class="detail-value">${acc.name}</span></div>
-                            <div class="detail-row"><span class="detail-label">Categoria</span><span class="detail-value">${cat.name}</span></div>
-                            ${receiptTransaction.notes ? `<div class="detail-row"><span class="detail-label">Observações</span><span class="detail-value">${receiptTransaction.notes}</span></div>` : ''}
-                            <div class="status-box"><div class="status-text">✅ CONCLUÍDA</div></div>
-                            <div class="footer">
-                              <p style="font-weight:700;font-size:13px;">FINEX - Sistema de Inteligência Financeira</p>
-                              <p>Comprovante gerado automaticamente</p>
-                              <p>ID: ${receiptTransaction.id?.substring(0, 12).toUpperCase()}</p>
-                            </div>
-                          </body></html>`);
-                          w.document.close();
-                          w.onload = () => w.print();
-                        }}
-                        className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-md"
-                      >
-                        <FileText className="w-4 h-4 mr-2" />
-                        Imprimir
-                      </Button>
+                      <div className="flex items-center justify-center gap-2 mt-3 print:mt-2">
+                        <div className="h-px w-16 bg-gradient-to-r from-transparent via-purple-300/50 to-transparent print:bg-purple-300"></div>
+                        <p className="text-xs text-purple-500/70 font-mono tracking-wider print:text-purple-600">
+                          ID: {receiptTransaction.id?.substring(0, 12).toUpperCase()}
+                        </p>
+                        <div className="h-px w-16 bg-gradient-to-r from-transparent via-purple-300/50 to-transparent print:bg-purple-300"></div>
+                      </div>
                     </div>
                   </div>
                 );
               })()}
+
+              {/* Botões */}
+              <div className="flex flex-col sm:flex-row gap-3 pt-4 sticky bottom-0 bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50 pb-2 print:hidden">
+                <Button onClick={() => setShowReceipt(false)} variant="outline" className="flex-1 border-purple-300/50 text-purple-700 hover:bg-purple-50">
+                  Fechar
+                </Button>
+                <Button
+                  onClick={() => window.print()}
+                  className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-md"
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  Imprimir
+                </Button>
+              </div>
             </DialogContent>
           </Dialog>
 
