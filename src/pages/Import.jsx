@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { base44 as b44sdk } from "@/api/base44Client";
+import { Account } from "@/entities/Account";
+import { Category } from "@/entities/Category";
+import { Transaction } from "@/entities/Transaction";
+import { SystemCategory } from "@/entities/SystemCategory";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,31 +24,33 @@ export default function Import() {
   const [categories, setCategories] = useState([]);
   const [selectedAccount, setSelectedAccount] = useState("");
   const [importResults, setImportResults] = useState(null);
+  const [loadError, setLoadError] = useState(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     loadAccountsAndCategories();
   }, []);
 
   const loadAccountsAndCategories = async () => {
+    setLoadError(null);
     try {
-      const [accs, userCats, sysCats] = await Promise.all([
-        b44sdk.entities.Account.list(),
-        b44sdk.entities.Category.list(),
-        b44sdk.entities.SystemCategory.list()
-      ]);
-      
-      // Mesclar categorias do sistema com categorias do usuário
-      const allCategories = [
-        ...sysCats.map(c => ({ ...c, isSystem: true, id: c.id, name: c.name, type: c.type, color: c.color })), // Ensure all fields are present
-        ...userCats.map(c => ({ ...c, isSystem: false, id: c.id, name: c.name, type: c.type, color: c.color }))
-      ];
-      
-      console.log("📊 Categorias carregadas:", allCategories.length);
-      
+      // Carrega contas separadamente para identificar qual falha
+      const accs = await Account.list("-created_date", 100);
+      console.log("✅ Contas carregadas:", accs.length, accs.map(a => a.name));
       setAccounts(accs);
+
+      const [userCats, sysCats] = await Promise.all([
+        Category.list(),
+        SystemCategory.list()
+      ]);
+
+      const allCategories = [
+        ...sysCats.map(c => ({ ...c, isSystem: true })),
+        ...userCats.map(c => ({ ...c, isSystem: false }))
+      ];
       setCategories(allCategories);
     } catch (error) {
-      console.error("Erro ao carregar dados:", error);
+      console.error("❌ Erro ao carregar dados:", error);
+      setLoadError(String(error));
     }
   };
 
@@ -134,7 +139,7 @@ export default function Import() {
 
       for (const tx of parsedData) {
         try {
-          await b44sdk.entities.Transaction.create({
+          await Transaction.create({
             description: tx.description,
             amount: Math.abs(tx.amount),
             type: tx.type,
@@ -157,7 +162,7 @@ export default function Import() {
         const totalExpense = parsedData.filter(t => t.type === 'expense').reduce((sum, t) => sum + Math.abs(t.amount), 0);
         const newBalance = account.balance + totalIncome - totalExpense;
 
-        await b44sdk.entities.Account.update(selectedAccount, { balance: newBalance });
+        await Account.update(selectedAccount, { balance: newBalance });
       }
 
       setImportResults({ success, errors, total: parsedData.length });
@@ -236,8 +241,16 @@ export default function Import() {
             <CardTitle className="text-white">1. Selecionar Arquivo e Conta</CardTitle>
           </CardHeader>
           <CardContent className="p-6 space-y-4">
+            {loadError && (
+              <Alert className="bg-red-900/20 border-red-700/30">
+                <AlertCircle className="h-4 w-4 text-red-400" />
+                <AlertDescription className="text-red-300 text-xs">
+                  Erro ao carregar contas: {loadError}. <button onClick={loadAccountsAndCategories} className="underline ml-1">Tentar novamente</button>
+                </AlertDescription>
+              </Alert>
+            )}
             <div>
-              <Label className="text-purple-200">Conta de Destino</Label>
+              <Label className="text-purple-200">Conta de Destino {accounts.length === 0 && !loadError && "(carregando...)"}</Label>
               <Select value={selectedAccount} onValueChange={setSelectedAccount}>
                 <SelectTrigger className="bg-purple-900/20 border-purple-700/50 text-white mt-2">
                   <SelectValue placeholder="Selecione a conta..." />
