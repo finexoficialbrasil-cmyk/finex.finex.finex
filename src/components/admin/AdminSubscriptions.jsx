@@ -577,8 +577,35 @@ export default function AdminSubscriptions() {
 
               {selectedSubscription.notes && (
                 <div>
-                  <p className="text-purple-300 text-sm">Observações</p>
-                  <p className="text-white">{selectedSubscription.notes}</p>
+                  <p className="text-purple-300 text-sm mb-2">Observações</p>
+                  {selectedSubscription.notes.includes("ANÁLISE IA RECUSOU") ? (
+                    <div className="bg-red-900/30 border border-red-500/50 rounded-xl p-4 space-y-2">
+                      <div className="flex items-center gap-2 mb-1">
+                        <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0" />
+                        <p className="text-red-300 font-bold text-sm">Motivos da Recusa pela IA</p>
+                      </div>
+                      {/* Extrair e mostrar cada motivo separado */}
+                      {(() => {
+                        const motivosMatch = selectedSubscription.notes.match(/Motivos: (.+)$/);
+                        const motivos = motivosMatch ? motivosMatch[1].split(", ") : [selectedSubscription.notes];
+                        return (
+                          <ul className="space-y-1">
+                            {motivos.map((motivo, i) => (
+                              <li key={i} className="flex items-start gap-2 text-sm text-red-200">
+                                <span className="text-red-400 mt-0.5">•</span>
+                                <span>{motivo}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        );
+                      })()}
+                      <p className="text-yellow-300 text-xs pt-2 border-t border-red-700/40">
+                        ⚠️ Revise o comprovante abaixo e decida se aprova ou exclui.
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-white text-sm">{selectedSubscription.notes}</p>
+                  )}
                 </div>
               )}
 
