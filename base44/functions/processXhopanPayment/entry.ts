@@ -13,28 +13,32 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { subscription_id, plan_type, amount } = await req.json();
+    const { subscription_id: existing_subscription_id, plan_type, amount, user_email } = await req.json();
 
     console.log(`🎯 Processando pagamento Xhopan para: ${user.email}`);
     console.log(`📊 Detalhes: Plano=${plan_type}, Valor=R$ ${amount}`);
 
-    // ✅ Buscar a subscription
-    const allSubscriptions = await base44.asServiceRole.entities.Subscription.list();
-    const subscription = allSubscriptions.find(s => s.id === subscription_id);
-
-    if (!subscription) {
-      console.error(`❌ Subscription não encontrada: ${subscription_id}`);
-      return Response.json({ error: 'Subscription não encontrada' }, { status: 404 });
-    }
-
-    // ✅ Se já está ativa, não processar novamente
-    if (subscription.status === 'active') {
-      console.log(`⚠️ Subscription já está ativa: ${subscription_id}`);
-      return Response.json({ 
-        success: true, 
-        message: 'Assinatura já está ativa',
-        already_active: true 
+    // ✅ Criar subscription via asServiceRole (frontend não tem permissão de criação)
+    let subscription_id = existing_subscription_id;
+    if (!subscription_id) {
+      const newSub = await base44.asServiceRole.entities.Subscription.create({
+        user_email: user.email,
+        plan_type: plan_type,
+        status: "pending",
+        amount_paid: amount,
+        payment_method: "xhopan",
+        notes: `Pagamento via Banco Xhopan - Aguardando processamento`
       });
+      subscription_id = newSub.id;
+      console.log("✅ Subscription criada:", subscription_id);
+    } else {
+      // Verificar se já está ativa
+      const allSubscriptions = await base44.asServiceRole.entities.Subscription.list();
+      const subscription = allSubscriptions.find(s => s.id === subscription_id);
+      if (subscription?.status === 'active') {
+        console.log(`⚠️ Subscription já está ativa: ${subscription_id}`);
+        return Response.json({ success: true, message: 'Assinatura já está ativa', already_active: true });
+      }
     }
 
     // 🏦 DEBITAR DO BANCO XHOPAN

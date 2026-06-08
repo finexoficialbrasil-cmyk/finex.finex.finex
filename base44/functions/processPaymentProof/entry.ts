@@ -10,18 +10,43 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { subscription_id, proof_url, expected_amount, plan_type } = await req.json();
+    const { subscription_id: existing_subscription_id, proof_url, expected_amount, plan_type, notes, transaction_id, skip_ai_analysis } = await req.json();
 
     console.log("🔍 Analisando comprovante PIX...");
     console.log("📊 Valor esperado:", expected_amount);
     console.log("📋 Tipo de plano:", plan_type);
 
-    // ✅ Salvar proof_url na subscription atual
     const proofUrl = proof_url;
-    if (proofUrl) {
+
+    // ✅ Criar subscription usando asServiceRole (frontend não tem permissão)
+    let subscription_id = existing_subscription_id;
+    if (!subscription_id) {
+      const newSub = await base44.asServiceRole.entities.Subscription.create({
+        user_email: user.email,
+        plan_type: plan_type,
+        status: "pending",
+        amount_paid: expected_amount,
+        payment_method: "pix",
+        payment_proof_url: proofUrl || null,
+        transaction_id: transaction_id || null,
+        notes: notes || `Aguardando análise - ${plan_type}`
+      });
+      subscription_id = newSub.id;
+      console.log("✅ Subscription criada:", subscription_id);
+    } else if (proofUrl) {
       await base44.asServiceRole.entities.Subscription.update(subscription_id, {
         payment_proof_url: proofUrl
       });
+    }
+
+    // ✅ Se não precisa analisar (pagamento Asaas, etc), retornar aqui
+    if (skip_ai_analysis) {
+      return Response.json({ success: true, subscription_id, skipped_analysis: true });
+    }
+
+    // ✅ Se não tem comprovante, não pode analisar
+    if (!proofUrl) {
+      return Response.json({ success: true, subscription_id, message: "Aguardando comprovante" });
     }
 
     // ✅ Buscar nome esperado do recebedor PIX

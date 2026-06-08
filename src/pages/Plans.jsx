@@ -305,16 +305,15 @@ export default function Plans() {
       if (response?.success === true) {
         console.log("✅ Pagamento criado com sucesso!");
         
-        // Criar registro de assinatura pendente
-        await Subscription.create({
-          user_email: user.email,
+        // ✅ Subscription criada pelo backend via asServiceRole (RLS não permite criação no frontend)
+        await base44.functions.invoke('processPaymentProof', {
+          proof_url: null,
+          expected_amount: plan.price,
           plan_type: plan.plan_type,
-          status: "pending",
-          amount_paid: plan.price,
-          payment_method: "pix",
+          notes: `Pagamento Asaas ID: ${response.payment_id}`,
           transaction_id: response.payment_id,
-          notes: `Pagamento Asaas ID: ${response.payment_id}`
-        });
+          skip_ai_analysis: true
+        }).catch(err => console.warn("Aviso ao criar registro Asaas:", err));
 
         setPaymentData({
           payment_proof_url: "",
@@ -402,14 +401,7 @@ export default function Plans() {
         trial_ends_at: trialEndStr
       });
 
-      await Subscription.create({
-        user_email: user.email,
-        plan_type: plan.plan_type,
-        status: "active",
-        amount_paid: 0,
-        payment_method: "free",
-        notes: "Trial de 3 dias ativado - ÚNICO USO"
-      });
+      // ✅ O trial não precisa criar registro em Subscription - o User já fica marcado com trial_started_at
 
       alert(`✅ Trial de 3 dias ativado!\n\n🎉 Você tem acesso completo até ${trialEnd.toLocaleDateString('pt-BR')}.\n\n⚠️ IMPORTANTE: Este é seu ÚNICO trial. Após o vencimento, escolha um plano pago para continuar.\n\nAtualize a página para começar!`);
       loadData();
@@ -502,32 +494,18 @@ export default function Plans() {
     try {
       console.log("🤖 Analisando comprovante com IA...");
       
-      // Criar subscription
-      const subscriptionData = {
-        user_email: user.email,
-        plan_type: selectedPlan.plan_type,
-        status: "pending",
-        amount_paid: selectedPlan.price,
-        payment_method: "pix",
-        payment_proof_url: paymentData.payment_proof_url,
-        notes: paymentData.notes || `Aguardando análise - ${selectedPlan.name}`
-      };
-      
-      const newSubscription = await Subscription.create(subscriptionData);
-
-      // Processar com IA
+      // ✅ Chamar função backend que cria a subscription e processa com IA (usa asServiceRole)
       const response = await base44.functions.invoke('processPaymentProof', {
-        subscription_id: newSubscription.id,
         proof_url: paymentData.payment_proof_url,
         expected_amount: selectedPlan.price,
-        plan_type: selectedPlan.plan_type
+        plan_type: selectedPlan.plan_type,
+        notes: paymentData.notes || `Aguardando análise - ${selectedPlan.name}`
       });
 
       const result = response.data;
 
       // 🚫 COMPROVANTE DUPLICADO
       if (result.duplicate_proof) {
-        await Subscription.delete(newSubscription.id);
         setErrorMessage(`DUPLICATE:${result.used_by_email}`);
         setIsSubmitting(false);
         return;
@@ -1068,25 +1046,12 @@ export default function Plans() {
               setXhopanState={setXhopanState}
               onSuccess={async () => {
                 try {
-                  // ✅ Criar subscription AGORA (antes de qualquer processamento)
-                  console.log("📝 Criando registro de subscription...");
-                  const newSubscription = await Subscription.create({
-                    user_email: user.email,
-                    plan_type: selectedPlan.plan_type,
-                    status: "pending",
-                    amount_paid: selectedPlan.price,
-                    payment_method: "xhopan",
-                    notes: `Pagamento via Banco Xhopan - Aguardando processamento`
-                  });
-
-                  console.log("✅ Subscription criado:", newSubscription.id);
-
-                  // ✅ Chamar função de processamento automático
-                  console.log("🔄 Processando pagamento...");
+                  // ✅ Chamar função de processamento (cria subscription internamente via asServiceRole)
+                  console.log("🔄 Processando pagamento Xhopan...");
                   const processRes = await base44.functions.invoke('processXhopanPayment', {
-                    subscription_id: newSubscription.id,
                     plan_type: selectedPlan.plan_type,
-                    amount: selectedPlan.price
+                    amount: selectedPlan.price,
+                    user_email: user.email
                   });
 
                   if (processRes.data?.success) {
