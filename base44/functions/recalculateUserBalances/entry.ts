@@ -3,13 +3,22 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.7.1';
 // Esta função é chamada em segundo plano para cada usuário
 Deno.serve(async (req) => {
     try {
+        // Usamos createClientFromRequest para autenticação de serviço a serviço
+        const base44 = createClientFromRequest(req);
+
+        // ✅ VERIFICAR AUTENTICAÇÃO E PERMISSÃO ADMIN
+        const user = await base44.auth.me();
+        if (!user) {
+            return Response.json({ success: false, error: 'Não autorizado' }, { status: 401 });
+        }
+        if (user.role !== 'admin') {
+            return Response.json({ success: false, error: 'Acesso restrito a administradores' }, { status: 403 });
+        }
+
         const { user_email } = await req.json();
         if (!user_email) {
             return Response.json({ error: "Email do usuário é obrigatório." }, { status: 400 });
         }
-
-        // Usamos createClientFromRequest para autenticação de serviço a serviço
-        const base44 = createClientFromRequest(req);
         
         console.log(`⚙️ Processando recálculo para o usuário: ${user_email}`);
 

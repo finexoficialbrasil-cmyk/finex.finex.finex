@@ -4,6 +4,15 @@ Deno.serve(async (req) => {
     try {
         const base44 = createClientFromRequest(req);
         
+        // ✅ VERIFICAR AUTENTICAÇÃO E PERMISSÃO ADMIN
+        const user = await base44.auth.me();
+        if (!user) {
+            return Response.json({ success: false, error: 'Não autorizado' }, { status: 401 });
+        }
+        if (user.role !== 'admin') {
+            return Response.json({ success: false, error: 'Acesso restrito a administradores' }, { status: 403 });
+        }
+
         console.log("💰 Iniciando updateAccountBalance...");
 
         // Pegar dados da requisição
