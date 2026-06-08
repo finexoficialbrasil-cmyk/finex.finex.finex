@@ -368,8 +368,8 @@ Retorne JSON:
       rejectionReasons.forEach(r => console.log(`   - ${r}`));
       
       await base44.asServiceRole.entities.Subscription.update(subscription_id, {
-        status: "cancelled",
-        notes: `❌ RECUSADO - ${rejectionReasons.join(", ")}`
+        status: "pending",
+        notes: `⚠️ ANÁLISE IA RECUSOU - Aguardando revisão manual do admin. Motivos: ${rejectionReasons.join(", ")}`
       });
     }
 
