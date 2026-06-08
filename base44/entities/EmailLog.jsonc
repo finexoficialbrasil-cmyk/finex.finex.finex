@@ -1,0 +1,75 @@
+{
+  "name": "EmailLog",
+  "type": "object",
+  "properties": {
+    "recipient_email": {
+      "type": "string",
+      "description": "Email do destinat\u00e1rio"
+    },
+    "recipient_name": {
+      "type": "string",
+      "description": "Nome do destinat\u00e1rio"
+    },
+    "email_type": {
+      "type": "string",
+      "enum": [
+        "3_days_before",
+        "2_days_before",
+        "1_day_before",
+        "expired_today",
+        "1_day_after",
+        "5_days_after",
+        "15_days_after",
+        "30_days_after",
+        "monthly_after_30",
+        "manual"
+      ],
+      "description": "Tipo de email enviado"
+    },
+    "subject": {
+      "type": "string",
+      "description": "Assunto do email"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "sent",
+        "failed"
+      ],
+      "default": "sent",
+      "description": "Status do envio"
+    },
+    "error_message": {
+      "type": "string",
+      "description": "Mensagem de erro se falhou"
+    },
+    "plan_type": {
+      "type": "string",
+      "description": "Tipo de plano do usu\u00e1rio"
+    },
+    "expiry_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de vencimento do plano"
+    },
+    "days_difference": {
+      "type": "number",
+      "description": "Diferen\u00e7a em dias (negativo = vencido)"
+    },
+    "sent_by": {
+      "type": "string",
+      "enum": [
+        "automatic",
+        "manual"
+      ],
+      "default": "automatic",
+      "description": "Enviado automaticamente ou manualmente"
+    }
+  },
+  "required": [
+    "recipient_email",
+    "email_type",
+    "subject",
+    "status"
+  ]
+}

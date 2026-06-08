@@ -1,0 +1,65 @@
+{
+  "name": "Account",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nome da conta (ex: Banco Inter, Nubank, Carteira)"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "checking",
+        "savings",
+        "credit_card",
+        "investment",
+        "crypto",
+        "wallet"
+      ],
+      "description": "Tipo da conta"
+    },
+    "balance": {
+      "type": "number",
+      "description": "Saldo atual"
+    },
+    "currency": {
+      "type": "string",
+      "default": "BRL",
+      "description": "Moeda"
+    },
+    "color": {
+      "type": "string",
+      "description": "Cor identificadora da conta"
+    },
+    "icon": {
+      "type": "string",
+      "description": "\u00cdcone emoji da conta"
+    },
+    "logo_url": {
+      "type": "string",
+      "description": "URL do logo personalizado do banco"
+    },
+    "bank_name": {
+      "type": "string",
+      "description": "Nome do banco selecionado"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Conta ativa"
+    }
+  },
+  "required": [
+    "name",
+    "type",
+    "balance"
+  ],
+  "rls": {
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "write": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

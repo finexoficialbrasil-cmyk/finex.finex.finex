@@ -1,0 +1,44 @@
+{
+  "name": "WebhookLog",
+  "type": "object",
+  "properties": {
+    "event_type": {
+      "type": "string",
+      "description": "Tipo de evento do webhook"
+    },
+    "payment_id": {
+      "type": "string",
+      "description": "ID do pagamento no Asaas"
+    },
+    "payload": {
+      "type": "string",
+      "description": "Dados completos do webhook (JSON)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "received",
+        "processed",
+        "error"
+      ],
+      "description": "Status do processamento"
+    },
+    "error_message": {
+      "type": "string",
+      "description": "Mensagem de erro se houver"
+    }
+  },
+  "required": [
+    "event_type",
+    "payload",
+    "status"
+  ],
+  "rls": {
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "write": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

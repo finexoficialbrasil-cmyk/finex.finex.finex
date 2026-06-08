@@ -1,0 +1,59 @@
+{
+  "name": "Goal",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "T\u00edtulo da meta"
+    },
+    "description": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o da meta"
+    },
+    "target_amount": {
+      "type": "number",
+      "description": "Valor alvo"
+    },
+    "current_amount": {
+      "type": "number",
+      "default": 0,
+      "description": "Valor atual economizado"
+    },
+    "deadline": {
+      "type": "string",
+      "format": "date",
+      "description": "Data limite"
+    },
+    "icon": {
+      "type": "string",
+      "description": "\u00cdcone da meta"
+    },
+    "color": {
+      "type": "string",
+      "description": "Cor da meta"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "completed",
+        "paused"
+      ],
+      "default": "active",
+      "description": "Status da meta"
+    }
+  },
+  "required": [
+    "title",
+    "target_amount",
+    "deadline"
+  ],
+  "rls": {
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "write": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

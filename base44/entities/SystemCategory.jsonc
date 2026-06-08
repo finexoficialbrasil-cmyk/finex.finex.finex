@@ -1,0 +1,46 @@
+{
+  "name": "SystemCategory",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nome da categoria padr\u00e3o"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "income",
+        "expense"
+      ],
+      "description": "Tipo: receita ou despesa"
+    },
+    "color": {
+      "type": "string",
+      "description": "Cor da categoria"
+    },
+    "icon": {
+      "type": "string",
+      "description": "\u00cdcone da categoria"
+    },
+    "is_system": {
+      "type": "boolean",
+      "default": true,
+      "description": "Categoria do sistema (n\u00e3o edit\u00e1vel por usu\u00e1rios)"
+    },
+    "order": {
+      "type": "number",
+      "default": 0,
+      "description": "Ordem de exibi\u00e7\u00e3o"
+    }
+  },
+  "required": [
+    "name",
+    "type",
+    "color"
+  ],
+  "rls": {
+    "write": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

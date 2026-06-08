@@ -671,7 +671,7 @@ export default function Payables() {
     all: activeBills.length,
     pending: activeBills.filter(b => b.status === "pending").length,
     overdue: activeBills.filter(b => b.status === "overdue").length,
-    paid: currentMonthBills.filter(b => b.status === "paid").length
+    paid: currentMonthBills.filter(b => !b.deleted && b.status === "paid").length
   };
 
   const getCategoryInfo = (categoryId) => {
@@ -712,11 +712,11 @@ export default function Payables() {
   };
 
   const totals = {
-    total: bills.filter(b => b.status !== "paid" && b.status !== "cancelled").reduce((sum, b) => sum + b.amount, 0),
-    overdue: bills.filter(b => b.status === "overdue").reduce((sum, b) => sum + b.amount, 0),
-    monthTotal: currentMonthBills.reduce((sum, b) => sum + b.amount, 0),
-    monthPending: currentMonthBills.filter(b => b.status === "pending").reduce((sum, b) => sum + b.amount, 0),
-    monthPaid: currentMonthBills.filter(b => b.status === "paid").reduce((sum, b) => sum + b.amount, 0),
+    total: bills.filter(b => !b.deleted && b.status !== "paid" && b.status !== "cancelled").reduce((sum, b) => sum + b.amount, 0),
+    overdue: bills.filter(b => !b.deleted && b.status === "overdue").reduce((sum, b) => sum + b.amount, 0),
+    monthTotal: currentMonthBills.filter(b => !b.deleted).reduce((sum, b) => sum + b.amount, 0),
+    monthPending: currentMonthBills.filter(b => !b.deleted && b.status === "pending").reduce((sum, b) => sum + b.amount, 0),
+    monthPaid: currentMonthBills.filter(b => !b.deleted && b.status === "paid").reduce((sum, b) => sum + b.amount, 0),
   };
 
   // ✅ NOVO: Renderização condicional para estado de carregamento
@@ -1099,14 +1099,16 @@ export default function Payables() {
                               >
                                 <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
                               </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDelete(bill.id)}
-                                className="h-7 w-7 sm:h-8 sm:w-8 text-red-400"
-                              >
-                                <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
-                              </Button>
+                              {!bill.deleted && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDelete(bill.id)}
+                                  className="h-7 w-7 sm:h-8 sm:w-8 text-red-400"
+                                >
+                                  <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                                </Button>
+                              )}
                             </div>
                           </div>
                         </motion.div>

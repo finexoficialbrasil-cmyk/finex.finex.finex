@@ -1,0 +1,45 @@
+{
+  "name": "Transfer",
+  "type": "object",
+  "properties": {
+    "from_account_id": {
+      "type": "string",
+      "description": "Conta de origem"
+    },
+    "to_account_id": {
+      "type": "string",
+      "description": "Conta de destino"
+    },
+    "amount": {
+      "type": "number",
+      "description": "Valor transferido"
+    },
+    "description": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o da transfer\u00eancia"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data da transfer\u00eancia"
+    },
+    "receipt_url": {
+      "type": "string",
+      "description": "URL do comprovante"
+    }
+  },
+  "required": [
+    "from_account_id",
+    "to_account_id",
+    "amount",
+    "date"
+  ],
+  "rls": {
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "write": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

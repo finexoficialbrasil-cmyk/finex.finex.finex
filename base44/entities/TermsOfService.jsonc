@@ -1,0 +1,38 @@
+{
+  "name": "TermsOfService",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Vers\u00e3o dos termos (ex: 1.0, 1.1, 2.0)"
+    },
+    "title": {
+      "type": "string",
+      "description": "T\u00edtulo dos termos"
+    },
+    "content": {
+      "type": "string",
+      "description": "Conte\u00fado completo dos termos em HTML ou Markdown"
+    },
+    "effective_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de vig\u00eancia dos termos"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Se esta vers\u00e3o est\u00e1 ativa (s\u00f3 uma pode estar ativa)"
+    },
+    "summary": {
+      "type": "string",
+      "description": "Resumo dos termos para exibi\u00e7\u00e3o r\u00e1pida"
+    }
+  },
+  "required": [
+    "version",
+    "title",
+    "content",
+    "effective_date"
+  ]
+}

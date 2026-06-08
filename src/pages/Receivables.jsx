@@ -587,11 +587,11 @@ Agradecemos pela atenção e confiança!
       });
 
   const totals = {
-    total: bills.filter(b => b.status !== "paid" && b.status !== "cancelled").reduce((sum, b) => sum + b.amount, 0),
-    overdue: bills.filter(b => b.status === "overdue").reduce((sum, b) => sum + b.amount, 0),
-    monthTotal: currentMonthBills.reduce((sum, b) => sum + b.amount, 0),
-    monthPending: currentMonthBills.filter(b => b.status === "pending").reduce((sum, b) => sum + b.amount, 0),
-    monthReceived: currentMonthBills.filter(b => b.status === "paid").reduce((sum, b) => sum + b.amount, 0),
+    total: bills.filter(b => !b.deleted && b.status !== "paid" && b.status !== "cancelled").reduce((sum, b) => sum + b.amount, 0),
+    overdue: bills.filter(b => !b.deleted && b.status === "overdue").reduce((sum, b) => sum + b.amount, 0),
+    monthTotal: currentMonthBills.filter(b => !b.deleted).reduce((sum, b) => sum + b.amount, 0),
+    monthPending: currentMonthBills.filter(b => !b.deleted && b.status === "pending").reduce((sum, b) => sum + b.amount, 0),
+    monthReceived: currentMonthBills.filter(b => !b.deleted && b.status === "paid").reduce((sum, b) => sum + b.amount, 0),
   };
 
   const selectContact = async () => {
@@ -1037,14 +1037,16 @@ Agradecemos pela atenção e confiança!
                               >
                                 <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
                               </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDelete(bill.id)}
-                                className="h-7 w-7 sm:h-8 sm:w-8 text-red-400 hover:bg-red-900/20"
-                              >
-                                <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
-                              </Button>
+                              {!bill.deleted && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDelete(bill.id)}
+                                  className="h-7 w-7 sm:h-8 sm:w-8 text-red-400 hover:bg-red-900/20"
+                                >
+                                  <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                                </Button>
+                              )}
                             </div>
                           </div>
                         </motion.div>

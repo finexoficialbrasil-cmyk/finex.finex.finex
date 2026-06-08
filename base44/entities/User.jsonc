@@ -1,0 +1,153 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "phone": {
+      "type": "string",
+      "description": "Telefone do usu\u00e1rio (formato internacional +5511999999999)"
+    },
+    "phone_verified": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se o telefone foi verificado"
+    },
+    "avatar_url": {
+      "type": "string",
+      "description": "URL da foto de perfil"
+    },
+    "subscription_plan": {
+      "type": "string",
+      "enum": [
+        "free",
+        "monthly",
+        "semester",
+        "annual",
+        "lifetime"
+      ],
+      "description": "Plano de assinatura do usu\u00e1rio"
+    },
+    "subscription_status": {
+      "type": "string",
+      "enum": [
+        "trial",
+        "active",
+        "pending",
+        "expired",
+        "cancelled"
+      ],
+      "description": "Status da assinatura"
+    },
+    "subscription_end_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de vencimento da assinatura"
+    },
+    "trial_started_at": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de in\u00edcio do trial (marca que j\u00e1 usou trial)"
+    },
+    "trial_ends_at": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de t\u00e9rmino do trial"
+    },
+    "theme": {
+      "type": "string",
+      "enum": [
+        "dark",
+        "light",
+        "purple",
+        "blue",
+        "green"
+      ],
+      "default": "dark",
+      "description": "Tema visual do usu\u00e1rio"
+    },
+    "theme_particles": {
+      "type": "boolean",
+      "default": true,
+      "description": "Ativar part\u00edculas no tema"
+    },
+    "theme_scan_line": {
+      "type": "boolean",
+      "default": true,
+      "description": "Ativar linha de scan no tema"
+    },
+    "theme_text_gradient": {
+      "type": "boolean",
+      "default": true,
+      "description": "Ativar gradiente de texto"
+    },
+    "theme_neon_border": {
+      "type": "boolean",
+      "default": true,
+      "description": "Ativar borda neon"
+    },
+    "theme_grid_bg": {
+      "type": "boolean",
+      "default": true,
+      "description": "Ativar fundo grid"
+    },
+    "theme_glow_effects": {
+      "type": "boolean",
+      "default": true,
+      "description": "Ativar efeitos de brilho"
+    },
+    "theme_pulse_dots": {
+      "type": "boolean",
+      "default": true,
+      "description": "Ativar pontos pulsantes"
+    },
+    "theme_animation_speed": {
+      "type": "string",
+      "enum": [
+        "slow",
+        "normal",
+        "fast"
+      ],
+      "default": "normal",
+      "description": "Velocidade das anima\u00e7\u00f5es"
+    },
+    "welcome_email_sent": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se o email de boas-vindas foi enviado"
+    },
+    "welcome_whatsapp_sent": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se o WhatsApp de boas-vindas foi enviado"
+    },
+    "terms_accepted": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se o usu\u00e1rio aceitou os termos de uso"
+    },
+    "terms_accepted_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data e hora que aceitou os termos"
+    },
+    "terms_version_accepted": {
+      "type": "string",
+      "description": "Vers\u00e3o dos termos que o usu\u00e1rio aceitou"
+    },
+    "terms_ip_address": {
+      "type": "string",
+      "description": "IP do usu\u00e1rio quando aceitou os termos"
+    }
+  },
+  "required": [
+    "phone",
+    "avatar_url",
+    "subscription_plan",
+    "subscription_status",
+    "subscription_end_date",
+    "trial_started_at",
+    "trial_ends_at",
+    "terms_accepted_at",
+    "terms_version_accepted",
+    "terms_ip_address"
+  ]
+}

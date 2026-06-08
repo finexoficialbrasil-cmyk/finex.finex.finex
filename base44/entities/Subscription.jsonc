@@ -1,0 +1,77 @@
+{
+  "name": "Subscription",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email do usu\u00e1rio"
+    },
+    "plan_type": {
+      "type": "string",
+      "enum": [
+        "monthly",
+        "semester",
+        "annual",
+        "lifetime"
+      ],
+      "description": "Tipo de plano"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "pending",
+        "expired",
+        "cancelled"
+      ],
+      "default": "pending",
+      "description": "Status da assinatura"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de in\u00edcio"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de vencimento"
+    },
+    "amount_paid": {
+      "type": "number",
+      "description": "Valor pago"
+    },
+    "payment_method": {
+      "type": "string",
+      "enum": [
+        "pix",
+        "free"
+      ],
+      "default": "pix",
+      "description": "M\u00e9todo de pagamento - APENAS PIX"
+    },
+    "payment_proof_url": {
+      "type": "string",
+      "description": "URL do comprovante de pagamento"
+    },
+    "transaction_id": {
+      "type": "string",
+      "description": "ID da transa\u00e7\u00e3o"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Observa\u00e7\u00f5es"
+    },
+    "auto_renew": {
+      "type": "boolean",
+      "default": false,
+      "description": "Renova\u00e7\u00e3o autom\u00e1tica"
+    }
+  },
+  "required": [
+    "user_email",
+    "plan_type",
+    "amount_paid",
+    "payment_method"
+  ]
+}

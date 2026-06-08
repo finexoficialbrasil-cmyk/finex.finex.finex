@@ -1,0 +1,64 @@
+{
+  "name": "BillingNotification",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email do usu\u00e1rio que recebeu a notifica\u00e7\u00e3o"
+    },
+    "notification_type": {
+      "type": "string",
+      "enum": [
+        "7_days_before",
+        "3_days_before",
+        "1_day_before",
+        "on_expiry",
+        "1_day_after",
+        "3_days_after",
+        "7_days_after"
+      ],
+      "description": "Tipo de notifica\u00e7\u00e3o de vencimento"
+    },
+    "subscription_plan": {
+      "type": "string",
+      "description": "Plano do usu\u00e1rio (monthly, semester, annual, lifetime)"
+    },
+    "expiry_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de vencimento do plano"
+    },
+    "sent_via": {
+      "type": "string",
+      "enum": [
+        "email",
+        "whatsapp",
+        "both",
+        "none"
+      ],
+      "default": "email",
+      "description": "Canal usado para envio"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "sent",
+        "failed"
+      ],
+      "default": "sent",
+      "description": "Status do envio"
+    },
+    "error_message": {
+      "type": "string",
+      "description": "Mensagem de erro se falhou"
+    }
+  },
+  "required": [
+    "user_email",
+    "notification_type",
+    "subscription_plan",
+    "expiry_date",
+    "sent_via",
+    "status"
+  ]
+}
