@@ -1,9 +1,6 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Transaction } from "@/entities/Transaction";
-import { Account } from "@/entities/Account";
-import { Category } from "@/entities/Category";
+import { base44 as b44sdk } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,12 +28,10 @@ export default function Import() {
 
   const loadAccountsAndCategories = async () => {
     try {
-      const { SystemCategory } = await import("@/entities/SystemCategory");
-      
       const [accs, userCats, sysCats] = await Promise.all([
-        Account.list(),
-        Category.list(),
-        SystemCategory.list()
+        b44sdk.entities.Account.list(),
+        b44sdk.entities.Category.list(),
+        b44sdk.entities.SystemCategory.list()
       ]);
       
       // Mesclar categorias do sistema com categorias do usuário
@@ -139,7 +134,7 @@ export default function Import() {
 
       for (const tx of parsedData) {
         try {
-          await Transaction.create({
+          await b44sdk.entities.Transaction.create({
             description: tx.description,
             amount: Math.abs(tx.amount),
             type: tx.type,
@@ -162,7 +157,7 @@ export default function Import() {
         const totalExpense = parsedData.filter(t => t.type === 'expense').reduce((sum, t) => sum + Math.abs(t.amount), 0);
         const newBalance = account.balance + totalIncome - totalExpense;
 
-        await Account.update(selectedAccount, { balance: newBalance });
+        await b44sdk.entities.Account.update(selectedAccount, { balance: newBalance });
       }
 
       setImportResults({ success, errors, total: parsedData.length });
