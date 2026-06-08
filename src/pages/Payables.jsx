@@ -1055,7 +1055,7 @@ export default function Payables() {
                               <p className="text-xs text-purple-400 truncate">{account.name}</p>
                             </div>
                             <div className="flex gap-1 sm:gap-2 justify-end order-1 sm:order-none">
-                              {bill.status === "paid" && (
+                              {!bill.deleted && bill.status === "paid" && (
                                 <Button
                                   variant="ghost"
                                   size="icon"
@@ -1071,7 +1071,7 @@ export default function Payables() {
                                   <FileText className="w-3 h-3 sm:w-4 sm:h-4" />
                                 </Button>
                               )}
-                              {bill.status === "pending" || bill.status === "overdue" ? (
+                              {!bill.deleted && (bill.status === "pending" || bill.status === "overdue") ? (
                                 <Button
                                   onClick={() => handlePay(bill)}
                                   disabled={isSubmitting}
@@ -1091,14 +1091,16 @@ export default function Payables() {
                                   )}
                                 </Button>
                               ) : null}
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleEdit(bill)}
-                                className="h-7 w-7 sm:h-8 sm:w-8 text-purple-400"
-                              >
-                                <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
-                              </Button>
+                              {!bill.deleted && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleEdit(bill)}
+                                  className="h-7 w-7 sm:h-8 sm:w-8 text-purple-400"
+                                >
+                                  <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
+                                </Button>
+                              )}
                               {!bill.deleted && (
                                 <Button
                                   variant="ghost"
