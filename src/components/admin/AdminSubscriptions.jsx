@@ -196,6 +196,18 @@ export default function AdminSubscriptions() {
     }
   };
 
+  const handleDelete = async (subscription) => {
+    if (!confirm(`Excluir permanentemente este registro de ${subscription.user_email}?`)) return;
+    try {
+      await Subscription.delete(subscription.id);
+      alert("🗑️ Registro excluído.");
+      loadData();
+    } catch (error) {
+      console.error("Erro ao excluir:", error);
+      alert("❌ Erro ao excluir.");
+    }
+  };
+
   const handleViewDetails = (subscription) => {
     setSelectedSubscription(subscription);
     setShowDetailsModal(true);
@@ -472,28 +484,38 @@ export default function AdminSubscriptions() {
                       Ver Detalhes
                     </Button>
 
-                    {sub.status === "pending" && (
-                      <>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleApprove(sub)}
-                          className="border-green-700 text-green-300"
-                        >
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          Aprovar Manualmente
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleReject(sub)}
-                          className="border-red-700 text-red-300"
-                        >
-                          <XCircle className="w-3 h-3 mr-1" />
-                          Rejeitar
-                        </Button>
-                      </>
+                    {sub.status !== "active" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleApprove(sub)}
+                        className="border-green-700 text-green-300 hover:bg-green-900/30"
+                      >
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                        ✅ Aprovar
+                      </Button>
                     )}
+
+                    {sub.status !== "cancelled" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleReject(sub)}
+                        className="border-red-700 text-red-300 hover:bg-red-900/30"
+                      >
+                        <XCircle className="w-3 h-3 mr-1" />
+                        ❌ Rejeitar
+                      </Button>
+                    )}
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDelete(sub)}
+                      className="border-gray-700 text-gray-400 hover:bg-gray-900/30"
+                    >
+                      🗑️ Excluir
+                    </Button>
                   </div>
                 </motion.div>
               ))}
@@ -579,6 +601,35 @@ export default function AdminSubscriptions() {
                   </a>
                 </div>
               )}
+
+              {/* Ações no modal */}
+              <div className="flex flex-wrap gap-3 pt-4 border-t border-purple-900/30">
+                {selectedSubscription.status !== "active" && (
+                  <Button
+                    onClick={() => { handleApprove(selectedSubscription); setShowDetailsModal(false); }}
+                    className="bg-green-600 hover:bg-green-700 flex-1"
+                  >
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    ✅ Aprovar Assinatura
+                  </Button>
+                )}
+                {selectedSubscription.status !== "cancelled" && (
+                  <Button
+                    onClick={() => { handleReject(selectedSubscription); setShowDetailsModal(false); }}
+                    className="bg-red-700 hover:bg-red-800 flex-1"
+                  >
+                    <XCircle className="w-4 h-4 mr-2" />
+                    ❌ Rejeitar
+                  </Button>
+                )}
+                <Button
+                  onClick={() => { handleDelete(selectedSubscription); setShowDetailsModal(false); }}
+                  variant="outline"
+                  className="border-gray-700 text-gray-400"
+                >
+                  🗑️ Excluir
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
