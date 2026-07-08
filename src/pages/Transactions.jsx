@@ -746,8 +746,8 @@ export default function TransactionsPage() {
               </div>
             </div>
 
-            {/* Cards de Entrada e Saída */}
-            <div className="grid md:grid-cols-2 gap-4">
+            {/* Cards de Entrada, Saída e Saldo Final */}
+            <div className="grid md:grid-cols-3 gap-4">
               <Card className="glass-card border-0 neon-glow">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
@@ -771,6 +771,22 @@ export default function TransactionsPage() {
                     </div>
                     <div className="p-3 rounded-xl bg-red-600/20">
                       <TrendingDown className="w-6 h-6 text-red-400" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="glass-card border-0 neon-glow">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-purple-300 mb-1">Saldo Final</p>
+                      <p className={`text-2xl font-bold ${totals.income - totals.expense >= 0 ? 'text-cyan-400' : 'text-red-400'}`}>
+                        R$ {formatCurrencyBR(totals.income - totals.expense)}
+                      </p>
+                    </div>
+                    <div className="p-3 rounded-xl bg-cyan-600/20">
+                      <Wallet className="w-6 h-6 text-cyan-400" />
                     </div>
                   </div>
                 </CardContent>
