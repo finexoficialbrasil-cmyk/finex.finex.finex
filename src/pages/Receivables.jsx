@@ -460,7 +460,7 @@ export default function Receivables() {
   const shareReceipt = async () => {
     const text = `Comprovante de Recebimento FINEX\n\n` +
       `📄 Descrição: ${receiptData.bill.description}\n` +
-      `💰 Valor: R$ ${receiptData.bill.amount.toFixed(2)}\n` +
+      `💰 Valor: R$ ${formatCurrencyBR(receiptData.bill.amount)}\n` +
       `🏦 Conta: ${receiptData.account.name}\n` +
       `📅 Data: ${format(new Date(), "dd/MM/yyyy HH:mm")}\n` +
       `✅ Status: RECEBIDO\n\n` +
@@ -489,7 +489,7 @@ export default function Receivables() {
 Estamos passando para informar que ainda não consta o pagamento referente a: *${bill.description}*
 
 📅 *Vencimento:* ${format(new Date(bill.due_date), "dd/MM/yyyy")}
-💰 *Valor:* R$ ${bill.amount.toFixed(2)}
+💰 *Valor:* R$ ${formatCurrencyBR(bill.amount)}
 
 Se o pagamento já foi realizado, por gentileza, envie o comprovante para conferência.
 Caso ainda não tenha efetuado, pedimos que realize o quanto antes para mantermos tudo certinho. 💳✨
@@ -971,7 +971,7 @@ Agradecemos pela atenção e confiança!
                             <div className="text-left sm:text-right order-2 sm:order-none">
                               <div className="flex items-center gap-2 justify-between sm:justify-end">
                                 <p className="font-bold text-sm sm:text-lg text-green-400">
-                                  R$ {bill.amount.toFixed(2)}
+                                  R$ {formatCurrencyBR(bill.amount)}
                                 </p>
                                 {bill.status === "paid" && (
                                   <Badge className="bg-green-600/20 text-green-400 border-green-600/40 text-xs">Recebido</Badge>
@@ -1358,7 +1358,7 @@ Agradecemos pela atenção e confiança!
                         Valor Recebido
                       </p>
                       <p className="text-5xl font-black bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent print:text-4xl print:text-emerald-700">
-                        R$ {receiptData.bill.amount.toFixed(2)}
+                        R$ {formatCurrencyBR(receiptData.bill.amount)}
                       </p>
                     </div>
                     {/* Brilho decorativo */}
