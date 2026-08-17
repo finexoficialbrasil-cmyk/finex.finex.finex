@@ -31,15 +31,55 @@ const AVAILABLE_WIDGETS = [
   { id: "transactions", name: "Ultimas Transacoes", icon: BarChart3, description: "Historico recente" }
 ];
 
-export default function DashboardCustomizer({ 
-  visibleWidgets, 
-  onToggleWidget, 
-  period,
-  onPeriodChange,
-  chartType,
-  onChartTypeChange 
-}) {
+const DEFAULT_WIDGETS = [
+  'stats', 'quick-actions', 'bills-summary', 'expenses-pie', 'category-bar',
+  'balance-evolution', 'cashflow', 'accounts', 'goals', 'transactions'
+];
+
+const notifyChange = () => {
+  window.dispatchEvent(new Event('dashboard-customization-changed'));
+};
+
+const loadVisibleWidgets = () => {
+  const saved = localStorage.getItem('dashboard_widgets');
+  if (saved) {
+    const parsed = JSON.parse(saved);
+    if (!parsed.includes('quick-actions')) {
+      parsed.push('quick-actions');
+      localStorage.setItem('dashboard_widgets', JSON.stringify(parsed));
+      return parsed;
+    }
+    return parsed;
+  }
+  return DEFAULT_WIDGETS;
+};
+
+export default function DashboardCustomizer() {
   const [showCustomizer, setShowCustomizer] = useState(false);
+  const [visibleWidgets, setVisibleWidgets] = useState(loadVisibleWidgets);
+  const [period, setPeriod] = useState(() => localStorage.getItem('dashboard_period') || 'month');
+  const [chartType, setChartType] = useState(() => localStorage.getItem('dashboard_chart_type') || 'all');
+
+  const handleToggleWidget = (widgetId) => {
+    const newWidgets = visibleWidgets.includes(widgetId)
+      ? visibleWidgets.filter(w => w !== widgetId)
+      : [...visibleWidgets, widgetId];
+    setVisibleWidgets(newWidgets);
+    localStorage.setItem('dashboard_widgets', JSON.stringify(newWidgets));
+    notifyChange();
+  };
+
+  const handlePeriodChange = (value) => {
+    setPeriod(value);
+    localStorage.setItem('dashboard_period', value);
+    notifyChange();
+  };
+
+  const handleChartTypeChange = (value) => {
+    setChartType(value);
+    localStorage.setItem('dashboard_chart_type', value);
+    notifyChange();
+  };
 
   return (
     <>
@@ -70,7 +110,7 @@ export default function DashboardCustomizer({
               <CardContent className="space-y-4">
                 <div>
                   <Label className="text-purple-200 mb-2 block">Periodo de Analise</Label>
-                  <Select value={period} onValueChange={onPeriodChange}>
+                  <Select value={period} onValueChange={handlePeriodChange}>
                     <SelectTrigger className="bg-purple-900/20 border-purple-700/50 text-white">
                       <SelectValue />
                     </SelectTrigger>
@@ -84,7 +124,7 @@ export default function DashboardCustomizer({
 
                 <div>
                   <Label className="text-purple-200 mb-2 block">Tipo de Grafico (Categorias)</Label>
-                  <Select value={chartType} onValueChange={onChartTypeChange}>
+                  <Select value={chartType} onValueChange={handleChartTypeChange}>
                     <SelectTrigger className="bg-purple-900/20 border-purple-700/50 text-white">
                       <SelectValue />
                     </SelectTrigger>
@@ -113,7 +153,7 @@ export default function DashboardCustomizer({
                   return (
                     <div
                       key={widget.id}
-                      onClick={() => onToggleWidget(widget.id)}
+                      onClick={() => handleToggleWidget(widget.id)}
                       className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer transition-all ${
                         isVisible 
                           ? 'bg-purple-600/30 border-2 border-purple-500' 

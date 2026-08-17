@@ -39,7 +39,6 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import ExpensesPieChart from "../components/dashboard/ExpensesPieChart";
 import CategoryBarChart from "../components/dashboard/CategoryBarChart";
 import BalanceEvolutionChart from "../components/dashboard/BalanceEvolutionChart";
-import DashboardCustomizer from "../components/dashboard/DashboardCustomizer";
 import BillsSummary from "../components/dashboard/BillsSummary";
 
 // Formata número para moeda brasileira (R$ 1.234,56)
@@ -110,12 +109,38 @@ export default function Dashboard() {
     }
     return defaultOrder;
   });
-  const [dashboardPeriod, setDashboardPeriod] = useState('month');
-  const [chartType, setChartType] = useState('all');
+  const [dashboardPeriod, setDashboardPeriod] = useState(() => localStorage.getItem('dashboard_period') || 'month');
+  const [chartType, setChartType] = useState(() => localStorage.getItem('dashboard_chart_type') || 'all');
 
   useEffect(() => {
     loadData();
     updatePageTitle();
+  }, []);
+
+  // Sincroniza customizações feitas a partir de outras páginas (ex.: Perfil)
+  useEffect(() => {
+    const syncCustomization = () => {
+      const savedWidgets = localStorage.getItem('dashboard_widgets');
+      if (savedWidgets) {
+        try {
+          const parsed = JSON.parse(savedWidgets);
+          if (!parsed.includes('quick-actions')) parsed.push('quick-actions');
+          setVisibleWidgets(parsed);
+        } catch (e) { /* ignore */ }
+      }
+      const savedOrder = localStorage.getItem('dashboard_widget_order');
+      if (savedOrder) {
+        try {
+          const parsed = JSON.parse(savedOrder);
+          if (!parsed.includes('quick-actions')) parsed.splice(1, 0, 'quick-actions');
+          setWidgetOrder(parsed);
+        } catch (e) { /* ignore */ }
+      }
+      setDashboardPeriod(localStorage.getItem('dashboard_period') || 'month');
+      setChartType(localStorage.getItem('dashboard_chart_type') || 'all');
+    };
+    window.addEventListener('dashboard-customization-changed', syncCustomization);
+    return () => window.removeEventListener('dashboard-customization-changed', syncCustomization);
   }, []);
 
   const updatePageTitle = useCallback(() => {
@@ -518,14 +543,6 @@ export default function Dashboard() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <DashboardCustomizer
-              visibleWidgets={visibleWidgets}
-              onToggleWidget={handleToggleWidget}
-              period={dashboardPeriod}
-              onPeriodChange={setDashboardPeriod}
-              chartType={chartType}
-              onChartTypeChange={setChartType}
-            />
             <Link to={createPageUrl("Transactions") + "?action=new"} className="flex-shrink-0">
               <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 neon-glow">
                 <Plus className="w-4 h-4 mr-2" />

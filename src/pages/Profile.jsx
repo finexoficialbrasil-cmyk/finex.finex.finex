@@ -47,6 +47,7 @@ import {
   Download
 } from "lucide-react";
 import { motion } from "framer-motion";
+import DashboardCustomizer from "../components/dashboard/DashboardCustomizer";
 
 export default function Profile() {
   const [user, setUser] = useState(null);
@@ -782,6 +783,14 @@ export default function Profile() {
                   <SelectItem value="green">💚 Verde</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="pt-4 border-t border-purple-900/30">
+              <Label className="text-purple-200 mb-2 block">Dashboard</Label>
+              <p className="text-purple-300 text-sm mb-3">
+                Escolha quais widgets aparecem e o período de análise do seu dashboard.
+              </p>
+              <DashboardCustomizer />
             </div>
           </CardContent>
         </Card>
