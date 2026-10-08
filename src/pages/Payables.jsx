@@ -42,7 +42,8 @@ import {
   Loader2,
   Search,
   CreditCard,
-  Building2
+  Building2,
+  Copy
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, differenceInDays, isBefore } from "date-fns";
@@ -1072,24 +1073,40 @@ export default function Payables() {
                                 </Button>
                               )}
                               {!bill.deleted && (bill.status === "pending" || bill.status === "overdue") ? (
-                                <Button
-                                  onClick={() => handlePay(bill)}
-                                  disabled={isSubmitting}
-                                  className="h-10 sm:h-11 px-4 sm:px-6 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all flex items-center gap-2 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
-                                  title="Confirmar Pagamento"
-                                >
-                                  {isSubmitting ? (
-                                    <>
-                                      <Loader2 className="w-5 h-5 animate-spin" />
-                                      <span className="hidden sm:inline text-sm">Processando...</span>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Check className="w-5 h-5 sm:w-5 sm:h-5" />
-                                      <span className="hidden sm:inline text-sm">Pagar</span>
-                                    </>
+                                <>
+                                  {bill.supplier_pix_key && (
+                                    <Button
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(bill.supplier_pix_key).then(() => {
+                                          alert(`✅ Chave PIX copiada!\n\n${bill.supplier_pix_key}`);
+                                        }).catch(() => alert("Não foi possível copiar. Chave: " + bill.supplier_pix_key));
+                                      }}
+                                      className="h-10 sm:h-11 px-3 sm:px-4 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all flex items-center gap-2 flex-shrink-0"
+                                      title={`Copiar PIX: ${bill.supplier_pix_key}`}
+                                    >
+                                      <Copy className="w-4 h-4 sm:w-5 sm:h-5" />
+                                      <span className="hidden sm:inline text-sm">PIX</span>
+                                    </Button>
                                   )}
-                                </Button>
+                                  <Button
+                                    onClick={() => handlePay(bill)}
+                                    disabled={isSubmitting}
+                                    className="h-10 sm:h-11 px-4 sm:px-6 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all flex items-center gap-2 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title="Confirmar Pagamento"
+                                  >
+                                    {isSubmitting ? (
+                                      <>
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                        <span className="hidden sm:inline text-sm">Processando...</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Check className="w-5 h-5 sm:w-5 sm:h-5" />
+                                        <span className="hidden sm:inline text-sm">Pagar</span>
+                                      </>
+                                    )}
+                                  </Button>
+                                </>
                               ) : null}
                               {!bill.deleted && (
                                 <Button
