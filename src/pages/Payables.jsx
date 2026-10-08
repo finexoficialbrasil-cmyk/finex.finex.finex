@@ -1074,20 +1074,22 @@ export default function Payables() {
                               )}
                               {!bill.deleted && (bill.status === "pending" || bill.status === "overdue") ? (
                                 <>
-                                  {bill.supplier_pix_key && (
-                                    <Button
-                                      onClick={() => {
-                                        navigator.clipboard.writeText(bill.supplier_pix_key).then(() => {
-                                          alert(`✅ Chave PIX copiada!\n\n${bill.supplier_pix_key}`);
-                                        }).catch(() => alert("Não foi possível copiar. Chave: " + bill.supplier_pix_key));
-                                      }}
-                                      className="h-10 sm:h-11 px-3 sm:px-4 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all flex items-center gap-2 flex-shrink-0"
-                                      title={`Copiar PIX: ${bill.supplier_pix_key}`}
-                                    >
-                                      <Copy className="w-4 h-4 sm:w-5 sm:h-5" />
-                                      <span className="hidden sm:inline text-sm">PIX</span>
-                                    </Button>
-                                  )}
+                                  <Button
+                                    onClick={() => {
+                                      if (!bill.supplier_pix_key) {
+                                        alert("⚠️ Nenhuma chave PIX cadastrada para esta conta.\n\nClique em Editar (lápis) para adicionar a chave PIX do fornecedor.");
+                                        return;
+                                      }
+                                      navigator.clipboard.writeText(bill.supplier_pix_key).then(() => {
+                                        alert(`✅ Chave PIX copiada!\n\n${bill.supplier_pix_key}`);
+                                      }).catch(() => alert("Não foi possível copiar. Chave: " + bill.supplier_pix_key));
+                                    }}
+                                    className="h-10 sm:h-11 px-3 sm:px-4 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all flex items-center gap-2 flex-shrink-0"
+                                    title={bill.supplier_pix_key ? `Copiar PIX: ${bill.supplier_pix_key}` : "Copiar PIX (não cadastrado)"}
+                                  >
+                                    <Copy className="w-4 h-4 sm:w-5 sm:h-5" />
+                                    <span className="hidden sm:inline text-sm">PIX</span>
+                                  </Button>
                                   <Button
                                     onClick={() => handlePay(bill)}
                                     disabled={isSubmitting}
