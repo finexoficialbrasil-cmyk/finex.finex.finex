@@ -48,6 +48,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { format, differenceInDays, isBefore } from "date-fns";
 import ExportBillsPDF from "../components/bills/ExportBillsPDF";
+import AlertModal from "@/components/ui/AlertModal";
 
 const formatCurrencyBR = (value) => {
   return new Intl.NumberFormat('pt-BR', {
@@ -72,6 +73,7 @@ export default function Payables() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
+  const [alertModal, setAlertModal] = useState({ open: false, type: "info", title: "", message: "" });
   const [formData, setFormData] = useState({
     description: "",
     amount: "",
@@ -1077,12 +1079,27 @@ export default function Payables() {
                                   <Button
                                     onClick={() => {
                                       if (!bill.supplier_pix_key) {
-                                        alert("⚠️ Nenhuma chave PIX cadastrada para esta conta.\n\nClique em Editar (lápis) para adicionar a chave PIX do fornecedor.");
+                                        setAlertModal({
+                                          open: true,
+                                          type: "warning",
+                                          title: "Chave PIX não cadastrada",
+                                          message: "Nenhuma chave PIX cadastrada para esta conta.\n\nClique em Editar (lápis) para adicionar a chave PIX do fornecedor."
+                                        });
                                         return;
                                       }
                                       navigator.clipboard.writeText(bill.supplier_pix_key).then(() => {
-                                        alert(`✅ Chave PIX copiada!\n\n${bill.supplier_pix_key}`);
-                                      }).catch(() => alert("Não foi possível copiar. Chave: " + bill.supplier_pix_key));
+                                        setAlertModal({
+                                          open: true,
+                                          type: "success",
+                                          title: "Chave PIX copiada!",
+                                          message: bill.supplier_pix_key
+                                        });
+                                      }).catch(() => setAlertModal({
+                                        open: true,
+                                        type: "error",
+                                        title: "Erro ao copiar",
+                                        message: "Não foi possível copiar. Chave: " + bill.supplier_pix_key
+                                      }));
                                     }}
                                     className="h-10 sm:h-11 px-3 sm:px-4 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all flex items-center gap-2 flex-shrink-0"
                                     title={bill.supplier_pix_key ? `Copiar PIX: ${bill.supplier_pix_key}` : "Copiar PIX (não cadastrado)"}
@@ -1753,6 +1770,15 @@ export default function Payables() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Modal de Alerta Personalizado */}
+        <AlertModal
+          open={alertModal.open}
+          onOpenChange={(open) => setAlertModal({ ...alertModal, open })}
+          type={alertModal.type}
+          title={alertModal.title}
+          message={alertModal.message}
+        />
       </div>
     </FeatureGuard>
   );
